@@ -36,7 +36,7 @@ const char* format_names[] = {
 
 unsigned int format_count = sizeof(formats) / sizeof(char*);
 
-void print_usage(const char* name)
+static void print_usage(const char* name)
 {
 	unsigned int i;
 	fprintf(stderr, "%s -t <format> <path-to-graphml-file>\n\n", name);

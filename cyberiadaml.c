@@ -77,10 +77,10 @@
  * Utility functions
  * ----------------------------------------------------------------------------- */
 
-int cyberiada_copy_string(char** target, unsigned int* size, const char* source)
+static int cyberiada_copy_string(char** target, size_t* size, const char* source)
 {
 	char* target_str;
-	unsigned int strsize;
+	size_t strsize;
 	if (!source)
 		return CYBERIADA_BAD_PARAMETER;
 	strsize = strlen(source);  
@@ -99,7 +99,7 @@ int cyberiada_copy_string(char** target, unsigned int* size, const char* source)
  * Graph manipulation functions
  * ----------------------------------------------------------------------------- */
 
-CyberiadaNode* cyberiada_graph_find_node(CyberiadaNode* root, const char* id)
+static CyberiadaNode* cyberiada_graph_find_node(CyberiadaNode* root, const char* id)
 {
 	CyberiadaNode* node;
 	CyberiadaNode* found;
@@ -117,7 +117,7 @@ CyberiadaNode* cyberiada_graph_find_node(CyberiadaNode* root, const char* id)
 	return NULL;
 }
 
-CyberiadaNode* cyberiada_new_node(const char* id)
+static CyberiadaNode* cyberiada_new_node(const char* id)
 {
 	CyberiadaNode* new_node = (CyberiadaNode*)malloc(sizeof(CyberiadaNode));
 	cyberiada_copy_string(&(new_node->id), &(new_node->id_len), id);
@@ -134,7 +134,7 @@ CyberiadaNode* cyberiada_new_node(const char* id)
 	return new_node;
 }
 
-CyberiadaEdge* cyberiada_new_edge(const char* id, CyberiadaNode* source, CyberiadaNode* target)
+static CyberiadaEdge* cyberiada_new_edge(const char* id, CyberiadaNode* source, CyberiadaNode* target)
 {
 	CyberiadaEdge* new_edge = (CyberiadaEdge*)malloc(sizeof(CyberiadaEdge));
 	cyberiada_copy_string(&(new_edge->id), &(new_edge->id_len), id);
@@ -148,7 +148,7 @@ CyberiadaEdge* cyberiada_new_edge(const char* id, CyberiadaNode* source, Cyberia
 	return new_edge;
 }
 
-int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNode* new_node)
+static int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNode* new_node)
 {
 	CyberiadaNode* node = sibling;
 	if (!new_node) {
@@ -160,7 +160,7 @@ int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNode* new_
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, CyberiadaNode* source, CyberiadaNode* target)
+static int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, CyberiadaNode* source, CyberiadaNode* target)
 {
 	CyberiadaEdge* last_edge;
 	CyberiadaEdge* new_edge;
@@ -178,7 +178,7 @@ int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, CyberiadaNode* sou
 	return CYBERIADA_NO_ERROR;
 }
 
-CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm)
+static CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm)
 {
 	CyberiadaEdge* edge;
 	if (!sm) {
@@ -193,7 +193,7 @@ CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm)
  * The Cyberiada GraphML library fucntions declarations
  * ----------------------------------------------------------------------------- */
 
-CyberiadaSM* cyberiada_create_sm()
+CyberiadaSM* cyberiada_create_sm(void)
 {
 	CyberiadaSM* sm = (CyberiadaSM*)malloc(sizeof(CyberiadaSM));
 	cyberiada_init_sm(sm);
@@ -229,11 +229,11 @@ static int cyberiada_destroy_node(CyberiadaNode* node)
 			if(n->action) free(n->action);
 		} while (node);
 	}
+	return CYBERIADA_NO_ERROR;
 }
 
 int cyberiada_cleanup_sm(CyberiadaSM* sm)
 {
-	CyberiadaNode* n;
 	CyberiadaEdge *edge, *e;
 	CyberiadaPolyline *polyline, *pl;
 	
@@ -278,12 +278,12 @@ int cyberiada_destroy_sm(CyberiadaSM* sm)
 	return CYBERIADA_NO_ERROR;
 }	
 
-static int cyberiada_get_attr_value(char* buffer, unsigned int buffer_len,
+static int cyberiada_get_attr_value(char* buffer, size_t buffer_len,
 									xmlNode* node, const char* attrname)
 {
 	xmlAttr* attribute = node->properties;
 	while(attribute) {
-		if (strcmp(attribute->name, attrname) == 0) {
+		if (strcmp((const char*)attribute->name, attrname) == 0) {
 			xmlChar* value = xmlNodeListGetString(node->doc, attribute->children, 1);
 			strncpy(buffer, (char*)value, buffer_len);
 			xmlFree(value);
@@ -294,7 +294,7 @@ static int cyberiada_get_attr_value(char* buffer, unsigned int buffer_len,
 	return CYBERIADA_NOT_FOUND;
 }
 
-static int cyberiada_get_element_text(char* buffer, unsigned int buffer_len,
+static int cyberiada_get_element_text(char* buffer, size_t buffer_len,
 									  xmlNode* node)
 {
 	xmlChar* value = xmlNodeListGetString(node->doc,
@@ -341,7 +341,7 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 {
 	CyberiadaNode* node;
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	/* process the top graph element only */
 	if(cyberiada_get_attr_value(buffer, buffer_len,
 								xml_node,
@@ -366,7 +366,7 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 {
 	CyberiadaNode* node;
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -417,10 +417,10 @@ static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 											   CyberiadaNode** current)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
-								 GRAPHML_YED_NODE_CONFIG_ATTRIBUTE) == CYBERIADA_NO_ERROR &
+								 GRAPHML_YED_NODE_CONFIG_ATTRIBUTE) == CYBERIADA_NO_ERROR &&
 		(strcmp(buffer, GRAPHML_YED_NODE_CONFIG_START) == 0 ||
 		 strcmp(buffer, GRAPHML_YED_NODE_CONFIG_START2) == 0)) {
 		(*current)->type = cybNodeInitial;
@@ -440,7 +440,7 @@ static int cyberiada_xml_read_coord(xmlNode* xml_node,
 									double* result)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 attr_name) != CYBERIADA_NO_ERROR) {
@@ -497,7 +497,7 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 										   CyberiadaNode** current)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_YED_PROP_VALUE_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -514,7 +514,7 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 											CyberiadaNode** current)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if ((*current)->title != NULL) {
 		ERROR("Trying to set node %s label twice\n", (*current)->id);
 		return gpsInvalid;
@@ -530,7 +530,7 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 											  CyberiadaNode** current)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if ((*current)->action != NULL) {
 		ERROR("Trying to set node %s action twice\n", (*current)->id);
 		return gpsInvalid;
@@ -548,7 +548,7 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 	CyberiadaNode* source = NULL;
 	CyberiadaNode* target = NULL;
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	if(cyberiada_get_attr_value(buffer, buffer_len,
 								xml_node,
 								GRAPHML_SOURCE_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -642,7 +642,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 											CyberiadaNode** node)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaEdge *current;
 	current = cyberiada_graph_find_last_edge(sm);
 	if (current == NULL) {
@@ -690,17 +690,17 @@ static ProcessorTransition processor_state_table[] = {
 	{gpsEdgePath, GRAPHML_YED_EDGELABEL, &handle_edge_label},
 	{gpsEdgePath, GRAPHML_EDGE_ELEMENT, &handle_new_edge},
 };
-const unsigned int processor_state_table_size = sizeof(processor_state_table) / sizeof(ProcessorTransition);
+const size_t processor_state_table_size = sizeof(processor_state_table) / sizeof(ProcessorTransition);
 
 static int dispatch_processor(xmlNode* xml_node,
 							  CyberiadaSM* sm,
 							  CyberiadaNode** current,
 							  GraphProcessorState* gps) {
-	unsigned int i;
+	size_t i;
 	if (xml_node->type == XML_ELEMENT_NODE) {
 		for (i = 0; i < processor_state_table_size; i++) {
 			if (processor_state_table[i].state == *gps &&
-				strcmp(xml_node->name, processor_state_table[i].symbol) == 0) {
+				strcmp((const char*)xml_node->name, processor_state_table[i].symbol) == 0) {
 				*gps = (*(processor_state_table[i].handler))(xml_node, sm, current);
 				return CYBERIADA_NO_ERROR;
 			}
@@ -738,7 +738,7 @@ static int cyberiada_build_graph(xmlNode* xml_root,
 static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaSM* sm)
 {
 	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer) - 1;
 	GraphProcessorState gps = gpsInit;
 	CyberiadaNode* current = NULL;
 	int res;
@@ -775,7 +775,7 @@ static int cyberiada_check_graphml_ns(xmlNode* root)
 		return CYBERIADA_XML_ERROR;
 	}
 	do {
-		if (strcmp(ns->href, GRAPHML_NAMESPACE_URI) == 0) {
+		if (strcmp((const char*)ns->href, GRAPHML_NAMESPACE_URI) == 0) {
 			return CYBERIADA_NO_ERROR;
 		}
 		ns = ns->next;
@@ -789,8 +789,6 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
 	int res;
 	xmlDoc* doc = NULL;
 	xmlNode* root = NULL;
-	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len;
 
 	cyberiada_init_sm(sm);
 	
@@ -803,7 +801,7 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
     /* get the root element node */
 	root = xmlDocGetRootElement(doc);
 
-	if (strcmp(root->name, GRAPHML_GRAPHML_ELEMENT) != 0) {
+	if (strcmp((const char*)root->name, GRAPHML_GRAPHML_ELEMENT) != 0) {
 		ERROR("error: could not find GraphML root node %s\n", filename);
 		return CYBERIADA_XML_ERROR;
 	}
@@ -834,8 +832,6 @@ static int cyberiada_print_node(CyberiadaNode* node, CyberiadaNode* start, int l
 {
 	CyberiadaNode* cur_node;
 	char levelspace[16];
-	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
 	int i;
 
 	memset(levelspace, 0, sizeof(levelspace));
@@ -872,10 +868,7 @@ static int cyberiada_print_node(CyberiadaNode* node, CyberiadaNode* start, int l
 
 static int cyberiada_print_edge(CyberiadaEdge* edge)
 {
-	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
 	CyberiadaPolyline* polyline;
-	int i;
 	printf(" Edge %s [%s %s]->[%s %s]\n",
 		   edge->id,
 		   edge->source->id,
@@ -889,7 +882,6 @@ static int cyberiada_print_edge(CyberiadaEdge* edge)
 			   edge->geometry_target_point.x,
 			   edge->geometry_target_point.y);
 	} else {
-		int i;
 		printf("  Geometry: (\n");
 		printf("   (%lf, %lf)\n", edge->geometry_source_point.x, edge->geometry_source_point.y);
 		for (polyline = edge->geometry_polyline; polyline; polyline = polyline->next) {
@@ -908,8 +900,6 @@ static int cyberiada_print_edge(CyberiadaEdge* edge)
 
 int cyberiada_print_sm(CyberiadaSM* sm)
 {
-	char buffer[MAX_STR_LEN];
-	unsigned int buffer_len = sizeof(buffer) - 1;
 	CyberiadaNode* cur_node;
 	CyberiadaEdge* cur_edge;
 

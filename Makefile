@@ -14,7 +14,7 @@ LIB_OBJECTS := $(patsubst %.c, %.o, $(LIB_SOURCES))
 TEST_OBJECTS := $(patsubst %.c, %.o, $(TEST_SOURCES))
 
 ifeq ($(DEBUG), 1)
-    CFLAGS := -fPIC -g3 -D__DEBUG__
+    CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fPIC -g3 -D__DEBUG__
 else
     CFLAGS := -fPIC
 endif
