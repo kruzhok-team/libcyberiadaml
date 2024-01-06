@@ -59,9 +59,8 @@
 #define GRAPHML_YED_EDGELABEL				"EdgeLabel"
 
 #define CYBERIADA_HOLLOW_NODE				"<node>"
-
-#define CYBERIADA_ENTRY_ACTION				"entry"
-#define CYBERIADA_EXIT_ACTION				"exit"
+#define CYBERIADA_VERSION_BERLOGA			"yEd Berloga 1.4"
+#define CYBERIADA_VERSION_OSTRANNA			"yEd Ostranna"
 
 #define MAX_STR_LEN							4096
 
@@ -754,10 +753,10 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaSM* sm)
 		} else {
 			cyberiada_copy_string(&(sm->name), &(sm->name_len), "");
 		}
-		cyberiada_copy_string(&(sm->version), &(sm->version_len), "YED Ostranna");
+		cyberiada_copy_string(&(sm->version), &(sm->version_len), CYBERIADA_VERSION_OSTRANNA);
 	} else {
 		cyberiada_copy_string(&(sm->name), &(sm->name_len), buffer);
-		cyberiada_copy_string(&(sm->version), &(sm->version_len), "YED Berloga 1.4");
+		cyberiada_copy_string(&(sm->version), &(sm->version_len), CYBERIADA_VERSION_BERLOGA);
 	}	
 	return CYBERIADA_NO_ERROR;
 }
