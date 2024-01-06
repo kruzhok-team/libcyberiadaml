@@ -30,7 +30,7 @@ else
 	ar rcs $@ $(LIB_OBJECTS)
 endif
 
-$(TEST_TARGET): $(TEST_OBJECTS) $(TARGET)
+$(TEST_TARGET): $(TEST_OBJECTS) $(LIB_TARGET) $(LIB_ORJECTS)
 	gcc $(TEST_OBJECTS) -Wl,--no-as-needed $(LIBS) $(TEST_LIBS) -o $@
 
 %.o: %.c
