@@ -17,6 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see https://www.gnu.org/licenses/
+ *
  * ----------------------------------------------------------------------------- */
 
 #include <stdlib.h>
@@ -27,6 +28,7 @@
 #include "cyberiadaml.h"
 
 #define GRAPHML_NAMESPACE_URI 				"http://graphml.graphdrawing.org/xmlns"
+#define GRAPHML_NAMESPACE_URI_YED			"http://www.yworks.com/xml/graphml"
 #define GRAPHML_GRAPHML_ELEMENT				"graphml"
 #define GRAPHML_BERLOGA_SCHEMENAME_ATTR 	"SchemeName"
 #define GRAPHML_GRAPH_ELEMENT				"graph"
@@ -766,21 +768,34 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaSM* sm)
 	return CYBERIADA_FORMAT_ERROR;
 }
 
-static int cyberiada_check_graphml_ns(xmlNode* root)
+static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 {
 	xmlNs* ns;
+	int graphml_found = 0;
+	int yed_found = 0;
 	if (!root || !(ns = root->nsDef)) {
 		ERROR("bad GraphML XML NS: null ns ptr\n");
 		return CYBERIADA_XML_ERROR;
 	}
 	do {
 		if (strcmp((const char*)ns->href, GRAPHML_NAMESPACE_URI) == 0) {
-			return CYBERIADA_NO_ERROR;
-		}
+			graphml_found = 1;
+		} else if (strcmp((const char*)ns->href, GRAPHML_NAMESPACE_URI_YED) == 0) {
+			yed_found = 1;
+		}  
 		ns = ns->next;
 	} while (ns);
-	ERROR("no GraphML XML NS href\n");
-	return CYBERIADA_XML_ERROR;
+	if (!graphml_found) {
+		ERROR("no GraphML XML NS href\n");
+		return CYBERIADA_XML_ERROR;
+	}
+	if (*format == cybxmlUnknown && yed_found) {
+		*format = cybxmlYED;
+	} else if (*format == cybxmlYED && !yed_found) {
+		ERROR("no GraphML YED NS href\n");
+		return CYBERIADA_XML_ERROR;
+	}
+	return CYBERIADA_NO_ERROR;
 }
 
 int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat format)
@@ -806,8 +821,8 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
 	}
 
 	/* check whether the xml is graphml */
-	if (cyberiada_check_graphml_ns(root)) {
-		ERROR("error: no graphml namespace in %s\n", filename);
+	if (cyberiada_check_graphml_ns(root, &format)) {
+		ERROR("error: no valid graphml namespace in %s\n", filename);
 		return CYBERIADA_XML_ERROR;
 	}
 
@@ -816,8 +831,8 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
 	} else if (format == cybxmlCyberiada) {
 		res = cyberiada_decode_cyberiada_xml(root, sm);
 	} else {
-		ERROR("error: unsupported GraphML format %d of file %s\n",
-				format, filename);
+		ERROR("error: unsupported GraphML format of file %s\n",
+			  filename);
 		return CYBERIADA_XML_ERROR;
 	}
 

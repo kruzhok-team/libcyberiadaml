@@ -17,6 +17,7 @@
  *
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see https://www.gnu.org/licenses/
+ *
  * ----------------------------------------------------------------------------- */
 
 #ifndef __CYBERIADA_ML_H
@@ -98,7 +99,8 @@ typedef struct {
 /* SM GraphML supported formats */
 typedef enum {
     cybxmlYED = 0,
-    cybxmlCyberiada
+    cybxmlCyberiada,
+	cybxmlUnknown
 } CyberiadaXMLFormat;
     
 /* -----------------------------------------------------------------------------
