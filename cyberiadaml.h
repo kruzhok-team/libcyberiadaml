@@ -75,6 +75,10 @@ typedef struct _CyberiadaNode {
 typedef struct _CyberiadaEdge {
     char*                       id;
     size_t                      id_len;
+	char*                       source_id;
+	size_t                      source_id_len;
+	char*                       target_id;
+	size_t                      target_id_len;
     CyberiadaNode*              source;
     CyberiadaNode*              target;
     char*                       action;
