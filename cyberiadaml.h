@@ -92,7 +92,6 @@ typedef struct {
     char*                       version;
     size_t                      version_len;
     CyberiadaNode*              nodes;
-    CyberiadaNode*              start;
     CyberiadaEdge*              edges;
 } CyberiadaSM;
 
