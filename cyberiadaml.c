@@ -209,7 +209,6 @@ int cyberiada_init_sm(CyberiadaSM* sm)
 		sm->version = NULL;
 		sm->version_len = 0;
 		sm->nodes = NULL;
-		sm->start = NULL;
 		sm->edges = NULL;
 	}
 	return CYBERIADA_NO_ERROR;
@@ -336,9 +335,93 @@ const char* debug_state_names[] = {
 	"Invalid"
 };
 
+typedef struct _NodeStack {
+	const char*        xml_element;
+	CyberiadaNode*     node;
+	struct _NodeStack* next;
+} NodeStack;
+
+static int node_stack_push(NodeStack** stack)
+{
+	NodeStack* new_item = (NodeStack*)malloc(sizeof(NodeStack));
+	new_item->xml_element = NULL;
+	new_item->node = NULL;
+	new_item->next = (*stack);
+	*stack = new_item;
+	return CYBERIADA_NO_ERROR;
+}
+
+static int node_stack_set_top_node(NodeStack** stack, CyberiadaNode* node)
+{
+	NodeStack* to_pop = *stack;
+	if (to_pop == NULL) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	to_pop->node = node;
+	return CYBERIADA_NO_ERROR;
+}
+
+static int node_stack_set_top_element(NodeStack** stack, const char* element)
+{
+	NodeStack* to_pop = *stack;
+	if (to_pop == NULL) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	to_pop->xml_element = element;
+	return CYBERIADA_NO_ERROR;	
+}
+
+static CyberiadaNode* node_stack_current_node(NodeStack** stack)
+{
+	NodeStack* s = *stack;
+	while (s) {
+		if (s->node)
+			return s->node;
+		s = s->next;
+	}
+	return NULL;
+}
+
+/* static CyberiadaNode* node_stack_parent_node(NodeStack** stack) */
+/* { */
+/* 	NodeStack* s = *stack; */
+/* 	int first = 1; */
+/* 	while (s) { */
+/* 		if (s->node) { */
+/* 			if (first) { */
+/* 				first = 0; */
+/* 			} else { */
+/* 				return s->node; */
+/* 			} */
+/* 		} */
+/* 		s = s->next; */
+/* 	} */
+/* 	return NULL; */
+/* } */
+
+static int node_stack_pop(NodeStack** stack, CyberiadaNode** node, const char** element)
+{
+	NodeStack* to_pop = *stack;
+	if (to_pop == NULL) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (element)
+		*element = to_pop->xml_element;
+	if (node)
+		*node = to_pop->node;
+	*stack = to_pop->next;
+	free(to_pop);
+	return CYBERIADA_NO_ERROR;
+}
+
+/* static int node_stack_empty(NodeStack** stack) */
+/* { */
+/* 	return *stack == NULL; */
+/* } */
+
 static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 											CyberiadaSM* sm,
-											CyberiadaNode** current)
+											NodeStack** stack)
 {
 	CyberiadaNode* node;
 	char buffer[MAX_STR_LEN];
@@ -349,23 +432,21 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 								GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
-	node = cyberiada_new_node(CYBERIADA_HOLLOW_NODE);
 	DEBUG("found graph %s \n", buffer);
+	node = cyberiada_new_node(CYBERIADA_HOLLOW_NODE);
 	if (sm->nodes == NULL) {
 		sm->nodes = node;
-	} else {
-		(*current)->children = node;
-		node->parent = *current;
+		node_stack_set_top_node(stack, node);
 	}
-	*current = node;
 	return gpsGraph;
 }
 
 static GraphProcessorState handle_new_node(xmlNode* xml_node,	
 										   CyberiadaSM* sm,
-										   CyberiadaNode** current)
+										   NodeStack** stack)
 {
-	CyberiadaNode* node;
+	CyberiadaNode* node;	
+	CyberiadaNode* parent;	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
@@ -374,11 +455,12 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 		return gpsInvalid;
 	}
 	DEBUG("found node %s\n", buffer);
-	if (*current == NULL) {
+	parent = node_stack_current_node(stack);
+	if (parent == NULL) {
 		ERROR("current node invalid\n");
 		return gpsInvalid;
 	}
-	if(strcmp((*current)->id, CYBERIADA_HOLLOW_NODE) == 0) {
+/*	if(strcmp(current->id, CYBERIADA_HOLLOW_NODE) == 0) {
 		if (*current == sm->nodes) {
 			node = cyberiada_new_node(buffer);
 			(*current)->children = node;
@@ -392,46 +474,69 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 		node = cyberiada_new_node(buffer);
 		cyberiada_graph_add_sibling_node(*current, node);
 		*current = node;
+		}*/
+	node = cyberiada_new_node(buffer);
+	node->parent = parent;
+	node_stack_set_top_node(stack, node);
+	if (parent->children == NULL) {
+		parent->children = node;
+	} else {
+		cyberiada_graph_add_sibling_node(parent->children, node);
 	}
 	return gpsNode;
 }
 
 static GraphProcessorState handle_group_node(xmlNode* xml_node,
 											 CyberiadaSM* sm,
-											 CyberiadaNode** current)
+											 NodeStack** stack)
 {
-	(*current)->type = cybNodeComplex;
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}
+	current->type = cybNodeComplex;
 	return gpsNodeGeometry;
 }
 
 static GraphProcessorState handle_comment_node(xmlNode* xml_node,
 											   CyberiadaSM* sm,
-											   CyberiadaNode** current)
+											   NodeStack** stack)
 {
-	(*current)->type = cybNodeComment;
-	cyberiada_copy_string(&((*current)->title), &((*current)->title_len), "COMMENT");
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}
+	current->type = cybNodeComment;
+	cyberiada_copy_string(&(current->title), &(current->title_len), "COMMENT");
 	return gpsNodeGeometry;
 }
 
 static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 											   CyberiadaSM* sm,
-											   CyberiadaNode** current)
+											   NodeStack** stack)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_YED_NODE_CONFIG_ATTRIBUTE) == CYBERIADA_NO_ERROR &&
 		(strcmp(buffer, GRAPHML_YED_NODE_CONFIG_START) == 0 ||
 		 strcmp(buffer, GRAPHML_YED_NODE_CONFIG_START2) == 0)) {
-		(*current)->type = cybNodeInitial;
-		if ((*current)->title != NULL) {
-			ERROR("Trying to set start node %s label twice\n", (*current)->id);
+		current->type = cybNodeInitial;
+		if (current->title != NULL) {
+			ERROR("Trying to set start node %s label twice\n", current->id);
 			return gpsInvalid;
 		}
-		cyberiada_copy_string(&((*current)->title), &((*current)->title_len), "");
+		cyberiada_copy_string(&(current->title), &(current->title_len), "");
 	} else {
-		(*current)->type = cybNodeSimple;
+		current->type = cybNodeSimple;
 	}
 	return gpsNodeGeometry;
 }
@@ -473,18 +578,24 @@ static int cyberiada_xml_read_rect(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 												CyberiadaSM* sm,
-												CyberiadaNode** current)
+												NodeStack** stack)
 {
-	CyberiadaNodeType type = (*current)->type;
+	CyberiadaNodeType type;
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}
+	type = current->type;
 	if (cyberiada_xml_read_rect(xml_node,
-								&((*current)->geometry_rect)) != CYBERIADA_NO_ERROR) {
+								&(current->geometry_rect)) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
 	if (type == cybNodeInitial) {
-		(*current)->geometry_rect.x += (*current)->geometry_rect.width / 2.0;
-		(*current)->geometry_rect.y += (*current)->geometry_rect.height / 2.0;
-		(*current)->geometry_rect.width = 0.0;
-		(*current)->geometry_rect.height = 0.0;
+		current->geometry_rect.x += current->geometry_rect.width / 2.0;
+		current->geometry_rect.y += current->geometry_rect.height / 2.0;
+		current->geometry_rect.width = 0.0;
+		current->geometry_rect.height = 0.0;
 		return gpsNodeStart;
 	} else if (type == cybNodeComment) {
 		return gpsNodeAction;
@@ -495,7 +606,7 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 
 static GraphProcessorState handle_property(xmlNode* xml_node,
 										   CyberiadaSM* sm,
-										   CyberiadaNode** current)
+										   NodeStack** stack)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -512,39 +623,49 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_title(xmlNode* xml_node,
 											CyberiadaSM* sm,
-											CyberiadaNode** current)
+											NodeStack** stack)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
-	if ((*current)->title != NULL) {
-		ERROR("Trying to set node %s label twice\n", (*current)->id);
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}
+	if (current->title != NULL) {
+		ERROR("Trying to set node %s label twice\n", current->id);
 		return gpsInvalid;
 	}
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
-	DEBUG("Set node %s title %s\n", (*current)->id, buffer);
-	cyberiada_copy_string(&((*current)->title), &((*current)->title_len), buffer);
+	DEBUG("Set node %s title %s\n", current->id, buffer);
+	cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
 	return gpsNodeAction;
 }
 
 static GraphProcessorState handle_node_action(xmlNode* xml_node,
 											  CyberiadaSM* sm,
-											  CyberiadaNode** current)
+											  NodeStack** stack)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
-	if ((*current)->action != NULL) {
-		ERROR("Trying to set node %s action twice\n", (*current)->id);
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("current node invalid\n");
+		return gpsInvalid;
+	}	
+	if (current->action != NULL) {
+		ERROR("Trying to set node %s action twice\n", current->id);
 		return gpsInvalid;
 	}
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
-	DEBUG("Set node %s action %s\n", (*current)->id, buffer);
-	cyberiada_copy_string(&((*current)->action), &((*current)->action_len), buffer);
+	DEBUG("Set node %s action %s\n", current->id, buffer);
+	cyberiada_copy_string(&(current->action), &(current->action_len), buffer);
 	return gpsGraph;
 }
 
 static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 										   CyberiadaSM* sm,
-										   CyberiadaNode** node)
+										   NodeStack** stack)
 {
 	CyberiadaNode* source = NULL;
 	CyberiadaNode* target = NULL;
@@ -581,7 +702,7 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 												CyberiadaSM* sm,
-												CyberiadaNode** node)
+												NodeStack** stack)
 {
 	CyberiadaEdge *current = cyberiada_graph_find_last_edge(sm);
 	if (current == NULL) {
@@ -607,7 +728,7 @@ static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 											 CyberiadaSM* sm,
-											 CyberiadaNode** node)
+											 NodeStack** stack)
 {
 	CyberiadaEdge *current = cyberiada_graph_find_last_edge(sm);
 	double x, y;
@@ -640,7 +761,7 @@ static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 											CyberiadaSM* sm,
-											CyberiadaNode** node)
+											NodeStack** stack)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -664,7 +785,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 
 typedef GraphProcessorState (*Handler)(xmlNode* xml_root,
 									   CyberiadaSM* sm,
-									   CyberiadaNode** current);
+									   NodeStack** stack);
 
 typedef struct {
 	GraphProcessorState		state;
@@ -695,14 +816,16 @@ const size_t processor_state_table_size = sizeof(processor_state_table) / sizeof
 
 static int dispatch_processor(xmlNode* xml_node,
 							  CyberiadaSM* sm,
-							  CyberiadaNode** current,
+							  NodeStack** stack,
 							  GraphProcessorState* gps) {
 	size_t i;
 	if (xml_node->type == XML_ELEMENT_NODE) {
+		const char* xml_element_name = (const char*)xml_node->name;
+		node_stack_set_top_element(stack, xml_element_name);
 		for (i = 0; i < processor_state_table_size; i++) {
 			if (processor_state_table[i].state == *gps &&
-				strcmp((const char*)xml_node->name, processor_state_table[i].symbol) == 0) {
-				*gps = (*(processor_state_table[i].handler))(xml_node, sm, current);
+				strcmp(xml_element_name, processor_state_table[i].symbol) == 0) {
+				*gps = (*(processor_state_table[i].handler))(xml_node, sm, stack);
 				return CYBERIADA_NO_ERROR;
 			}
 		}
@@ -712,26 +835,36 @@ static int dispatch_processor(xmlNode* xml_node,
 
 static int cyberiada_build_graph(xmlNode* xml_root,
 								 CyberiadaSM* sm,
-								 CyberiadaNode** current,
+								 NodeStack** stack,
 								 GraphProcessorState* gps)
 {
 	xmlNode *cur_xml_node = NULL;
+	/* NodeStack* s = *stack; */
+	/* DEBUG("\nStack:"); */
+	/* while (s) { */
+	/* 	DEBUG(" (%s %p)", */
+	/* 		  s->xml_element ? s->xml_element : "null", */
+	/* 		  s->node); */
+	/* 	s = s->next; */
+	/* } */
+	/* DEBUG("\n"); */
 	for (cur_xml_node = xml_root; cur_xml_node; cur_xml_node = cur_xml_node->next) {
-		DEBUG("xml node %s sm root %s current %s gps %s\n",
+		DEBUG("xml node %s sm root %s gps %s\n",
 			  cur_xml_node->name,
 			  sm->nodes ? sm->nodes->id : "none",
-			  *current ? (*current)->id : "none",
 			  debug_state_names[*gps]);
-		dispatch_processor(cur_xml_node, sm, current, gps);
+		node_stack_push(stack);
+		dispatch_processor(cur_xml_node, sm, stack, gps);
 		if (*gps == gpsInvalid) {
 			return CYBERIADA_FORMAT_ERROR;
 		}
 		if (cur_xml_node->children) {
-			int res = cyberiada_build_graph(cur_xml_node->children, sm, current, gps);
+			int res = cyberiada_build_graph(cur_xml_node->children, sm, stack, gps);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
 		}
+		node_stack_pop(stack, NULL, NULL);
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -741,12 +874,18 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaSM* sm)
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	GraphProcessorState gps = gpsInit;
-	CyberiadaNode* current = NULL;
+	NodeStack* stack = NULL;
 	int res;
-	
-	if ((res = cyberiada_build_graph(root, sm, &current, &gps)) != CYBERIADA_NO_ERROR) {
+
+	if ((res = cyberiada_build_graph(root, sm, &stack, &gps)) != CYBERIADA_NO_ERROR) {
 		return res;
 	}
+	
+	if (stack != NULL) {
+		fprintf(stderr, "error with node stack\n");
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 root,
 								 GRAPHML_BERLOGA_SCHEMENAME_ATTR) != CYBERIADA_NO_ERROR) {
@@ -842,7 +981,7 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
     return res;
 }
 
-static int cyberiada_print_node(CyberiadaNode* node, CyberiadaNode* start, int level)
+static int cyberiada_print_node(CyberiadaNode* node, int level)
 {
 	CyberiadaNode* cur_node;
 	char levelspace[16];
@@ -856,9 +995,6 @@ static int cyberiada_print_node(CyberiadaNode* node, CyberiadaNode* start, int l
 
 	printf("%sNode {id: %s, title: \"%s\", type: %d",
 		   levelspace, node->id, node->title, (int)node->type);
-	if (node == start) {
-		printf(", S");
-	}
 	printf("}\n");
 	printf("%sGeometry: (%lf, %lf, %lf, %lf)\n",
 		   levelspace,
@@ -874,7 +1010,7 @@ static int cyberiada_print_node(CyberiadaNode* node, CyberiadaNode* start, int l
 
 	printf("%sChildren:\n", levelspace);
 	for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
-		cyberiada_print_node(cur_node, start, level + 1);
+		cyberiada_print_node(cur_node, level + 1);
 	}
 
 	return CYBERIADA_NO_ERROR;
@@ -921,7 +1057,7 @@ int cyberiada_print_sm(CyberiadaSM* sm)
 
 	printf("Nodes:\n");
 	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
-		cyberiada_print_node(cur_node, sm->start, 0);
+		cyberiada_print_node(cur_node, 0);
 	}
 	printf("\n");
 
