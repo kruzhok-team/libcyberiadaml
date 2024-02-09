@@ -30,17 +30,29 @@ extern "C" {
 #endif
 
 /* -----------------------------------------------------------------------------
- * The Cyberiada GraphML library types
+ * The Cyberiada GraphML format library types
  * ----------------------------------------------------------------------------- */
 
 /* SM node types: */    
 typedef enum {
-    cybNodeInitial = 0,     /* initial node */
-    cybNodeSimple,          /* simple node */
-    cybNodeComplex,         /* complex node */
-    cybNodeComment          /* comment node */
+	cybNodeSM = 0,          /* state machine */
+    cybNodeSimple,          /* simple state */
+    cybNodeComposite,       /* composite state */
+    cybNodeComment,         /* comment node */
+    cybNodeInitial,         /* initial pseudostate */
+	cybNodeFinal,           /* final pseudostate */
+	cybNodeChoice,          /* final pseudostate */
+	cybNodeJunction,        /* junction pseudostate */
+	cybNodeEntry,			/* entry pseudostate */
+	cybNodeExit,			/* exit pseudostate */
 } CyberiadaNodeType;
 
+/* SM node types: */    
+typedef enum {
+	cybEdgeTransition = 0,
+	cybEdgeComment
+} CyberiadaEdgeType;
+	
 /* SM node geometry */
 
 typedef struct {
@@ -58,14 +70,14 @@ typedef struct _CyberiadaPolyline {
 
 /* SM node (state) */
 typedef struct _CyberiadaNode {
+    CyberiadaNodeType           type;
     char*                       id;
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-    CyberiadaNodeType           type;
     char*                       action;
     size_t                      action_len;
-    CyberiadaRect               geometry_rect;
+    CyberiadaRect*              geometry_rect;
     struct _CyberiadaNode*      next;
     struct _CyberiadaNode*      parent;
     struct _CyberiadaNode*      children;
@@ -73,6 +85,7 @@ typedef struct _CyberiadaNode {
 
 /* SM edge (transition) */
 typedef struct _CyberiadaEdge {
+	CyberiadaEdgeType           type;
     char*                       id;
     size_t                      id_len;
 	char*                       source_id;
@@ -83,20 +96,37 @@ typedef struct _CyberiadaEdge {
     CyberiadaNode*              target;
     char*                       action;
     size_t                      action_len;
-    CyberiadaPoint              geometry_source_point;
-    CyberiadaPoint              geometry_target_point;
+    CyberiadaPoint*             geometry_source_point;
+    CyberiadaPoint*             geometry_target_point;
     CyberiadaPolyline*          geometry_polyline;
+	CyberiadaPoint*             geometry_label;
+	char*                       color;
+	size_t                      color_len;
     struct _CyberiadaEdge*      next;
 } CyberiadaEdge;
 
+/* SM extentions 
+typedef struct _CyberiadaExtension {
+    char*                       id;
+	size_t                      id_len;
+    char*                       title;
+	size_t                      title_len;
+    char*                       data;
+	size_t                      data_len;
+	struct _CyberiadaExtension* next;
+	} CyberiadaExtension;*/
+	
 /* SM graph (state machine) */
 typedef struct {
     char*                       name;
     size_t                      name_len;
     char*                       version;
     size_t                      version_len;
+	char*                       info;
+	size_t                      info_len;
     CyberiadaNode*              nodes;
     CyberiadaEdge*              edges;
+/*	CyberiadaExtension*         extensions;*/
 } CyberiadaSM;
 
 /* SM GraphML supported formats */
@@ -115,6 +145,7 @@ typedef enum {
 #define CYBERIADA_FORMAT_ERROR   2
 #define CYBERIADA_NOT_FOUND      3
 #define CYBERIADA_BAD_PARAMETER  4
+#define CYBERIADA_ASSERT         5
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library functions
