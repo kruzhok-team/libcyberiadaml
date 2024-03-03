@@ -34,6 +34,7 @@
               <y:BorderStyle color="#000000" type="line" width="1.0" />
               <y:NodeLabel alignment="center" autoSizePolicy="node_width" backgroundColor="#EBEBEB" borderDistance="0.0" fontFamily="Dialog" fontSize="15" fontStyle="bold" hasLineColor="false" height="22" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="691" x="0" xml:space="preserve" y="0">Бой</y:NodeLabel>
               <y:NodeLabel alignment="left" autoSizePolicy="node_size" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="931" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="691" x="0" xml:space="preserve" y="0">entry/
+
 exit/
 </y:NodeLabel>
               <y:Shape type="roundrectangle" />
@@ -55,6 +56,7 @@ exit/
               <y:NodeLabel alignment="center" autoSizePolicy="node_width" backgroundColor="#B7C9E3" configuration="com.yworks.entityRelationship.label.name" fontFamily="Dialog" fontSize="15" fontStyle="bold" hasLineColor="false" height="22" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">Сближение</y:NodeLabel>
               <y:NodeLabel alignment="left" autoSizePolicy="content" configuration="com.yworks.entityRelationship.label.name" fontFamily="Consolas" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="208" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">entry/
 МодульДвижения.ДвигатьсяКЦели()
+
 exit/
 </y:NodeLabel>
             </y:GenericNode>
@@ -70,6 +72,7 @@ exit/
               <y:NodeLabel alignment="left" autoSizePolicy="content" configuration="com.yworks.entityRelationship.label.name" fontFamily="Consolas" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="208" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="590" x="0" xml:space="preserve" y="0">entry/
 ОружиеЦелевое.АтаковатьЦель()
 МодульДвижения.Стоп()
+
 exit/
 </y:NodeLabel>
             </y:GenericNode>
@@ -86,6 +89,7 @@ exit/
           <y:NodeLabel alignment="center" autoSizePolicy="node_width" backgroundColor="#B7C9E3" configuration="com.yworks.entityRelationship.label.name" fontFamily="Dialog" fontSize="15" fontStyle="bold" hasLineColor="false" height="22" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">Скан</y:NodeLabel>
           <y:NodeLabel alignment="left" autoSizePolicy="content" configuration="com.yworks.entityRelationship.label.name" fontFamily="Consolas" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="288" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">entry/
 Сенсор.ПоискВрагаПоДистанции(мин)
+
 exit/
 Сенсор.ОстановкаПоиска()
 </y:NodeLabel>
@@ -120,8 +124,14 @@ exit/
           <y:Path sx="0" sy="0" tx="0" ty="0" />
           <y:LineStyle color="#000000" type="line" width="1.0" />
           <y:Arrows source="none" target="standard" />
-          <y:EdgeLabel alignment="center" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasLineColor="false" horizontalTextPosition="center" iconTextGap="4" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" ratio="5.0" textColor="#000000" verticalTextPosition="bottom" visible="true" xml:space="preserve">Сенсор.ЦельПолучена/
-[ОружиеЦелевое.ЦельВЗонеАтаки == 1]
+          <y:EdgeLabel alignment="center" backgroundColor="#F5F5F5"
+		       configuration="AutoFlippingLabel" distance="2.0"
+		       fontFamily="Dialog" fontSize="12" fontStyle="plain"
+		       hasLineColor="false" horizontalTextPosition="center"
+		       iconTextGap="4" modelName="centered" modelPosition="center"
+		       preferredPlacement="center_on_edge" ratio="5.0" textColor="#000000"
+		       verticalTextPosition="bottom" visible="true"
+		       xml:space="preserve">Сенсор.ЦельПолучена [ОружиеЦелевое.ЦельВЗонеАтаки == 1]/
 <y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" placement="center" side="on_edge" sideReference="relative_to_edge_flow" /></y:EdgeLabel>
         </y:PolyLineEdge>
       </data>
