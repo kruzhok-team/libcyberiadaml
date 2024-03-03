@@ -23,8 +23,6 @@
 #ifndef __CYBERIADA_ML_H
 #define __CYBERIADA_ML_H
 
-#include <stdio.h>
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -35,25 +33,38 @@ extern "C" {
 
 /* SM node types: */    
 typedef enum {
-	cybNodeSM = 0,          /* state machine */
-    cybNodeSimple,          /* simple state */
-    cybNodeComposite,       /* composite state */
+    cybNodeSM = 0,          /* state machine */
+    cybNodeSimpleState,     /* simple state */
+    cybNodeCompositeState,  /* composite state */
+    cybNodeSubmachineState, /* submachine state */
     cybNodeComment,         /* comment node */
     cybNodeInitial,         /* initial pseudostate */
-	cybNodeFinal,           /* final pseudostate */
-	cybNodeChoice,          /* final pseudostate */
-	cybNodeJunction,        /* junction pseudostate */
-	cybNodeEntry,			/* entry pseudostate */
-	cybNodeExit,			/* exit pseudostate */
+    cybNodeFinal,           /* final pseudostate */
+    cybNodeChoice,          /* final pseudostate */
+    cybNodeJunction,        /* junction pseudostate */
+    cybNodeEntry,           /* entry pseudostate */
+    cybNodeExit,            /* exit pseudostate */
+    cybNodeHistory,         /* shallow history pseudostate */
+    cybNodeDeepHistory,     /* deep history pseudostate */
+    cybNodeFork,            /* fork pseudostate */
+    cybNodeJoin,            /* join pseudostate */
+    cybNodeTerminate,       /* terminate pseudostate */
 } CyberiadaNodeType;
 
 /* SM node types: */    
 typedef enum {
-	cybEdgeTransition = 0,
-	cybEdgeComment
+    cybEdgeTransition = 0,
 } CyberiadaEdgeType;
-	
-/* SM node geometry */
+    
+/* SM behavior types: */    
+typedef enum {
+    cybBehaviorTransition = 0,
+    cybBehaviorEntry = 1,
+    cybBehaviorExit = 2,
+    cybBehaviorDo = 3,
+} CyberiadaBehaviorType;
+
+/* SM node & transitions geometry */
 
 typedef struct {
     double x, y;
@@ -68,6 +79,18 @@ typedef struct _CyberiadaPolyline {
     struct _CyberiadaPolyline*  next;
 } CyberiadaPolyline;
 
+/* SM behavior */
+typedef struct _CyberiadaBehavior {
+    CyberiadaBehaviorType       type;
+    char*                       trigger;
+    size_t                      trigger_len;
+    char*                       guard;
+    size_t                      guard_len;
+    char*                       action;
+    size_t                      action_len;
+	struct _CyberiadaBehavior*  next;
+} CyberiadaBehavior;
+    
 /* SM node (state) */
 typedef struct _CyberiadaNode {
     CyberiadaNodeType           type;
@@ -75,8 +98,7 @@ typedef struct _CyberiadaNode {
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-    char*                       action;
-    size_t                      action_len;
+	CyberiadaBehavior*          behavior;
     CyberiadaRect*              geometry_rect;
     struct _CyberiadaNode*      next;
     struct _CyberiadaNode*      parent;
@@ -85,67 +107,67 @@ typedef struct _CyberiadaNode {
 
 /* SM edge (transition) */
 typedef struct _CyberiadaEdge {
-	CyberiadaEdgeType           type;
+    CyberiadaEdgeType           type;
     char*                       id;
     size_t                      id_len;
-	char*                       source_id;
-	size_t                      source_id_len;
-	char*                       target_id;
-	size_t                      target_id_len;
+    char*                       source_id;
+    size_t                      source_id_len;
+    char*                       target_id;
+    size_t                      target_id_len;
     CyberiadaNode*              source;
     CyberiadaNode*              target;
-    char*                       action;
-    size_t                      action_len;
+    CyberiadaBehavior*          behavior;
     CyberiadaPoint*             geometry_source_point;
     CyberiadaPoint*             geometry_target_point;
     CyberiadaPolyline*          geometry_polyline;
-	CyberiadaPoint*             geometry_label;
-	char*                       color;
-	size_t                      color_len;
+    CyberiadaPoint*             geometry_label;
+    char*                       color;
+    size_t                      color_len;
     struct _CyberiadaEdge*      next;
 } CyberiadaEdge;
 
 /* SM extentions 
 typedef struct _CyberiadaExtension {
     char*                       id;
-	size_t                      id_len;
+    size_t                      id_len;
     char*                       title;
-	size_t                      title_len;
+    size_t                      title_len;
     char*                       data;
-	size_t                      data_len;
-	struct _CyberiadaExtension* next;
-	} CyberiadaExtension;*/
-	
+    size_t                      data_len;
+    struct _CyberiadaExtension* next;
+    } CyberiadaExtension;*/
+    
 /* SM graph (state machine) */
 typedef struct {
     char*                       name;
     size_t                      name_len;
     char*                       version;
     size_t                      version_len;
-	char*                       info;
-	size_t                      info_len;
+    char*                       info;
+    size_t                      info_len;
     CyberiadaNode*              nodes;
     CyberiadaEdge*              edges;
-/*	CyberiadaExtension*         extensions;*/
+/*    CyberiadaExtension*         extensions;*/
 } CyberiadaSM;
 
 /* SM GraphML supported formats */
 typedef enum {
     cybxmlYED = 0,
     cybxmlCyberiada,
-	cybxmlUnknown
+    cybxmlUnknown
 } CyberiadaXMLFormat;
     
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
  * ----------------------------------------------------------------------------- */
 
-#define CYBERIADA_NO_ERROR       0
-#define CYBERIADA_XML_ERROR      1
-#define CYBERIADA_FORMAT_ERROR   2
-#define CYBERIADA_NOT_FOUND      3
-#define CYBERIADA_BAD_PARAMETER  4
-#define CYBERIADA_ASSERT         5
+#define CYBERIADA_NO_ERROR                0
+#define CYBERIADA_XML_ERROR               1
+#define CYBERIADA_FORMAT_ERROR            2
+#define CYBERIADA_BEHAVIOR_FORMAT_ERROR   3
+#define CYBERIADA_NOT_FOUND               4
+#define CYBERIADA_BAD_PARAMETER           5
+#define CYBERIADA_ASSERT                  6
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library functions
@@ -165,7 +187,10 @@ typedef enum {
 
     /* Read an XML file and decode the SM structure */
     int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat format);
-    
+
+    /* Encode the SM structure and write the data to an XML file */
+    int cyberiada_write_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat format);
+	
     /* Print the SM structure to stdout */
     int cyberiada_print_sm(CyberiadaSM* sm);
 
