@@ -43,7 +43,7 @@ const char* commands[] = {
 
 const char* command_descr[] = {
 	"print HSM diagram content to stdout; use -f key to set the scheme format (default - unknown)",
-	"convert HSM from <format-from> format to <to-format> into the file named <output-file>"
+	"convert HSM from <from-format> to <to-format> into the file named <output-file>"
 };
 
 	

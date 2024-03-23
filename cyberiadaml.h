@@ -189,7 +189,7 @@ typedef enum {
     /* Allocate the SM structure in memory (for heap usage) */
     CyberiadaSM* cyberiada_create_sm(void);
 
-    /* Initialize the SM structure. */
+    /* Initialize the SM structure */
 	/* Do not use the structure before the initialization! */
     int cyberiada_init_sm(CyberiadaSM* sm);
 

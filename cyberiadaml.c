@@ -2418,24 +2418,24 @@ static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* t
 	int res;
 	
 	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_LABELNODE, GRAPHML_YED_NS, indent);
-	XML_WRITE_ATTR(writer, "alignment", "center");
-	XML_WRITE_ATTR(writer, "backgroundColor", "#EBEBEB");
-	XML_WRITE_ATTR(writer, "fontSize", "15");
-	XML_WRITE_ATTR(writer, "fontStyle", "bold");
-	XML_WRITE_ATTR(writer, "textColor", "#000000");
-	XML_WRITE_ATTR(writer, "xml:space", "preserve");
-	XML_WRITE_ATTR(writer, "hasLineColor", "false");
-	XML_WRITE_ATTR(writer, "visible", "true");
-	XML_WRITE_ATTR(writer, "horizontalTextPosition", "center");
-	XML_WRITE_ATTR(writer, "verticalTextPosition", "top");
-	XML_WRITE_ATTR(writer, "autoSizePolicy", "node_width");
-	XML_WRITE_ATTR(writer, "y", "0");
-	XML_WRITE_ATTR(writer, "height", "20");
-	XML_WRITE_ATTR(writer, "configuration", "com.yworks.entityRelationship.label.name");
-	XML_WRITE_ATTR(writer, "modelName", "internal");
-	XML_WRITE_ATTR(writer, "modelPosition", "t");
-	
+
 	if (*title) {
+		XML_WRITE_ATTR(writer, "alignment", "center");
+		XML_WRITE_ATTR(writer, "backgroundColor", "#EBEBEB");
+		XML_WRITE_ATTR(writer, "fontSize", "15");
+		XML_WRITE_ATTR(writer, "fontStyle", "bold");
+		XML_WRITE_ATTR(writer, "textColor", "#000000");
+		XML_WRITE_ATTR(writer, "xml:space", "preserve");
+		XML_WRITE_ATTR(writer, "hasLineColor", "false");
+		XML_WRITE_ATTR(writer, "visible", "true");
+		XML_WRITE_ATTR(writer, "horizontalTextPosition", "center");
+		XML_WRITE_ATTR(writer, "verticalTextPosition", "top");
+		XML_WRITE_ATTR(writer, "autoSizePolicy", "node_width");
+		XML_WRITE_ATTR(writer, "y", "0");
+		XML_WRITE_ATTR(writer, "height", "20");
+		XML_WRITE_ATTR(writer, "configuration", "com.yworks.entityRelationship.label.name");
+		XML_WRITE_ATTR(writer, "modelName", "internal");
+		XML_WRITE_ATTR(writer, "modelPosition", "t");
 		XML_WRITE_TEXT(writer, title);
 	}
 	XML_WRITE_CLOSE_E(writer);
