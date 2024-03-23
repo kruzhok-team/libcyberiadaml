@@ -71,6 +71,7 @@ exit/
               <y:NodeLabel alignment="center" autoSizePolicy="node_width" backgroundColor="#B7C9E3" configuration="com.yworks.entityRelationship.label.name" fontFamily="Dialog" fontSize="15" fontStyle="bold" hasLineColor="false" height="22" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">Атака</y:NodeLabel>
               <y:NodeLabel alignment="left" autoSizePolicy="content" configuration="com.yworks.entityRelationship.label.name" fontFamily="Consolas" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="208" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="bottom" visible="true" width="413" x="0" xml:space="preserve" y="0">entry/
 ОружиеЦелевое.АтаковатьЦель()
+
 exit/
 </y:NodeLabel>
             </y:GenericNode>
