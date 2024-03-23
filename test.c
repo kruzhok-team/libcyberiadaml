@@ -52,7 +52,7 @@ size_t command_count = sizeof(commands) / sizeof(char*);
 static void print_usage(const char* name)
 {
 	unsigned int i;
-	fprintf(stderr, "%s <command> [-f <format-from>] [-t <format-to> -o <dest-file>] <path-to-graphml-file>\n\n", name);
+	fprintf(stderr, "%s <command> [-f <from-format>] [-t <to-format> -o <dest-file>] <path-to-graphml-file>\n\n", name);
 	fprintf(stderr, "Supported commands:\n");
 	for (i = 0; i < command_count; i++) {
 		fprintf(stderr, "  %-20s %s\n", commands[i], command_descr[i]);
