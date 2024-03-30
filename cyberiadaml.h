@@ -38,13 +38,14 @@ typedef enum {
     cybNodeCompositeState = 2,    /* composite state */
     cybNodeSubmachineState = 4,   /* submachine state */
     cybNodeComment = 8,           /* comment node */
-    cybNodeInitial = 16,          /* initial pseudostate */
-    cybNodeFinal = 32,            /* final pseudostate */
-    cybNodeChoice = 64,           /* final pseudostate */
-    cybNodeEntry = 128,           /* entry pseudostate */
-    cybNodeExit = 256,            /* exit pseudostate */
-    cybNodeShallowHistory = 512,  /* shallow history pseudostate */
-    cybNodeTerminate = 1024,      /* terminate pseudostate */
+	cybNodeMachineComment = 16,   /* machine-readable comment node */
+    cybNodeInitial = 32,          /* initial pseudostate */
+    cybNodeFinal = 64,            /* final pseudostate */
+    cybNodeChoice = 128,          /* final pseudostate */
+    cybNodeEntry = 256,           /* entry pseudostate */
+    cybNodeExit = 512,            /* exit pseudostate */
+    cybNodeShallowHistory = 1024,  /* shallow history pseudostate */
+    cybNodeTerminate = 2048,      /* terminate pseudostate */
 } CyberiadaNodeType;
 
 typedef unsigned int CyberiadaNodeTypeMask;
@@ -54,14 +55,14 @@ typedef enum {
     cybEdgeTransition = 0,
 	cybEdgeComment = 1,
 } CyberiadaEdgeType;
-    
-/* SM behavior types: */    
+
+/* SM action types: */    
 typedef enum {
-    cybBehaviorTransition = 0,
-    cybBehaviorEntry = 1,
-    cybBehaviorExit = 2,
-    cybBehaviorDo = 4,
-} CyberiadaBehaviorType;
+    cybActionTransition = 0,
+    cybActionEntry = 1,
+    cybActionExit = 2,
+    cybActionDo = 4,
+} CyberiadaActionType;
 
 /* SM node & transitions geometry */
 
@@ -79,16 +80,16 @@ typedef struct _CyberiadaPolyline {
 } CyberiadaPolyline;
 
 /* SM behavior */
-typedef struct _CyberiadaBehavior {
-    CyberiadaBehaviorType       type;
+typedef struct _CyberiadaAction {
+    CyberiadaActionType         type;
     char*                       trigger;
     size_t                      trigger_len;
     char*                       guard;
     size_t                      guard_len;
-    char*                       action;
-    size_t                      action_len;
-	struct _CyberiadaBehavior*  next;
-} CyberiadaBehavior;
+    char*                       behavior;
+    size_t                      behavior_len;
+	struct _CyberiadaAction*    next;
+} CyberiadaAction;
     
 /* SM node (state) */
 typedef struct _CyberiadaNode {
@@ -97,7 +98,7 @@ typedef struct _CyberiadaNode {
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-	CyberiadaBehavior*          behavior;
+	CyberiadaAction*            action;
     CyberiadaRect*              geometry_rect;
     struct _CyberiadaNode*      next;
     struct _CyberiadaNode*      parent;
@@ -115,7 +116,7 @@ typedef struct _CyberiadaEdge {
     size_t                      target_id_len;
     CyberiadaNode*              source;
     CyberiadaNode*              target;
-    CyberiadaBehavior*          behavior;
+    CyberiadaAction*            action;
     CyberiadaPoint*             geometry_source_point;
     CyberiadaPoint*             geometry_target_point;
     CyberiadaPolyline*          geometry_polyline;
@@ -176,7 +177,7 @@ typedef enum {
 #define CYBERIADA_NO_ERROR                0
 #define CYBERIADA_XML_ERROR               1
 #define CYBERIADA_FORMAT_ERROR            2
-#define CYBERIADA_BEHAVIOR_FORMAT_ERROR   3
+#define CYBERIADA_ACTION_FORMAT_ERROR     3
 #define CYBERIADA_METADATA_FORMAT_ERROR   4
 #define CYBERIADA_NOT_FOUND               5
 #define CYBERIADA_BAD_PARAMETER           6

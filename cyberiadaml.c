@@ -115,23 +115,23 @@
 #define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
 #define CYBERIADA_STANDARD_VERSION_YED           ""
 
-/* HSM behavior constants */
+/* HSM action constants */
 
-#define CYBERIADA_BEHAVIOR_NEWLINE               "\n\n"
-#define CYBERIADA_BEHAVIOR_NEWLINE_RN            "\r\n\r\n"
-#define CYBERIADA_BEHAVIOR_TRIGGER_ENTRY         "entry"
-#define CYBERIADA_BEHAVIOR_TRIGGER_EXIT          "exit"
-#define CYBERIADA_BEHAVIOR_TRIGGER_DO            "do"
-#define CYBERIADA_BEHAVIOR_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*))?\\s*$"
-#define CYBERIADA_BEHAVIOR_NODE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*)?)\\s*$"
-#define CYBERIADA_BEHAVIOR_REGEXP_MATCHES        10
-#define CYBERIADA_BEHAVIOR_REGEXP_MATCH_TRIGGER  1
-#define CYBERIADA_BEHAVIOR_REGEXP_MATCH_GUARD    6
-#define CYBERIADA_BEHAVIOR_REGEXP_MATCH_PROP     7
-#define CYBERIADA_BEHAVIOR_REGEXP_MATCH_ACTION   9
-#define CYBERIADA_BEHAVIOR_SPACES_REGEXP         "^\\s*$"
-/*#define CYBERIADA_BEHAVIOR_NEWLINE_REGEXP        "^([^\n]*(\n[ \t\r]*[^\\s])?)*\n\\s*\n(.*)?$"
-  #define CYBERIADA_BEHAVIOR_NL_REGEXP_MATCHES     4*/
+#define CYBERIADA_ACTION_NEWLINE               "\n\n"
+#define CYBERIADA_ACTION_NEWLINE_RN            "\r\n\r\n"
+#define CYBERIADA_ACTION_TRIGGER_ENTRY         "entry"
+#define CYBERIADA_ACTION_TRIGGER_EXIT          "exit"
+#define CYBERIADA_ACTION_TRIGGER_DO            "do"
+#define CYBERIADA_ACTION_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*))?\\s*$"
+#define CYBERIADA_ACTION_NODE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*)?)\\s*$"
+#define CYBERIADA_ACTION_REGEXP_MATCHES        10
+#define CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER  1
+#define CYBERIADA_ACTION_REGEXP_MATCH_GUARD    6
+#define CYBERIADA_ACTION_REGEXP_MATCH_PROP     7
+#define CYBERIADA_ACTION_REGEXP_MATCH_ACTION   9
+#define CYBERIADA_ACTION_SPACES_REGEXP         "^\\s*$"
+/*#define CYBERIADA_ACTION_NEWLINE_REGEXP        "^([^\n]*(\n[ \t\r]*[^\\s])?)*\n\\s*\n(.*)?$"
+  #define CYBERIADA_ACTION_NL_REGEXP_MATCHES     4*/
 
 /* HSM metadata constants */
 
@@ -243,7 +243,7 @@ static CyberiadaNode* cyberiada_new_node(const char* id)
 	new_node->type = cybNodeSimpleState;
 	new_node->title = NULL;
 	new_node->title_len = 0;
-	new_node->behavior = NULL;
+	new_node->action = NULL;
 	new_node->next = NULL;
 	new_node->parent = NULL;
 	new_node->children = NULL;
@@ -251,18 +251,18 @@ static CyberiadaNode* cyberiada_new_node(const char* id)
 	return new_node;
 }
 
-static int cyberiada_destroy_behavior(CyberiadaBehavior* behavior)
+static int cyberiada_destroy_action(CyberiadaAction* action)
 {
-	CyberiadaBehavior* b;
-	if (behavior != NULL) {
+	CyberiadaAction* a;
+	if (action != NULL) {
 		do {
-			b = behavior;
-			if (b->trigger) free(b->trigger);
-			if (b->guard) free(b->guard);
-			if (b->action) free(b->action);
-			behavior = b->next;
-			free(b);
-		} while (behavior);
+			a = action;
+			if (a->trigger) free(a->trigger);
+			if (a->guard) free(a->guard);
+			if (a->behavior) free(a->behavior);
+			action = a->next;
+			free(a);
+		} while (action);
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -277,7 +277,7 @@ static int cyberiada_destroy_node(CyberiadaNode* node)
 		if(node->children) {
 			cyberiada_destroy_all_nodes(node->children);
 		}
-		if(node->behavior) cyberiada_destroy_behavior(node->behavior);
+		if(node->action) cyberiada_destroy_action(node->action);
 		if(node->geometry_rect) free(node->geometry_rect);
 		free(node);
 	}
@@ -306,7 +306,7 @@ static CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, con
 	cyberiada_copy_string(&(new_edge->target_id), &(new_edge->target_id_len), target);
 	new_edge->source = NULL;
 	new_edge->target = NULL;
-	new_edge->behavior = NULL;
+	new_edge->action = NULL;
 	new_edge->next = NULL;
 	new_edge->geometry_source_point = NULL;
 	new_edge->geometry_target_point = NULL;
@@ -316,73 +316,73 @@ static CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, con
 	return new_edge;
 }
 
-static CyberiadaBehavior* cyberiada_new_behavior(CyberiadaBehaviorType type,
+static CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 												 const char* trigger,
 												 const char* guard,
-												 const char* action)
+												 const char* behavior)
 {
-	CyberiadaBehavior* behavior = (CyberiadaBehavior*)malloc(sizeof(CyberiadaBehavior));
-	behavior->type = type;
-	cyberiada_copy_string(&(behavior->trigger), &(behavior->trigger_len), trigger);
-	cyberiada_copy_string(&(behavior->guard), &(behavior->guard_len), guard);
-	cyberiada_copy_string(&(behavior->action), &(behavior->action_len), action);
-	behavior->next = NULL;
-	return behavior;
+	CyberiadaAction* action = (CyberiadaAction*)malloc(sizeof(CyberiadaAction));
+	action->type = type;
+	cyberiada_copy_string(&(action->trigger), &(action->trigger_len), trigger);
+	cyberiada_copy_string(&(action->guard), &(action->guard_len), guard);
+	cyberiada_copy_string(&(action->behavior), &(action->behavior_len), behavior);
+	action->next = NULL;
+	return action;
 }
 
-static regex_t cyberiada_edge_behavior_regexp;
-static regex_t cyberiada_node_behavior_regexp;
+static regex_t cyberiada_edge_action_regexp;
+static regex_t cyberiada_node_action_regexp;
 /*static regex_t cyberiada_newline_regexp;*/
 static regex_t cyberiada_spaces_regexp;
 
-static int cyberiada_init_behavior_regexps(void)
+static int cyberiada_init_action_regexps(void)
 {
-	if (regcomp(&cyberiada_edge_behavior_regexp, CYBERIADA_BEHAVIOR_EDGE_REGEXP, REG_EXTENDED)) {
-		ERROR("cannot compile edge behavior regexp\n");
+	if (regcomp(&cyberiada_edge_action_regexp, CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
+		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&cyberiada_node_behavior_regexp, CYBERIADA_BEHAVIOR_NODE_REGEXP, REG_EXTENDED)) {
-		ERROR("cannot compile edge behavior regexp\n");
+	if (regcomp(&cyberiada_node_action_regexp, CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
+		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-/*	if (regcomp(&cyberiada_newline_regexp, CYBERIADA_BEHAVIOR_NEWLINE_REGEXP, REG_EXTENDED)) {
+/*	if (regcomp(&cyberiada_newline_regexp, CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile new line regexp\n");
 		return CYBERIADA_ASSERT;
 		}*/
-	if (regcomp(&cyberiada_spaces_regexp, CYBERIADA_BEHAVIOR_SPACES_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&cyberiada_spaces_regexp, CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile new line regexp\n");
 		return CYBERIADA_ASSERT;
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_free_behavior_regexps(void)
+static int cyberiada_free_action_regexps(void)
 {
-	regfree(&cyberiada_edge_behavior_regexp);
-	regfree(&cyberiada_node_behavior_regexp);
+	regfree(&cyberiada_edge_action_regexp);
+	regfree(&cyberiada_node_action_regexp);
 /*	regfree(&cyberiada_newline_regexp);*/
 	regfree(&cyberiada_spaces_regexp);
 	return CYBERIADA_NO_ERROR;
 }
 
 
-static int cyberiaga_matchres_behavior_regexps(const char* text,
+static int cyberiaga_matchres_action_regexps(const char* text,
 											   const regmatch_t* pmatch, size_t pmatch_size,
-											   char** trigger, char** guard, char** action)
+											   char** trigger, char** guard, char** behavior)
 {
 	size_t i;
 	char* part;
 	int start, end;
 		
-	if (pmatch_size != CYBERIADA_BEHAVIOR_REGEXP_MATCHES) {
-		ERROR("bad behavior regexp match array size\n");
+	if (pmatch_size != CYBERIADA_ACTION_REGEXP_MATCHES) {
+		ERROR("bad action regexp match array size\n");
 		return CYBERIADA_ASSERT;
 	}
 
 	for (i = 0; i < pmatch_size; i++) {
-		if (i != CYBERIADA_BEHAVIOR_REGEXP_MATCH_TRIGGER &&
-			i != CYBERIADA_BEHAVIOR_REGEXP_MATCH_GUARD &&
-			i != CYBERIADA_BEHAVIOR_REGEXP_MATCH_ACTION) {
+		if (i != CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER &&
+			i != CYBERIADA_ACTION_REGEXP_MATCH_GUARD &&
+			i != CYBERIADA_ACTION_REGEXP_MATCH_ACTION) {
 			continue;
 		}
 		start = pmatch[i].rm_so;
@@ -394,13 +394,13 @@ static int cyberiaga_matchres_behavior_regexps(const char* text,
 		} else {
 			part = "";
 		}
-		if (i == CYBERIADA_BEHAVIOR_REGEXP_MATCH_TRIGGER) {
+		if (i == CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER) {
 			*trigger = part;
-		} else if (i == CYBERIADA_BEHAVIOR_REGEXP_MATCH_GUARD) {
+		} else if (i == CYBERIADA_ACTION_REGEXP_MATCH_GUARD) {
 			*guard = part;
 		} else {
-			/* i == BEHAVIOR_REGEXP_MATCH_ACTION */
-			*action = part;
+			/* i == ACTION_REGEXP_MATCH_ACTION */
+			*behavior= part;
 		}
 	}
 
@@ -410,7 +410,7 @@ static int cyberiaga_matchres_behavior_regexps(const char* text,
 /*static int cyberiaga_matchres_newline(const regmatch_t* pmatch, size_t pmatch_size,
 									  size_t* next_block)
 {
-	if (pmatch_size != BEHAVIOR_NL_REGEXP_MATCHES) {
+	if (pmatch_size != ACTION_NL_REGEXP_MATCHES) {
 		ERROR("bad new line regexp match array size\n");
 		return CYBERIADA_ASSERT;
 	}
@@ -421,7 +421,7 @@ static int cyberiaga_matchres_behavior_regexps(const char* text,
 	return CYBERIADA_NO_ERROR;
 	}*/
 
-static int decode_utf8_strings(char** trigger, char** guard, char** action)
+static int decode_utf8_strings(char** trigger, char** guard, char** behavior)
 {
 	char* oldptr;
 	size_t len;
@@ -435,141 +435,141 @@ static int decode_utf8_strings(char** trigger, char** guard, char** action)
 		*guard = utf8_decode(*guard, strlen(*guard), &len);
 		free(oldptr);
 	}	
-	if (*action && **action) {
-		oldptr = *action;
-		*action = utf8_decode(*action, strlen(*action), &len);
+	if (*behavior && **behavior) {
+		oldptr = *behavior;
+		*behavior = utf8_decode(*behavior, strlen(*behavior), &len);
 		free(oldptr);
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_edge_behavior(const char* text, CyberiadaBehavior** behavior)
+static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action)
 {
 	int res;
 	size_t buffer_len;
-	char *trigger = "", *guard = "", *action = "";
+	char *trigger = "", *guard = "", *behavior = "";
 	char *buffer;
-	regmatch_t pmatch[CYBERIADA_BEHAVIOR_REGEXP_MATCHES];
+	regmatch_t pmatch[CYBERIADA_ACTION_REGEXP_MATCHES];
 
 	buffer = utf8_encode(text, strlen(text), &buffer_len);
 	
-	if ((res = regexec(&cyberiada_edge_behavior_regexp, buffer,
-					   CYBERIADA_BEHAVIOR_REGEXP_MATCHES, pmatch, 0)) != 0) {
+	if ((res = regexec(&cyberiada_edge_action_regexp, buffer,
+					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 		if (res == REG_NOMATCH) {
-			ERROR("edge behavior text didn't match the regexp\n");
-			return CYBERIADA_BEHAVIOR_FORMAT_ERROR;
+			ERROR("edge action text didn't match the regexp\n");
+			return CYBERIADA_ACTION_FORMAT_ERROR;
 		} else {
-			ERROR("edge behavior regexp error %d\n", res);
+			ERROR("edge action regexp error %d\n", res);
 			return CYBERIADA_ASSERT;
 		}
 	}
-	if (cyberiaga_matchres_behavior_regexps(buffer,
-											pmatch, CYBERIADA_BEHAVIOR_REGEXP_MATCHES,
-											&trigger, &guard, &action) != CYBERIADA_NO_ERROR) {
+	if (cyberiaga_matchres_action_regexps(buffer,
+											pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
+											&trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_ASSERT;
 	}
 
-	decode_utf8_strings(&trigger, &guard, &action);
+	decode_utf8_strings(&trigger, &guard, &behavior);
 	
 /*	DEBUG("\n");
-	DEBUG("edge behavior:\n");
+	DEBUG("edge action:\n");
 	DEBUG("trigger: %s\n", trigger);
 	DEBUG("guard: %s\n", guard);
 	DEBUG("action: %s\n", action);*/
 	
-	*behavior = cyberiada_new_behavior(cybBehaviorTransition, trigger, guard, action);
+	*action = cyberiada_new_action(cybActionTransition, trigger, guard, behavior);
 	
 	if (*trigger) free(trigger);
 	if (*guard) free(guard);
-	if (*action) free(action);
+	if (*behavior) free(behavior);
 
 	free(buffer);
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_add_behavior(const char* trigger, const char* guard, const char* action,
-								  CyberiadaBehavior** behavior)
+static int cyberiada_add_action(const char* trigger, const char* guard, const char* behavior,
+								  CyberiadaAction** action)
 {
-	CyberiadaBehavior* new_behavior;
-	CyberiadaBehaviorType type;
+	CyberiadaAction* new_action;
+	CyberiadaActionType type;
 
 	if (trigger) {
-		if (strcmp(trigger, CYBERIADA_BEHAVIOR_TRIGGER_ENTRY) == 0) {
-			type = cybBehaviorEntry;
-		} else if (strcmp(trigger, CYBERIADA_BEHAVIOR_TRIGGER_EXIT) == 0) {
-			type = cybBehaviorExit;
-		} else if (strcmp(trigger, CYBERIADA_BEHAVIOR_TRIGGER_DO) == 0) {
-			type = cybBehaviorDo;
+		if (strcmp(trigger, CYBERIADA_ACTION_TRIGGER_ENTRY) == 0) {
+			type = cybActionEntry;
+		} else if (strcmp(trigger, CYBERIADA_ACTION_TRIGGER_EXIT) == 0) {
+			type = cybActionExit;
+		} else if (strcmp(trigger, CYBERIADA_ACTION_TRIGGER_DO) == 0) {
+			type = cybActionDo;
 		} else {
-			type = cybBehaviorTransition;
+			type = cybActionTransition;
 		}
 	}
 	
 	/*DEBUG("\n");
-	DEBUG("node behavior:\n");
+	DEBUG("node action:\n");
 	DEBUG("trigger: %s\n", trigger);
 	DEBUG("guard: %s\n", guard);
-	DEBUG("action: %s\n", action);
+	DEBUG("behavior: %s\n", behavior);
 	DEBUG("type: %d\n", type);*/
 
-	new_behavior = cyberiada_new_behavior(type, trigger, guard, action);
-	if (*behavior) {
-		CyberiadaBehavior* b = *behavior;
+	new_action = cyberiada_new_action(type, trigger, guard, behavior);
+	if (*action) {
+		CyberiadaAction* b = *action;
 		while (b->next) b = b->next;
-		b->next = new_behavior;
+		b->next = new_action;
 	} else {
-		*behavior = new_behavior;
+		*action = new_action;
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_block_behavior(const char* text, CyberiadaBehavior** behavior)
+static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** action)
 {
 	int res;
-	char *trigger = "", *guard = "", *action = "";
-	regmatch_t pmatch[CYBERIADA_BEHAVIOR_REGEXP_MATCHES];
-	if ((res = regexec(&cyberiada_node_behavior_regexp, text,
-					   CYBERIADA_BEHAVIOR_REGEXP_MATCHES, pmatch, 0)) != 0) {
+	char *trigger = "", *guard = "", *behavior = "";
+	regmatch_t pmatch[CYBERIADA_ACTION_REGEXP_MATCHES];
+	if ((res = regexec(&cyberiada_node_action_regexp, text,
+					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 		if (res == REG_NOMATCH) {
-			ERROR("node block behavior text didn't match the regexp\n");
-			return CYBERIADA_BEHAVIOR_FORMAT_ERROR;
+			ERROR("node block action text didn't match the regexp\n");
+			return CYBERIADA_ACTION_FORMAT_ERROR;
 		} else {
-			ERROR("node block behavior regexp error %d\n", res);
+			ERROR("node block action regexp error %d\n", res);
 			return CYBERIADA_ASSERT;
 		}
 	}
-	if (cyberiaga_matchres_behavior_regexps(text,
-											pmatch, CYBERIADA_BEHAVIOR_REGEXP_MATCHES,
-											&trigger, &guard, &action) != CYBERIADA_NO_ERROR) {
+	if (cyberiaga_matchres_action_regexps(text,
+											pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
+											&trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_ASSERT;
 	}
 
-	decode_utf8_strings(&trigger, &guard, &action);
-	cyberiada_add_behavior(trigger, guard, action, behavior);
+	decode_utf8_strings(&trigger, &guard, &behavior);
+	cyberiada_add_action(trigger, guard, behavior, action);
 
 	if (*trigger) free(trigger);
 	if (*guard) free(guard);
-	if (*action) free(action);
+	if (*behavior) free(behavior);
 	
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_behavior(const char* text, CyberiadaBehavior** behavior)
+static int cyberiada_decode_state_action(const char* text, CyberiadaAction** action)
 {
 	int res;
 	size_t buffer_len;
 	char *buffer, *start, *block, *block2, *next;
-/*	regmatch_t pmatch[BEHAVIOR_NL_REGEXP_MATCHES];*/
+/*	regmatch_t pmatch[ACTION_NL_REGEXP_MATCHES];*/
 	
 	buffer = utf8_encode(text, strlen(text), &buffer_len);
 	next = buffer;
 
-	*behavior = NULL;
+	*action = NULL;
 	
 	while (*next) {
 		start = next;
-		block = strstr(start, CYBERIADA_BEHAVIOR_NEWLINE);
-		block2 = strstr(start, CYBERIADA_BEHAVIOR_NEWLINE_RN);
+		block = strstr(start, CYBERIADA_ACTION_NEWLINE);
+		block2 = strstr(start, CYBERIADA_ACTION_NEWLINE_RN);
 		if (block2 && ((block && (block > block2)) || !block)) {
 			block = block2;
 			*block2 = 0;
@@ -582,7 +582,7 @@ static int cyberiada_decode_state_behavior(const char* text, CyberiadaBehavior**
 			next = start + strlen(block);
 		}
 /*		if ((res = regexec(&cyberiada_newline_regexp, start,
-						   BEHAVIOR_NL_REGEXP_MATCHES, pmatch, 0)) != 0) {
+						   ACTION_NL_REGEXP_MATCHES, pmatch, 0)) != 0) {
 			if (res != REG_NOMATCH) {
 				ERROR("newline regexp error %d\n", res);
 				return CYBERIADA_ASSERT;
@@ -592,7 +592,7 @@ static int cyberiada_decode_state_behavior(const char* text, CyberiadaBehavior**
 			block = start;
 			start = start + strlen(block);
 		} else {
-			if (cyberiaga_matchres_newline(pmatch, BEHAVIOR_NL_REGEXP_MATCHES,
+			if (cyberiaga_matchres_newline(pmatch, ACTION_NL_REGEXP_MATCHES,
 										   &next_block) != CYBERIADA_NO_ERROR) {
 				return CYBERIADA_ASSERT;
 			}
@@ -607,7 +607,7 @@ static int cyberiada_decode_state_behavior(const char* text, CyberiadaBehavior**
 			continue ;
 		}
 
-		if ((res = cyberiada_decode_state_block_behavior(start, behavior)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_decode_state_block_action(start, action)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
 			return res;
 		}
@@ -630,23 +630,23 @@ static int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNod
 	return CYBERIADA_NO_ERROR;
 }
 
-/*static int cyberiada_graph_add_node_behavior(CyberiadaNode* node,
-											 CyberiadaBehaviorType type,
+/*static int cyberiada_graph_add_node_action(CyberiadaNode* node,
+											 CyberiadaActionType type,
 											 const char* trigger,
 											 const char* guard,
 											 const char* action)
 {
-	CyberiadaBehavior *behavior, *new_behavior;
+	CyberiadaAction *action, *new_action;
 	if (!node) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	new_behavior = cyberiada_new_behavior(type, trigger, guard, action);
-	if (node->behavior) {
-		node->behavior = new_behavior;
+	new_action = cyberiada_new_action(type, trigger, guard, action);
+	if (node->action) {
+		node->action = new_action;
 	} else {
-		behavior = node->behavior;
-		while (behavior->next) behavior = behavior->next;
-		behavior->next = new_behavior;
+		action = node->action;
+		while (action->next) action = action->next;
+		action->next = new_action;
 	}
 	return CYBERIADA_NO_ERROR;
 	}*/
@@ -725,23 +725,23 @@ static CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm)
 	return edge;
 }
 
-/*static int cyberiada_graph_add_edge_behavior(CyberiadaEdge* edge,
-															CyberiadaBehaviorType type,
+/*static int cyberiada_graph_add_edge_action(CyberiadaEdge* edge,
+															CyberiadaActionType type,
 															const char* trigger,
 															const char* guard,
 															const char* action)
 {
-	CyberiadaBehavior *behavior, *new_behavior;
+	CyberiadaAction *action, *new_action;
 	if (!edge) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	new_behavior = cyberiada_new_behavior(type, trigger, guard, action);
-	if (edge->behavior) {
-		edge->behavior = new_behavior;
+	new_action = cyberiada_new_action(type, trigger, guard, action);
+	if (edge->action) {
+		edge->action = new_action;
 	} else {
-		behavior = edge->behavior;
-		while (behavior->next) behavior = behavior->next;
-		behavior->next = new_behavior;
+		action = edge->action;
+		while (action->next) action = action->next;
+		action->next = new_action;
 	}
 	return CYBERIADA_NO_ERROR;
 	}*/
@@ -752,7 +752,7 @@ static int cyberiada_destroy_edge(CyberiadaEdge* e)
 	if (e->id) free(e->id);
 	if (e->source_id) free(e->source_id);
 	if (e->target_id) free(e->target_id);
-	if (e->behavior) cyberiada_destroy_behavior(e->behavior);
+	if (e->action) cyberiada_destroy_action(e->action);
 	if (e->geometry_source_point) free(e->geometry_source_point); 
 	if (e->geometry_target_point) free(e->geometry_target_point); 
 	if (e->geometry_polyline) {
@@ -1444,7 +1444,7 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 	return gpsNodeAction;
 }
 
-static GraphProcessorState handle_node_behavior(xmlNode* xml_node,
+static GraphProcessorState handle_node_action(xmlNode* xml_node,
 												CyberiadaSM* sm,
 												NodeStack** stack)
 {
@@ -1460,13 +1460,13 @@ static GraphProcessorState handle_node_behavior(xmlNode* xml_node,
 		/* DEBUG("Set node %s comment text %s\n", current->id, buffer); */
 		cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
 	} else {
-		if (current->behavior != NULL) {
-			ERROR("Trying to set node %s behavior twice\n", current->id);
+		if (current->action != NULL) {
+			ERROR("Trying to set node %s action twice\n", current->id);
 			return gpsInvalid;
 		}
-		/* DEBUG("Set node %s behavior %s\n", current->id, buffer); */
-		if (cyberiada_decode_state_behavior(buffer, &(current->behavior)) != CYBERIADA_NO_ERROR) {
-			ERROR("cannot decode node behavior\n");
+		/* DEBUG("Set node %s action %s\n", current->id, buffer); */
+		if (cyberiada_decode_state_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+			ERROR("cannot decode node action\n");
 			return gpsInvalid;
 		}
 	}
@@ -1573,16 +1573,16 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 		ERROR("no current edge\n");
 		return gpsInvalid;
 	}
-	if (current->behavior != NULL) {
+	if (current->action != NULL) {
 		ERROR("Trying to set edge %s:%s label twice\n",
 			  current->source_id, current->target_id);
 		return gpsInvalid;
 	}
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
-	/* DEBUG("add edge %s:%s behavior %s\n",
+	/* DEBUG("add edge %s:%s action %s\n",
 	   current->source_id, current->target_id, buffer); */
-	if (cyberiada_decode_edge_behavior(buffer, &(current->behavior)) != CYBERIADA_NO_ERROR) {
-		ERROR("cannot decode edge behavior\n");
+	if (cyberiada_decode_edge_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+		ERROR("cannot decode edge action\n");
 		return gpsInvalid;
 	}
 	return gpsGraph;
@@ -1707,13 +1707,13 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 			/* DEBUG("Set node %s title %s\n", current->id, buffer); */
 			cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
 		} else {
-			if (current->behavior != NULL) {
-				ERROR("Trying to set node %s behavior twice\n", current->id);
+			if (current->action != NULL) {
+				ERROR("Trying to set node %s action twice\n", current->id);
 				return gpsInvalid;
 			}
-			/* DEBUG("Set node %s behavior %s\n", current->id, buffer); */
-			if (cyberiada_decode_state_behavior(buffer, &(current->behavior)) != CYBERIADA_NO_ERROR) {
-				ERROR("cannot decode node behavior\n");
+			/* DEBUG("Set node %s action %s\n", current->id, buffer); */
+			if (cyberiada_decode_state_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+				ERROR("cannot decode node action\n");
 				return gpsInvalid;
 			}
 		}
@@ -1787,9 +1787,9 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 	}
 	if (strcmp(buffer, GRAPHML_CYB_DATA_DATA) == 0) {
 		cyberiada_get_element_text(buffer, buffer_len, xml_node);
-		/* DEBUG("Set edge %s behavior %s\n", current->id, buffer); */
-		if (cyberiada_decode_edge_behavior(buffer, &(current->behavior)) != CYBERIADA_NO_ERROR) {
-			ERROR("cannot decode edge behavior\n");
+		/* DEBUG("Set edge %s action %s\n", current->id, buffer); */
+		if (cyberiada_decode_edge_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+			ERROR("cannot decode edge action\n");
 			return gpsInvalid;
 		}
 	} else if (strcmp(buffer, GRAPHML_CYB_DATA_GEOMETRY) == 0) {
@@ -1829,7 +1829,7 @@ static ProcessorTransition yed_processor_state_table[] = {
 	{gpsNodeStart, GRAPHML_YED_PROPNODE, &handle_property},
 	{gpsNodeStart, GRAPHML_NODE_ELEMENT, &handle_new_node},
 	{gpsNodeTitle, GRAPHML_YED_LABELNODE, &handle_node_title},
-	{gpsNodeAction, GRAPHML_YED_LABELNODE, &handle_node_behavior},
+	{gpsNodeAction, GRAPHML_YED_LABELNODE, &handle_node_action},
 	{gpsNodeAction, GRAPHML_NODE_ELEMENT, &handle_new_node},
 	{gpsEdge, GRAPHML_EDGE_ELEMENT, &handle_new_edge},
 	{gpsEdge, GRAPHML_YED_PATHNODE, &handle_edge_geometry},
@@ -2074,7 +2074,7 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
 		return CYBERIADA_XML_ERROR;
 	}
 
-	cyberiada_init_behavior_regexps();
+	cyberiada_init_action_regexps();
 
 	do {
 		/* get the root element node */
@@ -2116,7 +2116,7 @@ int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat 
 		}
 	} while(0);
 
-	cyberiada_free_behavior_regexps();
+	cyberiada_free_action_regexps();
 	xmlFreeDoc(doc);
 	xmlCleanupParser();
 	
@@ -2147,7 +2147,7 @@ static int cyberiada_print_meta(CyberiadaMetainformation* meta)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_print_behavior(CyberiadaBehavior* behavior, int level)
+static int cyberiada_print_action(CyberiadaAction* action, int level)
 {
 	char levelspace[16];
 	int i;
@@ -2158,19 +2158,19 @@ static int cyberiada_print_behavior(CyberiadaBehavior* behavior, int level)
 		levelspace[i] = ' ';
 	}
 	
-	printf("%sBehaviors:\n", levelspace);
-	while (behavior) {
-		printf("%s Behavior (type %d):\n", levelspace, behavior->type);
-		if(behavior->trigger) {
-			printf("%s  Trigger: \"%s\"\n", levelspace, behavior->trigger);
+	printf("%sActions:\n", levelspace);
+	while (action) {
+		printf("%s Action (type %d):\n", levelspace, action->type);
+		if(action->trigger) {
+			printf("%s  Trigger: \"%s\"\n", levelspace, action->trigger);
 		}		
-		if(behavior->guard) {
-			printf("%s  Guard: \"%s\"\n", levelspace, behavior->guard);
+		if(action->guard) {
+			printf("%s  Guard: \"%s\"\n", levelspace, action->guard);
 		}
-		if(behavior->action) {
-			printf("%s  Action: \"%s\"\n", levelspace, behavior->action);
+		if(action->behavior) {
+			printf("%s  Behavior: \"%s\"\n", levelspace, action->behavior);
 		}
-		behavior = behavior->next;
+		action = action->next;
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -2199,7 +2199,7 @@ static int cyberiada_print_node(CyberiadaNode* node, int level)
 			   node->geometry_rect->height);
 	}
 	
-	cyberiada_print_behavior(node->behavior, level + 1);
+	cyberiada_print_action(node->action, level + 1);
 	
 	printf("%sChildren:\n", levelspace);
 	for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
@@ -2252,7 +2252,7 @@ static int cyberiada_print_edge(CyberiadaEdge* edge)
 			   edge->geometry_label->y);
 	}
 
-	cyberiada_print_behavior(edge->behavior, 2);
+	cyberiada_print_action(edge->action, 2);
 	return CYBERIADA_NO_ERROR;
 }
 
@@ -2443,54 +2443,54 @@ static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* t
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_write_behavior_text(xmlTextWriterPtr writer, CyberiadaBehavior* behavior)
+static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction* action)
 {
 	int res;
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	
-	while (behavior) {
+	while (action) {
 
-		if (*(behavior->trigger) || *(behavior->action) || *(behavior->guard)) { 
-			if (*(behavior->trigger)) {
-				if (behavior->type != cybBehaviorTransition) {
-					snprintf(buffer, buffer_len, "%s/", behavior->trigger);
+		if (*(action->trigger) || *(action->behavior) || *(action->guard)) { 
+			if (*(action->trigger)) {
+				if (action->type != cybActionTransition) {
+					snprintf(buffer, buffer_len, "%s/", action->trigger);
 				} else {
-					if (*(behavior->guard)) {
-						snprintf(buffer, buffer_len, "%s [%s]/", behavior->trigger, behavior->guard);
+					if (*(action->guard)) {
+						snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
 					} else {
-						snprintf(buffer, buffer_len, "%s/", behavior->trigger);
+						snprintf(buffer, buffer_len, "%s/", action->trigger);
 					}
 				}
 				XML_WRITE_TEXT(writer, buffer);
-				if (behavior->next || *(behavior->action)) {
+				if (action->next || *(action->behavior)) {
 					XML_WRITE_TEXT(writer, "\n");
 				}
 			} else {
-				if (*(behavior->action)) {
+				if (*(action->behavior)) {
 					XML_WRITE_TEXT(writer, "/\n");
-				} else if (behavior->next) {
+				} else if (action->next) {
 					XML_WRITE_TEXT(writer, "\n");
 				}
 			}
 		
-			if (*(behavior->action)) {
-				XML_WRITE_TEXT(writer, behavior->action);
+			if (*(action->behavior)) {
+				XML_WRITE_TEXT(writer, action->behavior);
 				XML_WRITE_TEXT(writer, "\n");
 			}
 			
-			if (behavior->next) {
+			if (action->next) {
 				XML_WRITE_TEXT(writer, "\n");
 			}
 		}
 
-		behavior = behavior->next;
+		action = action->next;
 	}
 
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_node_behavior_yed(xmlTextWriterPtr writer, CyberiadaBehavior* behavior, size_t indent)
+static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, size_t indent)
 {
 	int res;
 
@@ -2509,7 +2509,7 @@ static int cyberiada_write_node_behavior_yed(xmlTextWriterPtr writer, CyberiadaB
 	XML_WRITE_TEXT(writer, "\n");
 	XML_WRITE_TEXT(writer, "\n");
 
-	if (cyberiada_write_behavior_text(writer, behavior) != CYBERIADA_NO_ERROR) {
+	if (cyberiada_write_action_text(writer, action) != CYBERIADA_NO_ERROR) {
 		ERROR("error while writing node bevavior text\n");
 		return CYBERIADA_XML_ERROR;
 	}
@@ -2519,7 +2519,7 @@ static int cyberiada_write_node_behavior_yed(xmlTextWriterPtr writer, CyberiadaB
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_behavior_yed(xmlTextWriterPtr writer, CyberiadaBehavior* behavior, size_t indent)
+static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, size_t indent)
 {
 	int res;
 
@@ -2538,7 +2538,7 @@ static int cyberiada_write_edge_behavior_yed(xmlTextWriterPtr writer, CyberiadaB
 	XML_WRITE_ATTR(writer, "modelPosition", "center");
 	XML_WRITE_ATTR(writer, "preferredPlacement", "center_on_edge");
 	
-	if (cyberiada_write_behavior_text(writer, behavior) != CYBERIADA_NO_ERROR) {
+	if (cyberiada_write_action_text(writer, action) != CYBERIADA_NO_ERROR) {
 		ERROR("error while writing node bevavior text\n");
 		return CYBERIADA_XML_ERROR;
 	}
@@ -2647,8 +2647,8 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 				return CYBERIADA_XML_ERROR;
 			}
 
-			if (cyberiada_write_node_behavior_yed(writer, node->behavior, indent + 3) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing simple node behavior\n");
+			if (cyberiada_write_node_action_yed(writer, node->action, indent + 3) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing simple node action\n");
 				return CYBERIADA_XML_ERROR;
 			}
 
@@ -2688,8 +2688,8 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 				return CYBERIADA_XML_ERROR;
 			}
 
-			if (cyberiada_write_node_behavior_yed(writer, node->behavior, indent + 5) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing composite node behavior\n");
+			if (cyberiada_write_node_action_yed(writer, node->action, indent + 5) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing composite node action\n");
 				return CYBERIADA_XML_ERROR;
 			}
 
@@ -2769,8 +2769,8 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 	XML_WRITE_ATTR(writer, "target", "standard");
 	XML_WRITE_CLOSE_E(writer);
 
-	if (cyberiada_write_edge_behavior_yed(writer, edge->behavior, indent + 3) != CYBERIADA_NO_ERROR) {
-		ERROR("error while writing edge behavior\n");
+	if (cyberiada_write_edge_action_yed(writer, edge->action, indent + 3) != CYBERIADA_NO_ERROR) {
+		ERROR("error while writing edge action\n");
 		return CYBERIADA_XML_ERROR;
 	}
 	    			 
