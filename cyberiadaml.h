@@ -38,14 +38,10 @@ typedef enum {
     cybNodeCompositeState = 2,    /* composite state */
     cybNodeSubmachineState = 4,   /* submachine state */
     cybNodeComment = 8,           /* comment node */
-	cybNodeMachineComment = 16,   /* machine-readable comment node */
+    cybNodeMachineComment = 16,   /* machine-readable comment node */
     cybNodeInitial = 32,          /* initial pseudostate */
-    cybNodeFinal = 64,            /* final pseudostate */
-    cybNodeChoice = 128,          /* final pseudostate */
-    cybNodeEntry = 256,           /* entry pseudostate */
-    cybNodeExit = 512,            /* exit pseudostate */
-    cybNodeShallowHistory = 1024,  /* shallow history pseudostate */
-    cybNodeTerminate = 2048,      /* terminate pseudostate */
+    cybNodeFinal = 64,            /* final state */
+    cybNodeChoice = 128,          /* choice pseudostate */
 } CyberiadaNodeType;
 
 typedef unsigned int CyberiadaNodeTypeMask;
@@ -53,7 +49,7 @@ typedef unsigned int CyberiadaNodeTypeMask;
 /* SM node types: */    
 typedef enum {
     cybEdgeTransition = 0,
-	cybEdgeComment = 1,
+    cybEdgeComment = 1,
 } CyberiadaEdgeType;
 
 /* SM action types: */    
@@ -88,7 +84,7 @@ typedef struct _CyberiadaAction {
     size_t                      guard_len;
     char*                       behavior;
     size_t                      behavior_len;
-	struct _CyberiadaAction*    next;
+    struct _CyberiadaAction*    next;
 } CyberiadaAction;
     
 /* SM node (state) */
@@ -98,7 +94,7 @@ typedef struct _CyberiadaNode {
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-	CyberiadaAction*            action;
+    CyberiadaAction*            actions;
     CyberiadaRect*              geometry_rect;
     struct _CyberiadaNode*      next;
     struct _CyberiadaNode*      parent;
@@ -126,48 +122,67 @@ typedef struct _CyberiadaEdge {
     struct _CyberiadaEdge*      next;
 } CyberiadaEdge;
 
-/* SM metainformation */
-typedef struct {
-	char* standard_version;      /* HSM standard version (required parameter) */
-	size_t standard_version_len;
-	char* platform_name;         /* target platform name */
-	size_t platform_name_len;
-	char* platform_version;      /* target platform version */
-	size_t platform_version_len;
-	char* platform_language;     /* target platform language */
-	size_t platform_language_len;
-	char* target_system;         /* target system controlled by the SM */
-	size_t target_system_len;
-	char* name;                  /* document name */
-	size_t name_len;
-	char* author;                /* document author */
-	size_t author_len;
-	char* contact;               /* document author's contact */
-	size_t contact_len;
-	char* description;           /* document description */
-	size_t description_len;
-	char* version;               /* document version */
-	size_t version_len;
-	char* date;                  /* document date */
-	size_t date_len;
-	char actions_order_flag;     /* actions order flag (0 = not set, 1 = transition first, 2 = exit first) */
-	char event_propagation_flag; /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
-} CyberiadaMetainformation;
-	
 /* SM graph (state machine) */
-typedef struct {
-    char*                       format;     /* SM graph format string */
-    size_t                      format_len; /* SM graph format string length */
-	CyberiadaMetainformation*   meta_info;
+typedef struct _CyberiadaSM {
     CyberiadaNode*              nodes;
     CyberiadaEdge*              edges;
+    struct _CyberiadaSM*        next;
 } CyberiadaSM;
 
+/* SM metainformation */
+typedef struct {
+    /* HSM standard version (required parameter) */
+    char*                       standard_version;
+    size_t                      standard_version_len;
+    /* target platform name */
+    char*                       platform_name;         
+    size_t                      platform_name_len;
+    /* target platform version */
+    char*                       platform_version;
+    size_t                      platform_version_len;
+    /* target platform language */
+    char*                       platform_language;
+    size_t                      platform_language_len;
+    /* target system controlled by the SM */
+    char*                       target_system;         
+    size_t                      target_system_len;
+    /* document name */
+    char*                       name;
+    size_t                      name_len;
+    /* document author */
+    char*                       author;
+    size_t                      author_len;
+    /* document author's contact */
+    char*                       contact;
+    size_t                      contact_len;
+    /* document description */
+    char*                       description;
+    size_t                      description_len;
+    /* document version */
+    char*                       version;
+    size_t                      version_len;
+    /* document date */
+    char*                       date;
+    size_t                      date_len;
+    /* actions order flag (0 = not set, 1 = transition first, 2 = exit first) */
+    char                        actions_order_flag;
+    /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
+    char                        event_propagation_flag;
+} CyberiadaMetainformation;
+	
+/* SM document */
+typedef struct {
+    char*                       format;         /* SM document format string */
+    size_t                      format_len;     /* SM document format string length */
+    CyberiadaMetainformation*   meta_info;      /* SM document metainformation */
+    CyberiadaSM*                state_machines; /* State machines */
+} CyberiadaDocument;
+	
 /* SM GraphML supported formats */
 typedef enum {
-	cybxmlCyberiada = 0,
-    cybxmlYED,
-    cybxmlUnknown
+    cybxmlCyberiada = 0,
+    cybxmlYED = 1,
+    cybxmlUnknown = 2
 } CyberiadaXMLFormat;
     
 /* -----------------------------------------------------------------------------
@@ -188,28 +203,28 @@ typedef enum {
  * ----------------------------------------------------------------------------- */
 
     /* Allocate the SM structure in memory (for heap usage) */
-    CyberiadaSM* cyberiada_create_sm(void);
+    CyberiadaDocument* cyberiada_create_sm_document(void);
 
     /* Initialize the SM structure */
 	/* Do not use the structure before the initialization! */
-    int cyberiada_init_sm(CyberiadaSM* sm);
+    int cyberiada_init_sm_document(CyberiadaDocument* doc);
 
     /* Cleanup the content of the SM structure */
 	/* Free the allocated memory of the structure content but not the structure itself */
-    int cyberiada_cleanup_sm(CyberiadaSM* sm);
-
+    int cyberiada_cleanup_sm_document(CyberiadaDocument* doc);
+		
     /* Free the allocated SM structure with the content (for heap usage) */
-    int cyberiada_destroy_sm(CyberiadaSM* sm);
+    int cyberiada_destroy_sm_document(CyberiadaDocument* doc);
 
     /* Read an XML file and decode the SM structure */
-	/* Allocate the SM structure first */
-    int cyberiada_read_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat format);
+    /* Allocate the SM document structure first */
+    int cyberiada_read_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format);
 
-    /* Encode the SM structure and write the data to an XML file */
-    int cyberiada_write_sm(CyberiadaSM* sm, const char* filename, CyberiadaXMLFormat format);
+    /* Encode the SM document structure and write the data to an XML file */
+    int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format);
 	
     /* Print the SM structure to stdout */
-    int cyberiada_print_sm(CyberiadaSM* sm);
+    int cyberiada_print_sm_document(CyberiadaDocument* doc);
 
 #ifdef __cplusplus
 }

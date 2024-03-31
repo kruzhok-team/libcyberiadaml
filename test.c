@@ -71,7 +71,7 @@ int main(int argc, char** argv)
 	CyberiadaXMLFormat source_format = cybxmlUnknown, dest_format = cybxmlUnknown;
 	unsigned int i;
 	int res;
-	CyberiadaSM sm;
+	CyberiadaDocument doc;
 	char print = 0;
 
 	if (argc < 3) {
@@ -172,23 +172,23 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if ((res = cyberiada_read_sm(&sm, source_filename, source_format)) != CYBERIADA_NO_ERROR) {
+	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format)) != CYBERIADA_NO_ERROR) {
 		fprintf(stderr, "error while reading %s file: %d\n",
 				source_filename, res);
 		return 2;
 	}
 
 	if (print) {
-		cyberiada_print_sm(&sm);
+		cyberiada_print_sm_document(&doc);
 	} else {
-		if ((res = cyberiada_write_sm(&sm, dest_filename, dest_format)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_write_sm_document(&doc, dest_filename, dest_format)) != CYBERIADA_NO_ERROR) {
 			fprintf(stderr, "error while writing %s file: %d\n",
 					dest_filename, res);
 			return 3;
 		}
 	}
 
-	cyberiada_cleanup_sm(&sm);
+	cyberiada_cleanup_sm_document(&doc);
 	
 	return 0;
 }
