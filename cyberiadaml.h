@@ -70,11 +70,11 @@ typedef enum {
 /* SM node & transitions geometry */
 
 typedef struct {
-    double x, y;
+    float x, y;
 } CyberiadaPoint;
 
 typedef struct {
-    double x, y, width, height;
+    float x, y, width, height;
 } CyberiadaRect;
 
 typedef struct _CyberiadaPolyline {

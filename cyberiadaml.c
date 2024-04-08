@@ -479,6 +479,7 @@ static int cyberiada_destroy_node(CyberiadaNode* node)
 			cyberiada_destroy_all_nodes(node->children);
 		}
 		if (node->actions) cyberiada_destroy_action(node->actions);
+		if (node->geometry_point) free(node->geometry_point);
 		if (node->geometry_rect) free(node->geometry_rect);
 		if (node->color) free(node->color);
 		if (node->link) {
@@ -1356,7 +1357,7 @@ static int cyberiada_get_element_text(char* buffer, size_t buffer_len,
 
 static int cyberiada_xml_read_coord(xmlNode* xml_node,
 									const char* attr_name,
-									double* result)
+									float* result)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -1365,7 +1366,7 @@ static int cyberiada_xml_read_coord(xmlNode* xml_node,
 								 attr_name) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	*result = atof(buffer);
+	*result = (float)atof(buffer);
 	return CYBERIADA_NO_ERROR;
 }
 
@@ -1607,24 +1608,27 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 {
 	CyberiadaNodeType type;
 	CyberiadaNode* current = node_stack_current_node(stack);
+	CyberiadaRect* rect;
 	if (current == NULL) {
 		ERROR("current node invalid\n");
 		return gpsInvalid;
 	}
 	type = current->type;
 	if (cyberiada_xml_read_rect(xml_node,
-								&(current->geometry_rect)) != CYBERIADA_NO_ERROR) {
+								&rect) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
 	if (type == cybNodeInitial) {
-		current->geometry_rect->x += current->geometry_rect->width / 2.0;
-		current->geometry_rect->y += current->geometry_rect->height / 2.0;
-		current->geometry_rect->width = PSEUDO_NODE_SIZE;
-		current->geometry_rect->height = PSEUDO_NODE_SIZE;
+		current->geometry_point = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
+		current->geometry_point->x = rect->x + rect->width / 2.0f;
+		current->geometry_point->y = rect->y + rect->height / 2.0f;
+		free(rect);
 		return gpsNodeStart;
 	} else if (type == cybNodeComment) {
+		current->geometry_rect = rect;
 		return gpsNodeAction;
 	} else {
+		current->geometry_rect = rect;
 		return gpsNodeTitle;
 	}
 }
