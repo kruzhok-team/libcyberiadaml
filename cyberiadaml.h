@@ -38,15 +38,22 @@ typedef enum {
     cybNodeCompositeState = 2,    /* composite state */
     cybNodeSubmachineState = 4,   /* submachine state */
     cybNodeComment = 8,           /* comment node */
-    cybNodeMachineComment = 16,   /* machine-readable comment node */
+    cybNodeFormalComment = 16,    /* machine-readable comment node */
     cybNodeInitial = 32,          /* initial pseudostate */
     cybNodeFinal = 64,            /* final state */
     cybNodeChoice = 128,          /* choice pseudostate */
+	cybNodeTerminate = 256,       /* terminate pseudostate */
+	cybNodeEntryPoint = 512,      /* entry point pseudostate */
+	cybNodeExitPoint = 1024,      /* exit point pseudostate */
+	cybNodeShallowHistory = 2048, /* shallow history pseudostate */
+	cybNodeDeepHistory = 4096,    /* deep history pseudostate */
+	cybNodeFork = 8192,           /* fork pseudostate */
+	cybNodeJoin = 16384,          /* join pseudostate */
 } CyberiadaNodeType;
 
 typedef unsigned int CyberiadaNodeTypeMask;
 	
-/* SM node types: */    
+/* SM node types: */
 typedef enum {
     cybEdgeTransition = 0,
     cybEdgeComment = 1,
@@ -57,7 +64,7 @@ typedef enum {
     cybActionTransition = 0,
     cybActionEntry = 1,
     cybActionExit = 2,
-    cybActionDo = 4,
+    cybActionDo = 4
 } CyberiadaActionType;
 
 /* SM node & transitions geometry */
@@ -86,7 +93,21 @@ typedef struct _CyberiadaAction {
     size_t                      behavior_len;
     struct _CyberiadaAction*    next;
 } CyberiadaAction;
-    
+
+/* SM comment content */
+typedef struct _CyberiadaCommentData {
+	char*                       body;
+	size_t                      body_len;
+	char*                       markup;
+	size_t                      markup_len;
+} CyberiadaCommentData;
+
+/* SM link (e.g. to a SM definition) */
+typedef struct _CyberiadaLink {
+	char*                       ref;
+	size_t                      ref_len;
+} CyberiadaLink;
+
 /* SM node (state) */
 typedef struct _CyberiadaNode {
     CyberiadaNodeType           type;
@@ -94,80 +115,101 @@ typedef struct _CyberiadaNode {
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-    CyberiadaAction*            actions;
-    CyberiadaRect*              geometry_rect;
-    struct _CyberiadaNode*      next;
-    struct _CyberiadaNode*      parent;
-    struct _CyberiadaNode*      children;
-} CyberiadaNode;
-
-/* SM edge (transition) */
-typedef struct _CyberiadaEdge {
-    CyberiadaEdgeType           type;
-    char*                       id;
-    size_t                      id_len;
-    char*                       source_id;
-    size_t                      source_id_len;
-    char*                       target_id;
-    size_t                      target_id_len;
-    CyberiadaNode*              source;
-    CyberiadaNode*              target;
-    CyberiadaAction*            action;
-    CyberiadaPoint*             geometry_source_point;
-    CyberiadaPoint*             geometry_target_point;
-    CyberiadaPolyline*          geometry_polyline;
-    CyberiadaPoint*             geometry_label;
+	CyberiadaAction*            actions;        /* for simple & composite nodes */
+	CyberiadaCommentData*       comment_data;   /* for comments */
+	CyberiadaLink*              link;           /* for submachine states */
+	CyberiadaPoint*             geometry_point; /* for some pseudostates & final state */
+	CyberiadaRect*              geometry_rect;  /* for sm, states, and choice pseudostate */
     char*                       color;
     size_t                      color_len;
-    struct _CyberiadaEdge*      next;
+    struct _CyberiadaNode*      parent;
+    struct _CyberiadaNode*      children;
+    struct _CyberiadaNode*      next;
+} CyberiadaNode;
+
+typedef enum {
+	cybCommentSubjectNode = 0,
+	cybCommentSubjectNameFragment = 1,
+	cybCommentSubjectDataFragment = 2,
+} CyberiadaCommentSubjectType;
+	
+typedef struct _CyberiadaCommentSubject {
+	CyberiadaCommentSubjectType type;
+	char*                       fragment;
+	size_t                      fragment_len;
+} CyberiadaCommentSubject;
+	
+/* SM edge (transition) */
+typedef struct _CyberiadaEdge {
+    CyberiadaEdgeType            type;
+    char*                        id;
+    size_t                       id_len;
+    char*                        source_id;
+    size_t                       source_id_len;
+    char*                        target_id;
+    size_t                       target_id_len;
+    CyberiadaNode*               source;
+    CyberiadaNode*               target;
+	CyberiadaAction*             action;                /* for transition */
+	CyberiadaCommentSubject*     comment_subject;       /* for comment subject */
+    CyberiadaPolyline*           geometry_polyline;
+    CyberiadaPoint*              geometry_source_point;
+    CyberiadaPoint*              geometry_target_point;
+    CyberiadaPoint*              geometry_label_point;
+    char*                        color;
+    size_t                       color_len;
+    struct _CyberiadaEdge*       next;
 } CyberiadaEdge;
 
 /* SM graph (state machine) */
 typedef struct _CyberiadaSM {
-    CyberiadaNode*              nodes;
-    CyberiadaEdge*              edges;
-    struct _CyberiadaSM*        next;
+    CyberiadaNode*               nodes;
+    CyberiadaEdge*               edges;
+    struct _CyberiadaSM*         next;
 } CyberiadaSM;
 
 /* SM metainformation */
 typedef struct {
     /* HSM standard version (required parameter) */
-    char*                       standard_version;
-    size_t                      standard_version_len;
+    char*                        standard_version;
+    size_t                       standard_version_len;
     /* target platform name */
-    char*                       platform_name;         
-    size_t                      platform_name_len;
+    char*                        platform_name;         
+    size_t                       platform_name_len;
     /* target platform version */
-    char*                       platform_version;
-    size_t                      platform_version_len;
+    char*                        platform_version;
+    size_t                       platform_version_len;
     /* target platform language */
-    char*                       platform_language;
-    size_t                      platform_language_len;
+    char*                        platform_language;
+    size_t                       platform_language_len;
     /* target system controlled by the SM */
-    char*                       target_system;         
-    size_t                      target_system_len;
+    char*                        target_system;         
+    size_t                       target_system_len;
     /* document name */
-    char*                       name;
-    size_t                      name_len;
+    char*                        name;
+    size_t                       name_len;
     /* document author */
-    char*                       author;
-    size_t                      author_len;
+    char*                        author;
+    size_t                       author_len;
     /* document author's contact */
-    char*                       contact;
-    size_t                      contact_len;
+    char*                        contact;
+    size_t                       contact_len;
     /* document description */
-    char*                       description;
-    size_t                      description_len;
+    char*                        description;
+    size_t                       description_len;
     /* document version */
-    char*                       version;
-    size_t                      version_len;
+    char*                        version;
+    size_t                       version_len;
     /* document date */
-    char*                       date;
-    size_t                      date_len;
-    /* actions order flag (0 = not set, 1 = transition first, 2 = exit first) */
-    char                        actions_order_flag;
+    char*                        date;
+    size_t                       date_len;
+    /* transition order flag (0 = not set, 1 = transition first, 2 = exit first) */
+    char                         transition_order_flag;
     /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
-    char                        event_propagation_flag;
+    char                         event_propagation_flag;
+	/* default comments markup language */
+	char*                        markup_language;
+	size_t                       markup_language_len;
 } CyberiadaMetainformation;
 	
 /* SM document */
@@ -178,11 +220,11 @@ typedef struct {
     CyberiadaSM*                state_machines; /* State machines */
 } CyberiadaDocument;
 	
-/* SM GraphML supported formats */
+/* Cyberiada GraphML Library supported formats */
 typedef enum {
-    cybxmlCyberiada = 0,
-    cybxmlYED = 1,
-    cybxmlUnknown = 2
+    cybxmlCyberiada10 = 0,                      /* Cyberiada 1.0 format */
+    cybxmlYED = 1,                              /* Old YED-based Berloga/Ostranna format */
+    cybxmlUnknown = 99                          /* Format is not specified */
 } CyberiadaXMLFormat;
     
 /* -----------------------------------------------------------------------------

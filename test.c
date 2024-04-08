@@ -25,12 +25,12 @@
 #include "cyberiadaml.h"
 
 const char* formats[] = {
-	"cyberiada",    /* cybxmlCyberiada */
+	"cyberiada",    /* cybxmlCyberiada10 */
 	"yed"           /* cybxmlYED */
 };
 
 const char* format_descr[] = {
-	"Cyberiada-GraphML format",
+	"Cyberiada-GraphML 1.0 format",
 	"yEd editor format used by Ostranna projects and the Orbita Simulator"
 };
 

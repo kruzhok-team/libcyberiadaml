@@ -8,15 +8,17 @@ else
 endif
 
 TEST_TARGET := cyberiada_test
-LIB_SOURCES := cyberiadaml.c utf8enc.c
+LIB_SOURCES := cyberiadaml.c utf8enc.c cyb_types.c
 TEST_SOURCES := test.c
 LIB_OBJECTS := $(patsubst %.c, %.o, $(LIB_SOURCES))
 TEST_OBJECTS := $(patsubst %.c, %.o, $(TEST_SOURCES))
 
 ifeq ($(DEBUG), 1)
-    CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fPIC -g3 -D__DEBUG__
+    CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fsanitize=address -fPIC -g3 -D__DEBUG_
+    LFLAGS := -fsanitize=address -static-libasan
 else
     CFLAGS := -fPIC
+    LFLAGS := 
 endif
 
 INCLUDE := -I. -I/usr/include/libxml2
@@ -31,7 +33,7 @@ else
 endif
 
 $(TEST_TARGET): $(TEST_OBJECTS) $(LIB_TARGET) $(LIB_ORJECTS)
-	gcc $(TEST_OBJECTS) -Wl,--no-as-needed $(LIBS) $(TEST_LIBS) -o $@
+	gcc $(TEST_OBJECTS) $(LFLAGS) -Wl,--no-as-needed $(LIBS) $(TEST_LIBS) -o $@
 
 %.o: %.c
 	gcc -c $< $(CFLAGS) $(INCLUDE) -o $@
