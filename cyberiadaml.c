@@ -2216,13 +2216,6 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 			return gpsInvalid;
 		}
 		if (current->type == cybNodeComment || current->type == cybNodeFormalComment) {
-			if (current->type == cybNodeFormalComment &&
-				current->title && strcmp(current->title, CYBERIADA_META_NODE_TITLE) == 0) {
-				if (cyberiada_decode_meta(doc, buffer) != CYBERIADA_NO_ERROR) {
-					ERROR("Error while decoging metainfo comment\n");
-					return gpsInvalid;
-				}
-			} 
 			if (current->comment_data != NULL) {
 				if (current->comment_data->body) {
 					ERROR("Trying to set node %s body twice\n", current->id);
@@ -2233,6 +2226,13 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 			}
 			cyberiada_copy_string(&(current->comment_data->body),
 								  &(current->comment_data->body_len), buffer);
+			if (current->type == cybNodeFormalComment &&
+				current->title && strcmp(current->title, CYBERIADA_META_NODE_TITLE) == 0) {
+				if (cyberiada_decode_meta(doc, buffer) != CYBERIADA_NO_ERROR) {
+					ERROR("Error while decoging metainfo comment\n");
+					return gpsInvalid;
+				}
+			}
 		} else {
 			/* DEBUG("Set node %s action %s\n", current->id, buffer); */
 			if (cyberiada_decode_state_actions(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
