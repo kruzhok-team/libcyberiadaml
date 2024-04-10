@@ -18,5 +18,5 @@ Run `make` to build the library binaries.
 Run `make test` to build the test program.
 
 Use variables:
-* `DEBUG=1` debug version of the library
+* `DEBUG=yes` debug version of the library
 * `DYNAMIC=1` build shared version of the library
