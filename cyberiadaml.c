@@ -146,7 +146,7 @@
 #define CYBERIADA_META_NEW_LINE_CHR              '\n'
 #define CYBERIADA_META_NEW_LINE_STR              "\n"
 #define CYBERIADA_META_STANDARD_VERSION          "standardVersion"
-#define CYBERIADA_META_PLATFORM_NAME             "platformName"
+#define CYBERIADA_META_PLATFORM_NAME             "platform"
 #define CYBERIADA_META_PLATFORM_VERSION          "platformVersion"
 #define CYBERIADA_META_PLATFORM_LANGUAGE         "platformLanguage"
 #define CYBERIADA_META_TARGET_SYSTEM             "target"
