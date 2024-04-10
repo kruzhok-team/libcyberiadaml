@@ -13,7 +13,10 @@ TEST_SOURCES := test.c
 LIB_OBJECTS := $(patsubst %.c, %.o, $(LIB_SOURCES))
 TEST_OBJECTS := $(patsubst %.c, %.o, $(TEST_SOURCES))
 
-ifeq ($(DEBUG), 1)
+ifeq ($(DEBUG), yes)
+    CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fPIC -g3 -D__DEBUG_
+    LFLAGS :=
+else ifeq ($(DEBUG), asan)
     CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fsanitize=address -fPIC -g3 -D__DEBUG_
     LFLAGS := -fsanitize=address -static-libasan
 else
