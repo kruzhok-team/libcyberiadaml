@@ -93,15 +93,21 @@ int   cyberiada_stack_free(CyberiadaStack** stack)
 
 int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data)
 {
-	CyberiadaList* new_item;
+	CyberiadaList *item, *new_item;
 	if (!list) {
 		return -1;
 	}
 	new_item = (CyberiadaList*)malloc(sizeof(CyberiadaList));
 	new_item->key = key;
 	new_item->data = data;
-	new_item->next = *list;
-	*list = new_item;
+	new_item->next = NULL;
+	if (!*list) {
+		*list = new_item;
+	} else {
+		item = *list;
+		while (item->next) item = item->next;
+		item->next = new_item;
+	}
 	return 0;
 }
 

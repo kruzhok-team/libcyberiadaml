@@ -122,6 +122,7 @@
 
 /* HSM action constants */
 
+#define CYBERIADA_SINGLE_NEWLINE               "\n"
 #define CYBERIADA_NEWLINE                      "\n\n"
 #define CYBERIADA_NEWLINE_RN                   "\r\n\r\n"
 #define CYBERIADA_ACTION_TRIGGER_ENTRY         "entry"
@@ -137,6 +138,9 @@
 #define CYBERIADA_ACTION_SPACES_REGEXP         "^\\s*$"
 /*#define CYBERIADA_ACTION_NEWLINE_REGEXP        "^([^\n]*(\n[ \t\r]*[^\\s])?)*\n\\s*\n(.*)?$"
   #define CYBERIADA_ACTION_NL_REGEXP_MATCHES     4*/
+#define CYBERIADA_ACTION_LEGACY_REGEXP         "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*/"
+#define CYBERIADA_ACTION_LEGACY_MATCHES        7
+#define CYBERIADA_ACTION_LEGACY_MATCH_TRIGGER  1
 
 /* CybediadaML metadata constants */
 
@@ -544,6 +548,7 @@ static CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 
 static regex_t cyberiada_edge_action_regexp;
 static regex_t cyberiada_node_action_regexp;
+static regex_t cyberiada_node_legacy_action_regexp;
 /*static regex_t cyberiada_newline_regexp;*/
 static regex_t cyberiada_spaces_regexp;
 
@@ -554,6 +559,10 @@ static int cyberiada_init_action_regexps(void)
 		return CYBERIADA_ASSERT;
 	}
 	if (regcomp(&cyberiada_node_action_regexp, CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
+		ERROR("cannot compile edge action regexp\n");
+		return CYBERIADA_ASSERT;
+	}
+	if (regcomp(&cyberiada_node_legacy_action_regexp, CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
@@ -572,6 +581,7 @@ static int cyberiada_free_action_regexps(void)
 {
 	regfree(&cyberiada_edge_action_regexp);
 	regfree(&cyberiada_node_action_regexp);
+	regfree(&cyberiada_node_legacy_action_regexp);
 /*	regfree(&cyberiada_newline_regexp);*/
 	regfree(&cyberiada_spaces_regexp);
 	return CYBERIADA_NO_ERROR;
@@ -769,7 +779,7 @@ static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** action)
+static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions)
 {
 	int res;
 	size_t buffer_len;
@@ -779,7 +789,7 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 	buffer = utf8_encode(text, strlen(text), &buffer_len);
 	next = buffer;
 
-	*action = NULL;
+	*actions = NULL;
 	
 	while (*next) {
 		start = next;
@@ -822,7 +832,7 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 			continue ;
 		}
 
-		if ((res = cyberiada_decode_state_block_action(start, action)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_decode_state_block_action(start, actions)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
 			return res;
 		}
@@ -832,6 +842,71 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 	
 	return CYBERIADA_NO_ERROR;
 }
+
+static int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions)
+{
+	int res;
+	char *buffer, *next, *start, *block;
+	size_t buffer_len;
+	CyberiadaList *sections_list = NULL, *list;
+	regmatch_t pmatch[CYBERIADA_ACTION_LEGACY_MATCHES];
+		
+	buffer = utf8_encode(text, strlen(text), &buffer_len);
+	next = buffer;
+
+	*actions = NULL;
+	
+	while (*next) {
+		start = next;
+		while (*start && isspace(*start)) start++;
+		res = regexec(&cyberiada_node_legacy_action_regexp, start,
+					  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
+		if (res != 0 && res != REG_NOMATCH) {
+			ERROR("newline regexp error %d\n", res);
+			res = CYBERIADA_ACTION_FORMAT_ERROR;
+			break;
+		}
+		if (res == 0) {
+			/*DEBUG("add start: '%s'\n", start);*/
+			list = sections_list;
+			cyberiada_list_add(&sections_list, start, NULL);
+			if (list) {
+				block = (char*)list->key;
+				while (*block) {
+					if (block == start) {
+						*(block - 1) = 0;
+						break;
+					}
+					block++;
+				}
+			}
+		}
+		block = strstr(start, CYBERIADA_SINGLE_NEWLINE);
+		if (block) {
+			next = block + 1;
+		} else {
+			next = start + strlen(start);
+		}
+		res = CYBERIADA_NO_ERROR;
+	}
+
+	/*DEBUG("text: %s\n", text);*/
+	for (list = sections_list; list; list = list->next) {
+		start = (char*)list->key;
+		/* DEBUG("section: '%s'\n", start);*/
+		if ((res = cyberiada_decode_state_block_action(start, actions)) != CYBERIADA_NO_ERROR) {
+			ERROR("error while decoding state block %s: %d\n", start, res);
+			break;
+		}
+		res = CYBERIADA_NO_ERROR;
+	}
+	
+	free(buffer);
+	cyberiada_list_free(&sections_list);
+	
+	return res;
+}
+
 
 static int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNode* new_node)
 {
@@ -1505,7 +1580,7 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 								GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
 		buffer[0] = 0;
 	}
-	DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer);
+	/* DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer); */
 	cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer);
 	return gpsEdge;
 }
@@ -1700,9 +1775,9 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 		cyberiada_copy_string(&(current->comment_data->body),
 							  &(current->comment_data->body_len), buffer);
 	} else {
-		/* DEBUG("Set node %s action %s\n", current->id, buffer); */
-		if (cyberiada_decode_state_actions(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
-			ERROR("cannot decode node action\n");
+		DEBUG("Set node %s action %s\n", current->id, buffer);
+		if (cyberiada_decode_state_actions_yed(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
+			ERROR("cannot decode yed node action\n");
 			return gpsInvalid;
 		}
 	}
@@ -2236,7 +2311,7 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 		} else {
 			/* DEBUG("Set node %s action %s\n", current->id, buffer); */
 			if (cyberiada_decode_state_actions(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
-				ERROR("Cannot decode node action\n");
+				ERROR("Cannot decode cyberiada node action\n");
 				return gpsInvalid;
 			}
 		}
