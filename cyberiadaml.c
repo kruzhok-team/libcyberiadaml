@@ -3573,7 +3573,7 @@ static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
 		return CYBERIADA_NO_ERROR;
 	}
 	sm_node = doc->state_machines->nodes;
-	if (sm_node->type != cybNodeSM||
+	if (sm_node->type != cybNodeSM ||
 		sm_node->next != NULL) {
 		ERROR("Inconsistem SM node\n");
 		return CYBERIADA_BAD_PARAMETER;
