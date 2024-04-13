@@ -1285,9 +1285,7 @@ CyberiadaDocument* cyberiada_new_sm_document(void)
 int cyberiada_init_sm_document(CyberiadaDocument* doc)
 {
 	if (doc) {
-		doc->format = NULL;
-		doc->meta_info = NULL;
-		doc->state_machines = NULL;
+		memset(doc, 0, sizeof(CyberiadaDocument));
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -4144,40 +4142,49 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 	writer = xmlNewTextWriterFilename(filename, 0);
 	if (!writer) {
 		ERROR("cannot open xml writter for file %s\n", filename);
+		xmlCleanupParser();
 		return CYBERIADA_XML_ERROR;
 	}
 
-	res = xmlTextWriterStartDocument(writer, NULL, GRAPHML_XML_ENCODING, NULL);
-	if (res < 0) {
-		ERROR("error writing xml start document: %d\n", res);
-		xmlFreeTextWriter(writer);
-		return CYBERIADA_XML_ERROR;
-	}
-
-	if (format == cybxmlYED) {
-		if (!doc->state_machines || doc->state_machines->next) {
-			ERROR("YED format supports only single SM documents\n");
-			xmlFreeTextWriter(writer);
-			return CYBERIADA_BAD_PARAMETER;
+	do {
+		res = xmlTextWriterStartDocument(writer, NULL, GRAPHML_XML_ENCODING, NULL);
+		if (res < 0) {
+			ERROR("error writing xml start document: %d\n", res);
+			res = CYBERIADA_XML_ERROR;
+			break;
 		}
-		res = cyberiada_write_sm_document_yed(doc, writer);
-	} else if (format == cybxmlCyberiada10) {
-		res = cyberiada_write_sm_document_cyberiada(doc, writer);
-	}
-	if (res != CYBERIADA_NO_ERROR) {
-		ERROR("error writing xml %d\n", res);
-		xmlFreeTextWriter(writer);
-		return CYBERIADA_XML_ERROR;
-	}
 
-	res = xmlTextWriterEndDocument(writer);
-	if (res < 0) {
-		ERROR("error writing xml end document: %d\n", res);
-		xmlFreeTextWriter(writer);
-		return CYBERIADA_XML_ERROR;
-	}
+		if (format == cybxmlYED) {
+			if (!doc->state_machines || doc->state_machines->next) {
+				ERROR("YED format supports only single SM documents\n");
+				res = CYBERIADA_BAD_PARAMETER;
+				break;
+			}
+			res = cyberiada_write_sm_document_yed(doc, writer);
+		} else if (format == cybxmlCyberiada10) {
+			res = cyberiada_write_sm_document_cyberiada(doc, writer);
+		}
+		if (res != CYBERIADA_NO_ERROR) {
+			ERROR("error writing xml %d\n", res);
+			res = CYBERIADA_XML_ERROR;
+			break;
+		}
+
+		res = xmlTextWriterEndDocument(writer);
+		if (res < 0) {
+			ERROR("error writing xml end document: %d\n", res);
+			res = CYBERIADA_XML_ERROR;
+			break;
+		}
+
+		res = CYBERIADA_NO_ERROR;
+	} while (0);
 	
 	xmlFreeTextWriter(writer);
-
-	return CYBERIADA_NO_ERROR;
+	
+	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	} else {
+		return CYBERIADA_NO_ERROR;
+	}
 }
