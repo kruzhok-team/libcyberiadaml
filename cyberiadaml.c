@@ -752,7 +752,7 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 }
 
 static int cyberiada_add_action(const char* trigger, const char* guard, const char* behavior,
-								  CyberiadaAction** action)
+								CyberiadaAction** action)
 {
 	CyberiadaAction* new_action;
 	CyberiadaActionType type;
@@ -803,8 +803,8 @@ static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction
 		}
 	}
 	if (cyberiaga_matchres_action_regexps(text,
-											pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
-											&trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
+										  pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
+										  &trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_ASSERT;
 	}
 
