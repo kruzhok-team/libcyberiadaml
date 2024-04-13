@@ -2931,16 +2931,18 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 	NamesList* nl = NULL;
 	
 	cyberiada_init_sm_document(cyb_doc);
-	
-	/* parse the file and get the DOM */
-	if ((doc = xmlReadFile(filename, NULL, 0)) == NULL) {
-		ERROR("error: could not parse file %s\n", filename);
-		return CYBERIADA_XML_ERROR;
-	}
-
 	cyberiada_init_action_regexps();
+	xmlInitParser();
 
 	do {
+	
+		/* parse the file and get the DOM */
+		if ((doc = xmlReadFile(filename, NULL, 0)) == NULL) {
+			ERROR("error: could not parse file %s\n", filename);
+			res = CYBERIADA_XML_ERROR;
+			break;
+		}
+
 		/* get the root element node */
 		root = xmlDocGetRootElement(doc);
 
@@ -4128,7 +4130,7 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 {
 	xmlTextWriterPtr writer;
 	int res;
-
+	
 	if (format != cybxmlCyberiada10 && format != cybxmlYED) {
 		ERROR("unsupported SM format for write: %d\n", format);
 		return CYBERIADA_BAD_PARAMETER;
@@ -4139,14 +4141,16 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	writer = xmlNewTextWriterFilename(filename, 0);
-	if (!writer) {
-		ERROR("cannot open xml writter for file %s\n", filename);
-		xmlCleanupParser();
-		return CYBERIADA_XML_ERROR;
-	}
+	xmlInitParser();
 
 	do {
+		
+		writer = xmlNewTextWriterFilename(filename, 0);
+		if (!writer) {
+			ERROR("cannot open xml writter for file %s\n", filename);
+			res = CYBERIADA_XML_ERROR;
+		}
+
 		res = xmlTextWriterStartDocument(writer, NULL, GRAPHML_XML_ENCODING, NULL);
 		if (res < 0) {
 			ERROR("error writing xml start document: %d\n", res);
@@ -4181,6 +4185,7 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 	} while (0);
 	
 	xmlFreeTextWriter(writer);
+	xmlCleanupParser();
 	
 	if (res != CYBERIADA_NO_ERROR) {
 		return res;
