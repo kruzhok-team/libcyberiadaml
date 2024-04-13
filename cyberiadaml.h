@@ -244,8 +244,8 @@ typedef enum {
  * The Cyberiada GraphML library functions
  * ----------------------------------------------------------------------------- */
 
-    /* Allocate the SM structure in memory (for heap usage) */
-    CyberiadaDocument* cyberiada_create_sm_document(void);
+    /* Allocate the SM document structure in memory (for heap usage) */
+    CyberiadaDocument* cyberiada_new_sm_document(void);
 
     /* Initialize the SM structure */
 	/* Do not use the structure before the initialization! */
@@ -268,6 +268,42 @@ typedef enum {
     /* Print the SM structure to stdout */
     int cyberiada_print_sm_document(CyberiadaDocument* doc);
 
+	/* Allocate and initialize the SM structure in memory */
+	CyberiadaSM* cyberiada_new_sm(void);
+
+	/* Allocate and initialize the SM node structure in memory */
+	CyberiadaNode* cyberiada_new_node(const char* id);
+
+	/* Allocate and initialize the SM edge structure in memory */
+	CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target);
+
+	/* Allocate and initialize the SM comment data structure in memory */
+	CyberiadaCommentData* cyberiada_new_comment_data(void);
+
+	/* Allocate and initialize the SM link structure in memory */
+	CyberiadaLink* cyberiada_new_link(const char* ref);
+
+	/* Allocate and initialize the SM comment subject structure in memory */
+	CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSubjectType type);
+
+	/* Allocate and initialize the SM action structure in memory */
+	CyberiadaAction* cyberiada_new_action(CyberiadaActionType type, const char* trigger, const char* guard, const char* behavior);
+
+	/* Allocate and initialize the SM point structure in memory */
+	CyberiadaPoint* cyberiada_new_point(void);
+
+	/* Allocate and initialize the SM rect structure in memory */
+	CyberiadaRect* cyberiada_new_rect(void);
+	
+	/* Allocate and initialize the SM polyline structure in memory */
+	CyberiadaPolyline* cyberiada_new_polyline(void);
+
+	/* Allocate and initialize the SM metainformation structure in memory */
+	CyberiadaMetainformation* cyberiada_new_meta(void);
+	
+	/* Initialize and copy string. Use this function to initialize strings in Cyberiada structures */
+	int cyberiada_copy_string(char** target, size_t* size, const char* source);
+	
 #ifdef __cplusplus
 }
 #endif

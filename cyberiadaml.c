@@ -326,7 +326,7 @@ static const size_t yed_graphml_keys_count = sizeof(yed_graphml_keys) / sizeof(G
  * Utility functions
  * ----------------------------------------------------------------------------- */
 
-static int cyberiada_copy_string(char** target, size_t* size, const char* source)
+int cyberiada_copy_string(char** target, size_t* size, const char* source)
 {
 	char* target_str;
 	size_t strsize;
@@ -432,14 +432,14 @@ static CyberiadaEdge* cyberiada_graph_find_edge_by_id(CyberiadaEdge* root, const
 	return NULL;
 }
 
-static CyberiadaCommentData* cyberiada_new_comment_data(void)
+CyberiadaCommentData* cyberiada_new_comment_data(void)
 {
 	CyberiadaCommentData* cd = (CyberiadaCommentData*)malloc(sizeof(CyberiadaCommentData));
 	memset(cd, 0, sizeof(CyberiadaCommentData));
 	return cd;
 }
 
-static CyberiadaLink* cyberiada_new_link(const char* ref)
+CyberiadaLink* cyberiada_new_link(const char* ref)
 {
 	CyberiadaLink* link = (CyberiadaLink*)malloc(sizeof(CyberiadaLink));
 	memset(link, 0, sizeof(CyberiadaLink));
@@ -447,7 +447,7 @@ static CyberiadaLink* cyberiada_new_link(const char* ref)
 	return link;
 }
 
-static CyberiadaNode* cyberiada_new_node(const char* id)
+CyberiadaNode* cyberiada_new_node(const char* id)
 {
 	CyberiadaNode* new_node = (CyberiadaNode*)malloc(sizeof(CyberiadaNode));
 	memset(new_node, 0, sizeof(CyberiadaNode));
@@ -513,7 +513,7 @@ static int cyberiada_destroy_all_nodes(CyberiadaNode* node)
 	return CYBERIADA_NO_ERROR;
 }
 
-static CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSubjectType type)
+CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSubjectType type)
 {
 	CyberiadaCommentSubject* cs = (CyberiadaCommentSubject*)malloc(sizeof(CyberiadaCommentSubject));
 	memset(cs, 0, sizeof(CyberiadaCommentSubject));
@@ -521,7 +521,7 @@ static CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSu
 	return cs;
 }
 
-static CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target)
+CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target)
 {
 	CyberiadaEdge* new_edge = (CyberiadaEdge*)malloc(sizeof(CyberiadaEdge));
 	memset(new_edge, 0, sizeof(CyberiadaEdge));
@@ -532,10 +532,31 @@ static CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, con
 	return new_edge;
 }
 
-static CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
-												 const char* trigger,
-												 const char* guard,
-												 const char* behavior)
+CyberiadaPoint* cyberiada_new_point(void)
+{
+	CyberiadaPoint* p = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
+	memset(p, 0, sizeof(CyberiadaPoint));
+	return p;
+}
+
+CyberiadaRect* cyberiada_new_rect(void)
+{
+	CyberiadaRect* r = (CyberiadaRect*)malloc(sizeof(CyberiadaRect));
+	memset(r, 0, sizeof(CyberiadaRect));
+	return r;
+}
+
+CyberiadaPolyline* cyberiada_new_polyline(void)
+{
+	CyberiadaPolyline* pl = (CyberiadaPolyline*)malloc(sizeof(CyberiadaPolyline));
+	memset(pl, 0, sizeof(CyberiadaPolyline));
+	return pl;
+}
+
+CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
+									  const char* trigger,
+									  const char* guard,
+									  const char* behavior)
 {
 	CyberiadaAction* action = (CyberiadaAction*)malloc(sizeof(CyberiadaAction));
 	memset(action, 0, sizeof(CyberiadaAction));
@@ -1226,14 +1247,14 @@ static int cyberiada_init_sm(CyberiadaSM* sm)
 	return CYBERIADA_NO_ERROR;
 }
 
-static CyberiadaSM* cyberiada_create_sm(void)
+CyberiadaSM* cyberiada_new_sm(void)
 {
 	CyberiadaSM* sm = (CyberiadaSM*)malloc(sizeof(CyberiadaSM));
 	cyberiada_init_sm(sm);
 	return sm;
 }
 
-CyberiadaDocument* cyberiada_create_sm_document(void)
+CyberiadaDocument* cyberiada_new_sm_document(void)
 {
 	CyberiadaDocument* doc = (CyberiadaDocument*)malloc(sizeof(CyberiadaDocument));
 	cyberiada_init_sm_document(doc);
@@ -1448,7 +1469,7 @@ static int cyberiada_xml_read_coord(xmlNode* xml_node,
 static int cyberiada_xml_read_point(xmlNode* xml_node,
 									CyberiadaPoint** point)
 {
-	CyberiadaPoint* p = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
+	CyberiadaPoint* p = cyberiada_new_point();
 	if (cyberiada_xml_read_coord(xml_node,
 								 GRAPHML_GEOM_X_ATTRIBUTE,
 								 &(p->x))) {
@@ -1466,7 +1487,7 @@ static int cyberiada_xml_read_point(xmlNode* xml_node,
 static int cyberiada_xml_read_rect(xmlNode* xml_node,
 								   CyberiadaRect** rect)
 {
-	CyberiadaRect* r = (CyberiadaRect*)malloc(sizeof(CyberiadaRect));
+	CyberiadaRect* r = cyberiada_new_rect();
 	if (cyberiada_xml_read_coord(xml_node,
 								 GRAPHML_GEOM_X_ATTRIBUTE,
 								 &(r->x)) != CYBERIADA_NO_ERROR) {
@@ -1513,7 +1534,7 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 	while (sm->next) sm = sm->next;
 	if (parent == NULL) {
 		if (sm->nodes != NULL) {
-			sm->next = cyberiada_create_sm();
+			sm->next = cyberiada_new_sm();
 			sm = sm->next;
 		}
 		sm->nodes = cyberiada_new_node(buffer);
@@ -1602,8 +1623,7 @@ static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 	if (cyberiada_xml_read_point(xml_node, &p) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
-	pl = (CyberiadaPolyline*)malloc(sizeof(CyberiadaPolyline));
-	memset(pl, 0, sizeof(CyberiadaPolyline));
+	pl = cyberiada_new_polyline();
 	pl->point.x = p->x;
 	pl->point.y = p->y;
 	free(p);
@@ -1694,7 +1714,7 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 		return gpsInvalid;
 	}
 	if (type == cybNodeInitial) {
-		current->geometry_point = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
+		current->geometry_point = cyberiada_new_point();
 		current->geometry_point->x = rect->x + rect->width / 2.0f;
 		current->geometry_point->y = rect->y + rect->height / 2.0f;
 		free(rect);
@@ -1796,8 +1816,8 @@ static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 		ERROR("no current edge\n");
 		return gpsInvalid;
 	}
-	current->geometry_source_point = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
-	current->geometry_target_point = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
+	current->geometry_source_point = cyberiada_new_point();
+	current->geometry_target_point = cyberiada_new_point();
 	if (cyberiada_xml_read_coord(xml_node,
 								 GRAPHML_YED_GEOM_SOURCE_X_ATTRIBUTE,
 								 &(current->geometry_source_point->x)) != CYBERIADA_NO_ERROR ||
@@ -1957,6 +1977,19 @@ static MetainfoDeclaration cyberiada_metadata[] = {
 	}
 };
 
+CyberiadaMetainformation* cyberiada_new_meta(void)
+{
+	CyberiadaMetainformation* meta = (CyberiadaMetainformation*)malloc(sizeof(CyberiadaMetainformation));
+	memset(meta, 0, sizeof(CyberiadaMetainformation));
+
+	cyberiada_copy_string(&(meta->standard_version),
+						  &(meta->standard_version_len),
+						  CYBERIADA_STANDARD_VERSION_CYBERIADAML);
+	meta->transition_order_flag = 1;
+	meta->event_propagation_flag = 1;
+	return meta;
+}
+
 static int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name)
 {
 	CyberiadaMetainformation* meta;
@@ -1965,18 +1998,12 @@ static int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_nam
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	meta = (CyberiadaMetainformation*)malloc(sizeof(CyberiadaMetainformation));
-	memset(meta, 0, sizeof(CyberiadaMetainformation));
+	meta = cyberiada_new_meta();
 
-	cyberiada_copy_string(&(meta->standard_version),
-						  &(meta->standard_version_len),
-						  CYBERIADA_STANDARD_VERSION_CYBERIADAML);
 	if (*sm_name) {
 		cyberiada_copy_string(&(meta->name), &(meta->name_len), sm_name);
 	}
 	
-	meta->transition_order_flag = 1;
-	meta->event_propagation_flag = 1;
 	
 	doc->meta_info = meta;
 	return CYBERIADA_NO_ERROR;	
@@ -2911,7 +2938,7 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 			break;
 		}
 
-		cyb_doc->state_machines = cyberiada_create_sm();
+		cyb_doc->state_machines = cyberiada_new_sm();
 		
 		/* DEBUG("reading format %d\n", format); */
 		if (format == cybxmlYED) {
