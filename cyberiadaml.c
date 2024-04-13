@@ -360,6 +360,21 @@ static int cyberiada_string_is_empty(const char* s)
 	return 1;
 }
 
+static int cyberiada_string_trim(char* orig)
+{
+	char* s;
+	if (!orig) return 1;
+	if (!*orig) return 0;
+	s = orig + strlen(orig) - 1;
+	while(s > orig) {
+		if (isspace(*s)) {
+			*s = 0;
+		}
+		s--;
+	}
+	return 0;
+}
+
 /* -----------------------------------------------------------------------------
  * Graph manipulation functions
  * ----------------------------------------------------------------------------- */
@@ -720,6 +735,9 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 	DEBUG("action: %s\n", action);*/
 
 	if (*trigger || *guard || *behavior) {
+		cyberiada_string_trim(trigger);
+		cyberiada_string_trim(guard);
+		cyberiada_string_trim(behavior);
 		*action = cyberiada_new_action(cybActionTransition, trigger, guard, behavior);
 	} else {
 		*action = NULL;
@@ -791,6 +809,9 @@ static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction
 	}
 
 	decode_utf8_strings(&trigger, &guard, &behavior);
+	cyberiada_string_trim(trigger);
+	cyberiada_string_trim(guard);
+	cyberiada_string_trim(behavior);
 	cyberiada_add_action(trigger, guard, behavior, action);
 
 	if (*trigger) free(trigger);
@@ -1795,7 +1816,7 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 		cyberiada_copy_string(&(current->comment_data->body),
 							  &(current->comment_data->body_len), buffer);
 	} else {
-		DEBUG("Set node %s action %s\n", current->id, buffer);
+		/* DEBUG("Set node %s action %s\n", current->id, buffer); */
 		if (cyberiada_decode_state_actions_yed(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
 			ERROR("cannot decode yed node action\n");
 			return gpsInvalid;
