@@ -3217,36 +3217,35 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 	
 	while (action) {
 
-		if (*(action->trigger) || *(action->behavior) || *(action->guard)) { 
-			if (*(action->trigger)) {
-				if (action->type != cybActionTransition) {
-					snprintf(buffer, buffer_len, "%s/", action->trigger);
+		if (action->type != cybActionTransition || *(action->trigger) || *(action->behavior) || *(action->guard)) { 
+			if (action->type != cybActionTransition) {
+				if (action->type == cybActionEntry) {
+					snprintf(buffer, buffer_len, "entry/");
+				} else if (action->type == cybActionExit) {
+					snprintf(buffer, buffer_len, "exit/");
 				} else {
-					if (*(action->guard)) {
-						snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
-					} else {
-						snprintf(buffer, buffer_len, "%s/", action->trigger);
-					}
-				}
-				XML_WRITE_TEXT(writer, buffer);
-				if (action->next || *(action->behavior)) {
-					XML_WRITE_TEXT(writer, "\n");
+					ERROR("Bad action type %d", action->type);
+					return CYBERIADA_ASSERT;
 				}
 			} else {
-				if (*(action->behavior)) {
-					XML_WRITE_TEXT(writer, "/\n");
-				} else if (action->next) {
-					XML_WRITE_TEXT(writer, "\n");
+				if (*(action->guard)) {
+					snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
+				} else {
+					snprintf(buffer, buffer_len, "%s/", action->trigger);
 				}
 			}
+			XML_WRITE_TEXT(writer, buffer);
+			if (action->next || *(action->behavior)) {
+				XML_WRITE_TEXT(writer, "\n");
 		
-			if (*(action->behavior)) {
-				XML_WRITE_TEXT(writer, action->behavior);
-				XML_WRITE_TEXT(writer, "\n");
-			}
-			
-			if (action->next) {
-				XML_WRITE_TEXT(writer, "\n");
+				if (*(action->behavior)) {
+					XML_WRITE_TEXT(writer, action->behavior);
+					XML_WRITE_TEXT(writer, "\n");
+				}
+				
+				if (action->next) {
+					XML_WRITE_TEXT(writer, "\n");
+				}
 			}
 		}
 
