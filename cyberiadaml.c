@@ -3591,7 +3591,8 @@ static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
 	CyberiadaNode *sm_node, *first_node, *meta_node;
 	if (!doc->state_machines) {
 		/* empty doc */
-		return CYBERIADA_NO_ERROR;
+		ERROR("At least one SM required\n");
+		return CYBERIADA_BAD_PARAMETER;
 	}
 	sm_node = doc->state_machines->nodes;
 	if (sm_node->type != cybNodeSM ||
