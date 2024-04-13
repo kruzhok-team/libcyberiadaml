@@ -3642,7 +3642,10 @@ static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlText
 							  &(doc->format_len),
 							  CYBERIADA_FORMAT_CYBERIADAML);	
 	}
-	cyberiada_update_metainfo_comment(doc);
+	res = cyberiada_update_metainfo_comment(doc);
+	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	}
 
 	XML_WRITE_OPEN_E(writer, GRAPHML_GRAPHML_ELEMENT);
 	XML_WRITE_ATTR(writer, "xmlns", GRAPHML_NAMESPACE_URI);
