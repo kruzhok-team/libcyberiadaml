@@ -2047,7 +2047,7 @@ static int cyberiada_encode_meta(CyberiadaDocument* doc, char** meta_body, size_
 	buffer_len += (strlen(CYBERIADA_META_TRANSITION_ORDER) +
 				   (meta->transition_order_flag == 1 ? strlen(CYBERIADA_META_AO_TRANSITION) : strlen(CYBERIADA_META_AO_EXIT)) +
 				   strlen(CYBERIADA_META_EVENT_PROPAGATION) +
-				   (meta->event_propagation_flag == 1 ? strlen(CYBERIADA_META_EP_PROPAGATE) : strlen(CYBERIADA_META_EP_BLOCK)) + 
+				   (meta->event_propagation_flag == 1 ? strlen(CYBERIADA_META_EP_BLOCK) : strlen(CYBERIADA_META_EP_PROPAGATE)) + 
 				   8);		
 	buffer = (char*)malloc(buffer_len);
 	*meta_body = buffer;
@@ -2068,7 +2068,7 @@ static int cyberiada_encode_meta(CyberiadaDocument* doc, char** meta_body, size_
 	buffer += written;
 	written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
 					   CYBERIADA_META_EVENT_PROPAGATION,
-					   meta->event_propagation_flag == 1 ? CYBERIADA_META_EP_PROPAGATE : CYBERIADA_META_EP_BLOCK);
+					   meta->event_propagation_flag == 1 ? CYBERIADA_META_EP_BLOCK : CYBERIADA_META_EP_PROPAGATE);
 	buffer_len -= (size_t)written;
 	buffer += written;
 	*buffer = 0;
@@ -2150,9 +2150,9 @@ static int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata)
 					return CYBERIADA_METADATA_FORMAT_ERROR;					
 				}
 			} else if (strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0) {
-				if (strcmp(parts, CYBERIADA_META_EP_PROPAGATE) == 0) {
+				if (strcmp(parts, CYBERIADA_META_EP_BLOCK) == 0) {
 					meta->event_propagation_flag = 1;
-				} else if (strcmp(parts, CYBERIADA_META_EP_BLOCK) == 0) {
+				} else if (strcmp(parts, CYBERIADA_META_EP_PROPAGATE) == 0) {
 					meta->event_propagation_flag = 2;
 				} else {
 					ERROR("Error decoding SM metainformation: bad value of event propagation flag parameter\n");
