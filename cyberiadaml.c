@@ -1234,7 +1234,7 @@ static int cyberiada_graphs_reconstruct_edges(CyberiadaDocument* doc, NamesList*
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_destroy_meta(CyberiadaMetainformation* meta)
+int cyberiada_destroy_meta(CyberiadaMetainformation* meta)
 {
 	if (meta) {
 		if (meta->standard_version) free(meta->standard_version);
@@ -2022,18 +2022,16 @@ static int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_nam
 	if (*sm_name) {
 		cyberiada_copy_string(&(meta->name), &(meta->name_len), sm_name);
 	}
-	
-	
+		
 	doc->meta_info = meta;
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_encode_meta(CyberiadaDocument* doc, char** meta_body, size_t* meta_body_len)
+int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len)
 {
 	size_t i, buffer_len;
 	int written;
 	char *buffer, *value;
-	CyberiadaMetainformation* meta = doc->meta_info;
 
 	buffer_len = 1;
 	for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
@@ -3624,7 +3622,7 @@ static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
 		sm_node->children = meta_node;
 		meta_node->next = first_node;
 	}
-	cyberiada_encode_meta(doc,
+	cyberiada_encode_meta(doc->meta_info,
 						  &(meta_node->comment_data->body),
 						  &(meta_node->comment_data->body_len));
 	return CYBERIADA_NO_ERROR;

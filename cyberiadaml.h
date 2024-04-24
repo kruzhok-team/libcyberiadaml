@@ -303,7 +303,13 @@ typedef enum {
 	
 	/* Initialize and copy string. Use this function to initialize strings in Cyberiada structures */
 	int cyberiada_copy_string(char** target, size_t* size, const char* source);
-	
+
+	/* Encode metainformation to string */
+	int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len);
+
+    /* Free metainformation struct */
+	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
+
 #ifdef __cplusplus
 }
 #endif
