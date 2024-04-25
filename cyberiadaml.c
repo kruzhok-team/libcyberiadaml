@@ -369,8 +369,10 @@ static int cyberiada_string_trim(char* orig)
 	while(s > orig) {
 		if (isspace(*s)) {
 			*s = 0;
+			s--;
+		} else {
+			break;
 		}
-		s--;
 	}
 	return 0;
 }
@@ -721,8 +723,8 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 		}
 	}
 	if (cyberiaga_matchres_action_regexps(buffer,
-											pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
-											&trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
+										  pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
+										  &trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_ASSERT;
 	}
 
@@ -3227,7 +3229,11 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 				}
 			} else {
 				if (*(action->guard)) {
-					snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
+					if (*(action->trigger)) {
+						snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
+					} else {
+						snprintf(buffer, buffer_len, "[%s]/", action->guard);
+					}
 				} else {
 					snprintf(buffer, buffer_len, "%s/", action->trigger);
 				}
