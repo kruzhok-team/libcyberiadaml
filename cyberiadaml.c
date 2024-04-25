@@ -1453,6 +1453,18 @@ static int node_stack_free(NodeStack** stack)
  * The Cyberiada GraphML XML reader functions
  * ----------------------------------------------------------------------------- */
 
+static int cyberiada_has_attr(xmlNode* node, const char* attrname)
+{
+	xmlAttr* attribute = node->properties;
+	while(attribute) {
+		if (strcmp((const char*)attribute->name, attrname) == 0) {
+			return CYBERIADA_NO_ERROR;
+		}
+		attribute = attribute->next;
+	}
+	return CYBERIADA_NOT_FOUND;
+}
+
 static int cyberiada_get_attr_value(char* buffer, size_t buffer_len,
 									xmlNode* node, const char* attrname)
 {
@@ -1878,6 +1890,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
+	float x = 0.0, y = 0.0;
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -1897,6 +1910,24 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 	if (cyberiada_decode_edge_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
 		ERROR("cannot decode edge action\n");
 		return gpsInvalid;
+	}
+	if (current->action &&
+		cyberiada_has_attr(xml_node, GRAPHML_GEOM_X_ATTRIBUTE) == CYBERIADA_NO_ERROR &&
+		cyberiada_has_attr(xml_node, GRAPHML_GEOM_Y_ATTRIBUTE) == CYBERIADA_NO_ERROR) {
+		
+		if (cyberiada_xml_read_coord(xml_node, GRAPHML_GEOM_X_ATTRIBUTE, &x) == CYBERIADA_NO_ERROR &&
+			cyberiada_xml_read_coord(xml_node, GRAPHML_GEOM_Y_ATTRIBUTE, &y) == CYBERIADA_NO_ERROR) {
+			
+			if (current->geometry_label_point) {
+				ERROR("Trying to set edge %s:%s label coordinates twice\n",
+					  current->source_id, current->target_id);
+				return gpsInvalid;
+			}
+		
+			current->geometry_label_point = cyberiada_new_point();
+			current->geometry_label_point->x = x;
+			current->geometry_label_point->y = y;
+		}
 	}
 	return gpsGraph;
 }
