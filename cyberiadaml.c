@@ -3560,6 +3560,18 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 	XML_WRITE_TEXT(writer, sm->nodes->title);	
 	XML_WRITE_CLOSE_E(writer);
 
+	if (sm->nodes->geometry_rect) {
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_GEOMETRY);
+		if ((res = cyberiada_write_geometry_rect_cyberiada(writer,
+														   sm->nodes->geometry_rect,
+														   3)) != CYBERIADA_NO_ERROR) {
+			ERROR("Cannot write SM %s geometry rect\n", sm->nodes->id);
+			return CYBERIADA_XML_ERROR;
+		}
+		XML_WRITE_CLOSE_E_I(writer, 2);
+	}
+	
 	/* write nodes */
 	for (cur_node = sm->nodes->children; cur_node; cur_node = cur_node->next) {
 		res = cyberiada_write_node_cyberiada(writer, cur_node, 2);
