@@ -711,6 +711,11 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 	regmatch_t pmatch[CYBERIADA_ACTION_REGEXP_MATCHES];
 
 	buffer = utf8_encode(text, strlen(text), &buffer_len);
+
+	if (!buffer) {
+		*action = NULL;
+		return CYBERIADA_NO_ERROR;
+	}
 	
 	if ((res = regexec(&cyberiada_edge_action_regexp, buffer,
 					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
@@ -834,6 +839,10 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 	next = buffer;
 
 	*actions = NULL;
+
+	if (!buffer) {
+		return CYBERIADA_NO_ERROR;
+	}
 	
 	while (*next) {
 		start = next;
@@ -897,9 +906,12 @@ static int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction*
 		
 	buffer = utf8_encode(text, strlen(text), &buffer_len);
 	next = buffer;
-
 	*actions = NULL;
-	
+
+	if (!buffer) {
+		return CYBERIADA_NO_ERROR;
+	}
+		
 	while (*next) {
 		start = next;
 		while (*start && isspace(*start)) start++;
