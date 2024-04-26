@@ -14,7 +14,7 @@ LIB_OBJECTS := $(patsubst %.c, %.o, $(LIB_SOURCES))
 TEST_OBJECTS := $(patsubst %.c, %.o, $(TEST_SOURCES))
 
 ifeq ($(DEBUG), yes)
-    CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fPIC -g3 -D__DEBUG__
+    CFLAGS := -Werror -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fPIC -g3 -D__DEBUG__
     LFLAGS :=
 else ifeq ($(DEBUG), asan)
     CFLAGS := -Wall -Wstrict-prototypes -Wmissing-prototypes -Wshadow -Wconversion -fsanitize=address -fPIC -g3 -D__DEBUG__
