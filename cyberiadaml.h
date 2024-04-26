@@ -251,6 +251,9 @@ typedef enum {
 	/* Do not use the structure before the initialization! */
     int cyberiada_init_sm_document(CyberiadaDocument* doc);
 
+    /* Deep copy the SM structure */
+    CyberiadaDocument* cyberiada_copy_sm_document(CyberiadaDocument* source_doc);
+	
     /* Cleanup the content of the SM structure */
 	/* Free the allocated memory of the structure content but not the structure itself */
     int cyberiada_cleanup_sm_document(CyberiadaDocument* doc);
