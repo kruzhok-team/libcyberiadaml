@@ -29,10 +29,12 @@
 #include <libxml/xmlwriter.h>
 #include <regex.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "cyberiadaml.h"
 #include "utf8enc.h"
 #include "cyb_types.h"
+#include "cyb_string.h"
 
 /* -----------------------------------------------------------------------------
  * Cyberiada parser constants 
@@ -170,7 +172,6 @@
 
 /* Misc. constants */
 
-#define MAX_STR_LEN							     4096
 #define PSEUDO_NODE_SIZE					     20
 #define EMPTY_TITLE                              ""
 
@@ -323,61 +324,6 @@ static GraphMLKey yed_graphml_keys[] = {
 static const size_t yed_graphml_keys_count = sizeof(yed_graphml_keys) / sizeof(GraphMLKey); 
 
 /* -----------------------------------------------------------------------------
- * Utility functions
- * ----------------------------------------------------------------------------- */
-
-int cyberiada_copy_string(char** target, size_t* size, const char* source)
-{
-	char* target_str;
-	size_t strsize;
-	if (!source) {
-		*target = NULL;
-		*size = 0;
-		return CYBERIADA_NO_ERROR;
-	}
-	strsize = strlen(source);  
-	if (strsize > MAX_STR_LEN - 1) {
-		strsize = MAX_STR_LEN - 1;
-	}
-	target_str = (char*)malloc(strsize + 1);
-	strncpy(target_str, source, strsize);
-	target_str[strsize] = 0;
-	*target = target_str;
-	if (size) {
-		*size = strsize;
-	}
-	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_string_is_empty(const char* s)
-{
-	while(*s) {
-		if (!isspace(*s)) {
-			return 0;
-		}
-		s++;
-	}
-	return 1;
-}
-
-static int cyberiada_string_trim(char* orig)
-{
-	char* s;
-	if (!orig) return 1;
-	if (!*orig) return 0;
-	s = orig + strlen(orig) - 1;
-	while(s > orig) {
-		if (isspace(*s)) {
-			*s = 0;
-			s--;
-		} else {
-			break;
-		}
-	}
-	return 0;
-}
-
-/* -----------------------------------------------------------------------------
  * Graph manipulation functions
  * ----------------------------------------------------------------------------- */
 
@@ -511,6 +457,13 @@ static CyberiadaPoint* cyberiada_copy_point(CyberiadaPoint* src)
 	return dst;
 }
 
+static void cyberiada_update_point(CyberiadaPoint* p, float dx, float dy)
+{
+	if (!p) return ;
+	p->x += dx;
+	p->y += dy;
+}
+
 CyberiadaRect* cyberiada_new_rect(void)
 {
 	CyberiadaRect* r = (CyberiadaRect*)malloc(sizeof(CyberiadaRect));
@@ -530,6 +483,13 @@ static CyberiadaRect* cyberiada_copy_rect(CyberiadaRect* src)
 	dst->width = src->width;
 	dst->height = src->height;
 	return dst;
+}
+
+static void cyberiada_update_rect(CyberiadaRect* r, float dx, float dy)
+{
+	if (!r) return ;
+	r->x += dx;
+	r->y += dy;
 }
 
 CyberiadaPolyline* cyberiada_new_polyline(void)
@@ -559,6 +519,15 @@ static CyberiadaPolyline* cyberiada_copy_polyline(CyberiadaPolyline* src)
 	} while (src);
 	return dst;
 }
+
+/*static void cyberiada_update_polyline(CyberiadaPolyline* pl, float dx, float dy)
+{
+	if (!pl) return ;
+	do {
+		cyberiada_update_point(&(pl->point), dx, dy);
+		pl = pl->next;
+	} while (pl);
+	}*/
 
 CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 									  const char* trigger,
@@ -1440,8 +1409,242 @@ static int cyberiada_graphs_reconstruct_edges(CyberiadaDocument* doc, NamesList*
 	}
 	return CYBERIADA_NO_ERROR;
 }
+
+static int cyberiada_graphs_reconstruct_node_geometry_from_yed(CyberiadaNode* node, float parent_x, float parent_y)
+{
+	float new_root_x;
+	float new_root_y;
+
+	while (node) {
+		if (node->geometry_point) {
+			cyberiada_update_point(node->geometry_point, -parent_x, -parent_y);
+		}
+		
+		if (node->geometry_rect) {
+			new_root_x = node->geometry_rect->x;
+			new_root_y = node->geometry_rect->y;
+		
+			cyberiada_update_rect(node->geometry_rect, -parent_x, -parent_y);
+		} else {
+			new_root_x = parent_x;
+			new_root_y = parent_y;
+		}
+
+		if (node->children) {
+			cyberiada_graphs_reconstruct_node_geometry_from_yed(node->children, new_root_x, new_root_y);
+		}
+		node = node->next;
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_graphs_reconstruct_geometry_from_yed(CyberiadaDocument* doc)
 {
+	CyberiadaSM* sm;
+	CyberiadaNode* node;
+	CyberiadaEdge* edge;
+	CyberiadaPolyline* pl;
+	float from_x, from_y, to_x, to_y;
+	float src_from_x, src_from_y, src_to_x, src_to_y, tgt_from_x, tgt_from_y, tgt_to_x, tgt_to_y;
+				
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		
+		for (edge = sm->edges; edge; edge = edge->next) {
+			if (edge->source && (edge->source->geometry_rect || edge->source->geometry_point) &&
+				edge->target && (edge->target->geometry_rect || edge->target->geometry_point) &&
+				(edge->geometry_source_point ||
+				 edge->geometry_target_point ||
+				 edge->geometry_polyline ||
+				 edge->geometry_label_point)) {
+
+				from_x = from_y = to_x = to_y = 0.0f;
+				if (edge->source->geometry_point) {
+					from_x += edge->source->geometry_point->x;
+					from_y += edge->source->geometry_point->y;
+				} else {
+					from_x += edge->source->geometry_rect->x + edge->source->geometry_rect->width / 2.0f;
+					from_y += edge->source->geometry_rect->y + edge->source->geometry_rect->height / 2.0f;
+					if (edge->geometry_source_point) {
+						from_x += edge->geometry_source_point->x;
+						from_y += edge->geometry_source_point->y;
+					}
+				}				
+				if (edge->target->geometry_point) {
+					to_x += edge->target->geometry_point->x;
+					to_y += edge->target->geometry_point->y;
+				} else {
+					to_x += edge->target->geometry_rect->x + edge->target->geometry_rect->width / 2.0f;
+					to_y += edge->target->geometry_rect->y + edge->target->geometry_rect->height / 2.0f;
+					if (edge->geometry_target_point) {
+						to_x += edge->geometry_target_point->x;
+						to_y += edge->geometry_target_point->y;
+					}
+				}
+				
+				if (edge->geometry_polyline) {
+					float first_p_x = edge->geometry_polyline->point.x;
+					float first_p_y = edge->geometry_polyline->point.y;
+					float last_p_x;
+					float last_p_y;
+
+					pl = edge->geometry_polyline;
+					while (pl->next) pl = pl->next;
+					last_p_x = pl->point.x;
+					last_p_y = pl->point.y;
+					
+					src_from_x = from_x;
+					src_from_y = from_y;
+					src_to_x = first_p_x;
+					src_to_y = first_p_y;
+					tgt_from_x = last_p_x;
+					tgt_from_y = last_p_y;
+					tgt_to_x = to_x;
+					tgt_to_y = to_y;			
+				} else {
+					src_from_x = tgt_from_x = from_x;
+					src_from_y = tgt_from_y = from_y;
+					src_to_x = tgt_to_x = to_x;
+					src_to_y = tgt_to_y = to_y;
+				}
+
+				/* DEBUG("edge (%f; %f) -> (%f; %f) and (%f; %f) -> (%f; %f)\n", */
+				/* 	  src_from_x, src_from_y, src_to_x, src_to_y, */
+				/* 	  tgt_from_x, tgt_from_y, tgt_to_x, tgt_to_y); */
+				
+				if (edge->geometry_source_point) {
+					if (edge->source->geometry_point) {
+						if (src_from_x == src_to_x) {
+							edge->geometry_source_point->x = 0.0f;
+							if (src_from_y >= src_to_y) {
+								edge->geometry_source_point->y = -PSEUDO_NODE_SIZE / 2.0f;
+							} else {
+								edge->geometry_source_point->y = PSEUDO_NODE_SIZE / 2.0f;							
+							}
+						} else {
+							float alpha = (float)atan((src_from_y - src_to_y) / (src_to_x - src_from_x));
+							edge->geometry_source_point->x = (float)cos(alpha) * PSEUDO_NODE_SIZE / 2.0f;
+							edge->geometry_source_point->y = -(float)sin(alpha) * PSEUDO_NODE_SIZE / 2.0f;
+						}
+					} else {
+						if (src_from_x == src_to_x) {
+							edge->geometry_source_point->x = edge->source->geometry_rect->width / 2.0f;
+							if (src_from_y >= src_to_y) {
+								edge->geometry_source_point->y = 0.0f;
+							} else {
+								edge->geometry_source_point->y = edge->source->geometry_rect->height;
+							}
+						} else {
+							float alpha = (float)atan((src_from_y - src_to_y) / (src_to_x - src_from_x));
+							if (src_to_x < src_from_x) alpha += (float)M_PI;
+							float alpha_g = 180.0f * alpha / (float)M_PI;
+/*							DEBUG("src alpha %f\n", alpha_g);*/
+							if (alpha_g < 0.0f) alpha_g += 360.0f;
+							if (alpha_g <= 45.0f || alpha_g > 315.0f) {
+								edge->geometry_source_point->x = edge->source->geometry_rect->width;
+								edge->geometry_source_point->y += (-(float)tan(alpha) * edge->source->geometry_rect->width +
+																   edge->source->geometry_rect->height) / 2.0f;
+							} else if (alpha_g > 45.0f && alpha_g <= 135.0f) {
+								edge->geometry_source_point->x += ((float)tan(alpha) * edge->source->geometry_rect->height +
+																  edge->source->geometry_rect->width) / 2.0f;
+								edge->geometry_source_point->y = 0.0f;
+							} else if (alpha_g > 135.0f && alpha_g <= 225.0f) {
+								edge->geometry_source_point->x = 0.0f;
+								edge->geometry_source_point->y += (-(float)tan(alpha) * edge->source->geometry_rect->width +
+																   edge->source->geometry_rect->height) / 2.0f;
+							} else {
+								edge->geometry_source_point->x += (-(float)tan(alpha) * edge->source->geometry_rect->height +
+																   edge->source->geometry_rect->width) / 2.0f;
+								edge->geometry_source_point->y = edge->source->geometry_rect->height;
+							}
+
+							if (edge->geometry_source_point->x < 0) {
+								edge->geometry_source_point->x = 0.0f;
+							}
+							if (edge->geometry_source_point->x > edge->source->geometry_rect->width) {
+								edge->geometry_source_point->x = edge->source->geometry_rect->width;
+							}
+							if (edge->geometry_source_point->y < 0) {
+								edge->geometry_source_point->y = 0.0f;
+							}
+							if (edge->geometry_source_point->y > edge->source->geometry_rect->height) {
+								edge->geometry_source_point->y = edge->source->geometry_rect->height;
+							}
+						}
+					}
+					/* DEBUG("sp: (%f; %f)\n", edge->geometry_source_point->x, edge->geometry_source_point->y); */
+				}
+
+				if (edge->geometry_target_point) {
+					if (edge->target->geometry_point) {
+						if (tgt_from_x == tgt_to_x) {
+							edge->geometry_target_point->x = 0.0f;
+							if (tgt_from_y >= tgt_to_y) {
+								edge->geometry_target_point->y = PSEUDO_NODE_SIZE / 2.0f;
+							} else {
+								edge->geometry_target_point->y = -PSEUDO_NODE_SIZE / 2.0f;							
+							}
+						} else {
+							float alpha = (float)atan((tgt_from_y - tgt_to_y) / (tgt_to_x - tgt_from_x));
+							edge->geometry_target_point->x = (float)cos(alpha) * PSEUDO_NODE_SIZE / 2.0f;
+							edge->geometry_target_point->y = -(float)sin(alpha) * PSEUDO_NODE_SIZE / 2.0f;
+						}
+					} else {
+						if (tgt_from_x == tgt_to_x) {
+							edge->geometry_target_point->x = edge->target->geometry_rect->width / 2.0f;
+							if (tgt_from_y >= tgt_to_y) {
+								edge->geometry_target_point->y = edge->target->geometry_rect->height;
+							} else {
+								edge->geometry_target_point->y = 0.0f;
+							}
+						} else {
+							float alpha = (float)atan((tgt_from_y - tgt_to_y) / (tgt_to_x - tgt_from_x));
+							if (tgt_to_x < tgt_from_x) alpha += (float)M_PI;
+							alpha += (float)M_PI; /* target = incoming edge */
+							float alpha_g = 180.0f * alpha / (float)M_PI;
+/*							DEBUG("tgt alpha %f\n", alpha_g);*/
+							if (alpha_g < 0.0f) alpha_g += 360.0f;
+							if (alpha_g <= 45.0f || alpha_g > 315.0f) {
+								edge->geometry_target_point->x = edge->target->geometry_rect->width;
+								edge->geometry_target_point->y += (-(float)tan(alpha) * edge->target->geometry_rect->width +
+																   edge->target->geometry_rect->height) / 2.0f;
+							} else if (alpha_g > 45.0f && alpha_g <= 135.0f) {
+								edge->geometry_target_point->x += ((float)tan(alpha) * edge->target->geometry_rect->height +
+																   edge->target->geometry_rect->width) / 2.0f;
+								edge->geometry_target_point->y = 0.0f;
+							} else if (alpha_g > 135.0f && alpha_g <= 225.0f) {
+								edge->geometry_target_point->x = 0.0f;
+								edge->geometry_target_point->y += (-(float)tan(alpha) * edge->target->geometry_rect->width +
+																   edge->target->geometry_rect->height) / 2.0f;
+							} else {
+								edge->geometry_target_point->x += (-(float)tan(alpha) * edge->target->geometry_rect->height +
+																   edge->target->geometry_rect->width) / 2.0f;
+								edge->geometry_target_point->y = edge->target->geometry_rect->height;
+							}
+						}
+
+						if (edge->geometry_target_point->x < 0) {
+							edge->geometry_target_point->x = 0.0f;
+						}
+						if (edge->geometry_target_point->x > edge->target->geometry_rect->width) {
+							edge->geometry_target_point->x = edge->target->geometry_rect->width;
+						}
+						if (edge->geometry_target_point->y < 0) {
+							edge->geometry_target_point->y = 0.0f;
+						}
+						if (edge->geometry_target_point->y > edge->target->geometry_rect->height) {
+							edge->geometry_target_point->y = edge->target->geometry_rect->height;
+						}
+					}
+					/* DEBUG("tp: (%f; %f)\n", edge->geometry_target_point->x, edge->geometry_target_point->y); */
+				}				
+			}
+		}
+
+		for (node = sm->nodes; node; node = node->next) {
+			cyberiada_graphs_reconstruct_node_geometry_from_yed(node, 0.0f, 0.0f);
+		}
+	}
+	
 	return CYBERIADA_NO_ERROR;
 }
 
@@ -3306,9 +3509,6 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 		/* DEBUG("reading format %d\n", format); */
 		if (format == cybxmlYED) {
 			res = cyberiada_decode_yed_xml(root, cyb_doc);
-			if (res != CYBERIADA_NO_ERROR) {
-				cyberiada_graphs_reconstruct_geometry_from_yed(cyb_doc);
-			}
 		} else if (format == cybxmlCyberiada10) {
 			res = cyberiada_decode_cyberiada_xml(root, cyb_doc);
 		} else {
@@ -3335,6 +3535,11 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 				  filename);
 			break;
 		}
+		
+		if (format == cybxmlYED && res == CYBERIADA_NO_ERROR) {
+			cyberiada_graphs_reconstruct_geometry_from_yed(cyb_doc);
+		}
+		
 	} while(0);
 
 	cyberiada_free_name_list(&nl);

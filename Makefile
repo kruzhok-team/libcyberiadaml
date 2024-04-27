@@ -8,7 +8,7 @@ else
 endif
 
 TEST_TARGET := cyberiada_test
-LIB_SOURCES := cyberiadaml.c utf8enc.c cyb_types.c
+LIB_SOURCES := cyberiadaml.c utf8enc.c cyb_types.c cyb_string.c
 TEST_SOURCES := test.c
 LIB_OBJECTS := $(patsubst %.c, %.o, $(LIB_SOURCES))
 TEST_OBJECTS := $(patsubst %.c, %.o, $(TEST_SOURCES))
@@ -25,11 +25,11 @@ else
 endif
 
 INCLUDE := -I. -I/usr/include/libxml2
-LIBS := -L/usr/lib -lxml2
+LIBS := -L/usr/lib -lxml2 -lm
 TEST_LIBS := -L. -lcyberiadaml
 
 $(LIB_TARGET): $(LIB_OBJECTS)
-ifeq ($(DYNAMIC), 1)
+ifeq ($(DYNAMIC), yes)
 	gcc -shared $(LIBS) $(LIB_OBJECTS) -o $@
 else
 	ar rcs $@ $(LIB_OBJECTS)
