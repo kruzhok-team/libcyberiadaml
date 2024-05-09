@@ -10,13 +10,14 @@ the GNU Free Documentation License (version 1.3).
 
 * build-essential
 * libxml2-dev
+* cmake (version 3.12+)
 
 ## Installation
 
-Run `make` to build the library binaries.
+Create `build` directory: `mkdir build && cd build`
 
-Run `make test` to build the test program.
+Run `cmake ..` to build the library binaries and the test program.
 
-Use variables:
-* `DEBUG=yes` debug version of the library
-* `DYNAMIC=1` build shared version of the library
+Run `make install` to install the library.
+
+Use CMake parameters to change the build type / installation prefix / etc.
