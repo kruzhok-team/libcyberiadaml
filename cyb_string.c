@@ -67,7 +67,7 @@ int cyberiada_string_trim(char* orig)
 	if (!orig) return 1;
 	if (!*orig) return 0;
 	s = orig + strlen(orig) - 1;
-	while(s > orig) {
+	while(s >= orig) {
 		if (isspace(*s)) {
 			*s = 0;
 			s--;
