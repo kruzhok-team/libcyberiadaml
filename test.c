@@ -52,8 +52,11 @@ size_t command_count = sizeof(commands) / sizeof(char*);
 static void print_usage(const char* name)
 {
 	unsigned int i;
-	fprintf(stderr, "%s <command> [-f <from-format>] [-t <to-format> -o <dest-file>] <path-to-graphml-file>\n\n", name);
-	fprintf(stderr, "Supported commands:\n");
+	fprintf(stderr, "%s <command> [-f <from-format>] [-t <to-format> -o <dest-file>] <path-to-graphml-file>\n", name);
+#ifdef __DEBUG__
+	fprintf(stderr, "Debug verision\n");
+#endif
+	fprintf(stderr, "\nSupported commands:\n");
 	for (i = 0; i < command_count; i++) {
 		fprintf(stderr, "  %-20s %s\n", commands[i], command_descr[i]);
 	}
@@ -172,7 +175,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format)) != CYBERIADA_NO_ERROR) {
+	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format, CYBERIADA_FLAG_NO)) != CYBERIADA_NO_ERROR) {
 		fprintf(stderr, "error while reading %s file: %d\n",
 				source_filename, res);
 		return 2;
@@ -181,7 +184,7 @@ int main(int argc, char** argv)
 	if (print) {
 		cyberiada_print_sm_document(&doc);
 	} else {
-		if ((res = cyberiada_write_sm_document(&doc, dest_filename, dest_format)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_write_sm_document(&doc, dest_filename, dest_format, CYBERIADA_FLAG_NO)) != CYBERIADA_NO_ERROR) {
 			fprintf(stderr, "error while writing %s file: %d\n",
 					dest_filename, res);
 			return 3;
