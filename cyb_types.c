@@ -38,7 +38,7 @@ int   cyberiada_stack_update_top_key(CyberiadaStack** stack, const char* new_key
 	if (!stack || !*stack) {
 		return -1;
 	}
-	(*stack)->key = new_key;	
+	(*stack)->key = (void*)new_key;	
 	return 0;
 }
 
@@ -98,7 +98,7 @@ int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data)
 		return -1;
 	}
 	new_item = (CyberiadaList*)malloc(sizeof(CyberiadaList));
-	new_item->key = key;
+	new_item->key = (void*)key;
 	new_item->data = data;
 	new_item->next = NULL;
 	if (!*list) {
@@ -119,7 +119,7 @@ void* cyberiada_list_find(CyberiadaList** list, const char* key)
 	}
 	item = *list;
 	while (item) {
-		if (item->key && strcmp(item->key, key) == 0) {
+		if (item->key && strcmp((const char*)item->key, key) == 0) {
 			return item->data;
 		}
 		item = item->next;
@@ -140,3 +140,49 @@ int   cyberiada_list_free(CyberiadaList** list)
 	}
 	return 0;
 }
+
+int   cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data)
+{
+	CyberiadaQueue* new_item = (CyberiadaQueue*)malloc(sizeof(CyberiadaQueue));
+	memset(new_item, 0, sizeof(CyberiadaQueue));
+	new_item->key = key;
+	new_item->data = data;
+	new_item->next = (*queue);
+	*queue = new_item;
+	return 0;	
+}
+
+int cyberiada_queue_get(CyberiadaQueue** queue, void** key, void** data)
+{
+	CyberiadaQueue *q, *prev = NULL;
+	if (!queue || !key || !data) return 1;
+	q = *queue;
+	while (q->next) {
+		prev = q;
+		q = q->next;
+	}
+	*key = q->key;
+	*data = q->data;
+	free(q);
+	if (prev) {
+		prev->next = NULL;
+	} else {
+		*queue = NULL;
+	}
+	return 0;
+}
+
+int   cyberiada_queue_free(CyberiadaQueue** queue)
+{
+	CyberiadaQueue* item;
+	if (!queue) {
+		return 0;
+	}
+	while(*queue) {
+		item = *queue;
+		*queue = item->next;
+		free(item);
+	}
+	return 0;
+}
+

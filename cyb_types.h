@@ -32,7 +32,7 @@ extern "C" {
  * ----------------------------------------------------------------------------- */
 
 	struct _CyberiadaStruct {
-		const char*              key;
+		void*                    key;
 		void*                    data;
 		struct _CyberiadaStruct* next;
 	};
@@ -52,6 +52,12 @@ extern "C" {
 	int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data);	
 	void* cyberiada_list_find(CyberiadaList** list, const char* key);
 	int   cyberiada_list_free(CyberiadaList** list);
+
+	typedef struct _CyberiadaStruct CyberiadaQueue; 
+	
+	int   cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data);	
+	int   cyberiada_queue_get(CyberiadaQueue** queue, void** key, void**data);
+	int   cyberiada_queue_free(CyberiadaQueue** queue);
 	
 #ifdef __cplusplus
 }

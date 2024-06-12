@@ -35,6 +35,8 @@
 #include "utf8enc.h"
 #include "cyb_types.h"
 #include "cyb_string.h"
+#include "geometry.h"
+#include "cyb_error.h"
 
 /* -----------------------------------------------------------------------------
  * Cyberiada parser constants 
@@ -173,15 +175,8 @@
 /* Misc. constants */
 
 #define PSEUDO_NODE_SIZE					     20
+#define DEFAULT_NODE_SIZE                        100
 #define EMPTY_TITLE                              ""
-
-#ifdef __DEBUG__
-#define DEBUG(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define DEBUG(...)
-#endif
-
-#define ERROR(...) fprintf(stderr, __VA_ARGS__)
 
 /* Types & macros for XML/GraphML processing */
 
@@ -231,6 +226,7 @@
 		                                                   fprintf(stderr, "xml close element error %d at %s:%d", res, __FILE__, __LINE__); \
 												           return CYBERIADA_XML_ERROR; \
                                                        }
+# define XML_READMEMORY_BASENAME                       "noname.xml"
 
 typedef struct {
 	char* attr_id;
@@ -438,97 +434,6 @@ static CyberiadaLink* cyberiada_copy_link(CyberiadaLink* src)
 	return cyberiada_new_link(src->ref);
 }
 
-CyberiadaPoint* cyberiada_new_point(void)
-{
-	CyberiadaPoint* p = (CyberiadaPoint*)malloc(sizeof(CyberiadaPoint));
-	memset(p, 0, sizeof(CyberiadaPoint));
-	return p;
-}
-
-static CyberiadaPoint* cyberiada_copy_point(CyberiadaPoint* src)
-{
-	CyberiadaPoint* dst;
-	if (!src) {
-		return NULL;
-	}
-	dst = cyberiada_new_point();
-	dst->x = src->x;
-	dst->y = src->y;
-	return dst;
-}
-
-static void cyberiada_update_point(CyberiadaPoint* p, float dx, float dy)
-{
-	if (!p) return ;
-	p->x += dx;
-	p->y += dy;
-}
-
-CyberiadaRect* cyberiada_new_rect(void)
-{
-	CyberiadaRect* r = (CyberiadaRect*)malloc(sizeof(CyberiadaRect));
-	memset(r, 0, sizeof(CyberiadaRect));
-	return r;
-}
-
-static CyberiadaRect* cyberiada_copy_rect(CyberiadaRect* src)
-{
-	CyberiadaRect* dst;
-	if (!src) {
-		return NULL;
-	}
-	dst = cyberiada_new_rect();
-	dst->x = src->x;
-	dst->y = src->y;
-	dst->width = src->width;
-	dst->height = src->height;
-	return dst;
-}
-
-static void cyberiada_update_rect(CyberiadaRect* r, float dx, float dy)
-{
-	if (!r) return ;
-	r->x += dx;
-	r->y += dy;
-}
-
-CyberiadaPolyline* cyberiada_new_polyline(void)
-{
-	CyberiadaPolyline* pl = (CyberiadaPolyline*)malloc(sizeof(CyberiadaPolyline));
-	memset(pl, 0, sizeof(CyberiadaPolyline));
-	return pl;
-}
-
-static CyberiadaPolyline* cyberiada_copy_polyline(CyberiadaPolyline* src)
-{
-	CyberiadaPolyline *dst = NULL, *prev, *pl;
-	if (!src) {
-		return NULL;
-	}
-	do {
-		pl = cyberiada_new_polyline();
-		pl->point.x = src->point.x;
-		pl->point.y = src->point.y;
-		if (dst) {
-			prev->next = pl;
-		} else {
-			dst = pl;
-		}
-		prev = pl;
-		src = src->next;
-	} while (src);
-	return dst;
-}
-
-/*static void cyberiada_update_polyline(CyberiadaPolyline* pl, float dx, float dy)
-{
-	if (!pl) return ;
-	do {
-		cyberiada_update_point(&(pl->point), dx, dy);
-		pl = pl->next;
-	} while (pl);
-	}*/
-
 CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 									  const char* trigger,
 									  const char* guard,
@@ -545,21 +450,10 @@ CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 
 static CyberiadaAction* cyberiada_copy_action(CyberiadaAction* src)
 {
-	CyberiadaAction *dst = NULL, *prev, *a;
 	if (!src) {
 		return NULL;
 	}
-	do {
-		a = cyberiada_new_action(src->type, src->trigger, src->guard, src->behavior);
-		if (dst) {
-			prev->next = a;
-		} else {
-			dst = a;
-		}
-		prev = a;
-		src = src->next;
-	} while (src);
-	return dst;
+	return cyberiada_new_action(src->type, src->trigger, src->guard, src->behavior);
 }
 
 CyberiadaNode* cyberiada_new_node(const char* id)
@@ -1256,7 +1150,6 @@ static CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm)
 
 static int cyberiada_destroy_edge(CyberiadaEdge* e)
 {
-	CyberiadaPolyline *polyline, *pl;
 	if (e->id) free(e->id);
 	if (e->source_id) free(e->source_id);
 	if (e->target_id) free(e->target_id);
@@ -1266,12 +1159,7 @@ static int cyberiada_destroy_edge(CyberiadaEdge* e)
 		free(e->comment_subject);
 	}
 	if (e->geometry_polyline) {
-		polyline = e->geometry_polyline;
-		do {
-			pl = polyline;
-			polyline = polyline->next;
-			free(pl);
-		} while (polyline);
+		cyberiada_destroy_polyline(e->geometry_polyline);
 	}
 	if (e->geometry_source_point) free(e->geometry_source_point); 
 	if (e->geometry_target_point) free(e->geometry_target_point);
@@ -1311,7 +1199,7 @@ static void cyberiada_free_name_list(NamesList** nl)
 	cyberiada_list_free(nl);
 }
 
-static int cyberiada_graphs_reconstruct_nodes(CyberiadaNode* root, NamesList** nl)
+static int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -1340,14 +1228,14 @@ static int cyberiada_graphs_reconstruct_nodes(CyberiadaNode* root, NamesList** n
 			cyberiada_add_name_to_list(nl, "", node->id);
 		}
 		if (node->children) {
-			cyberiada_graphs_reconstruct_nodes(node->children, nl);
+			cyberiada_graphs_reconstruct_node_identifiers(node->children, nl);
 		}
 		node = node->next;
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_graphs_reconstruct_edges(CyberiadaDocument* doc, NamesList** nl)
+static int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -1407,249 +1295,6 @@ static int cyberiada_graphs_reconstruct_edges(CyberiadaDocument* doc, NamesList*
 			edge = edge->next;
 		}
 	}
-	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_graphs_reconstruct_node_geometry_from_yed(CyberiadaNode* node, float parent_x, float parent_y)
-{
-	float new_root_x;
-	float new_root_y;
-
-	while (node) {
-		if (node->geometry_point) {
-			cyberiada_update_point(node->geometry_point, -parent_x, -parent_y);
-		}
-		
-		if (node->geometry_rect) {
-			new_root_x = node->geometry_rect->x;
-			new_root_y = node->geometry_rect->y;
-		
-			cyberiada_update_rect(node->geometry_rect, -parent_x, -parent_y);
-		} else {
-			new_root_x = parent_x;
-			new_root_y = parent_y;
-		}
-
-		if (node->children) {
-			cyberiada_graphs_reconstruct_node_geometry_from_yed(node->children, new_root_x, new_root_y);
-		}
-		node = node->next;
-	}
-	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_graphs_reconstruct_geometry_from_yed(CyberiadaDocument* doc)
-{
-	CyberiadaSM* sm;
-	CyberiadaNode* node;
-	CyberiadaEdge* edge;
-	CyberiadaPolyline* pl;
-	float from_x, from_y, to_x, to_y;
-	float src_from_x, src_from_y, src_to_x, src_to_y, tgt_from_x, tgt_from_y, tgt_to_x, tgt_to_y;
-				
-	for (sm = doc->state_machines; sm; sm = sm->next) {
-		
-		for (edge = sm->edges; edge; edge = edge->next) {
-			if (edge->source && (edge->source->geometry_rect || edge->source->geometry_point) &&
-				edge->target && (edge->target->geometry_rect || edge->target->geometry_point) &&
-				(edge->geometry_source_point ||
-				 edge->geometry_target_point ||
-				 edge->geometry_polyline ||
-				 edge->geometry_label_point)) {
-
-				from_x = from_y = to_x = to_y = 0.0f;
-				if (edge->source->geometry_point) {
-					from_x += edge->source->geometry_point->x;
-					from_y += edge->source->geometry_point->y;
-				} else {
-					from_x += edge->source->geometry_rect->x + edge->source->geometry_rect->width / 2.0f;
-					from_y += edge->source->geometry_rect->y + edge->source->geometry_rect->height / 2.0f;
-					if (edge->geometry_source_point) {
-						from_x += edge->geometry_source_point->x;
-						from_y += edge->geometry_source_point->y;
-					}
-				}				
-				if (edge->target->geometry_point) {
-					to_x += edge->target->geometry_point->x;
-					to_y += edge->target->geometry_point->y;
-				} else {
-					to_x += edge->target->geometry_rect->x + edge->target->geometry_rect->width / 2.0f;
-					to_y += edge->target->geometry_rect->y + edge->target->geometry_rect->height / 2.0f;
-					if (edge->geometry_target_point) {
-						to_x += edge->geometry_target_point->x;
-						to_y += edge->geometry_target_point->y;
-					}
-				}
-				
-				if (edge->geometry_polyline) {
-					float first_p_x = edge->geometry_polyline->point.x;
-					float first_p_y = edge->geometry_polyline->point.y;
-					float last_p_x;
-					float last_p_y;
-
-					pl = edge->geometry_polyline;
-					while (pl->next) pl = pl->next;
-					last_p_x = pl->point.x;
-					last_p_y = pl->point.y;
-					
-					src_from_x = from_x;
-					src_from_y = from_y;
-					src_to_x = first_p_x;
-					src_to_y = first_p_y;
-					tgt_from_x = last_p_x;
-					tgt_from_y = last_p_y;
-					tgt_to_x = to_x;
-					tgt_to_y = to_y;			
-				} else {
-					src_from_x = tgt_from_x = from_x;
-					src_from_y = tgt_from_y = from_y;
-					src_to_x = tgt_to_x = to_x;
-					src_to_y = tgt_to_y = to_y;
-				}
-
-				/* DEBUG("edge (%f; %f) -> (%f; %f) and (%f; %f) -> (%f; %f)\n", */
-				/* 	  src_from_x, src_from_y, src_to_x, src_to_y, */
-				/* 	  tgt_from_x, tgt_from_y, tgt_to_x, tgt_to_y); */
-				
-				if (edge->geometry_source_point) {
-					if (edge->source->geometry_point) {
-						if (src_from_x == src_to_x) {
-							edge->geometry_source_point->x = 0.0f;
-							if (src_from_y >= src_to_y) {
-								edge->geometry_source_point->y = -PSEUDO_NODE_SIZE / 2.0f;
-							} else {
-								edge->geometry_source_point->y = PSEUDO_NODE_SIZE / 2.0f;							
-							}
-						} else {
-							float alpha = (float)atan((src_from_y - src_to_y) / (src_to_x - src_from_x));
-							edge->geometry_source_point->x = (float)cos(alpha) * PSEUDO_NODE_SIZE / 2.0f;
-							edge->geometry_source_point->y = -(float)sin(alpha) * PSEUDO_NODE_SIZE / 2.0f;
-						}
-					} else {
-						if (src_from_x == src_to_x) {
-							edge->geometry_source_point->x = edge->source->geometry_rect->width / 2.0f;
-							if (src_from_y >= src_to_y) {
-								edge->geometry_source_point->y = 0.0f;
-							} else {
-								edge->geometry_source_point->y = edge->source->geometry_rect->height;
-							}
-						} else {
-							float alpha = (float)atan((src_from_y - src_to_y) / (src_to_x - src_from_x));
-							if (src_to_x < src_from_x) alpha += (float)M_PI;
-							float alpha_g = 180.0f * alpha / (float)M_PI;
-/*							DEBUG("src alpha %f\n", alpha_g);*/
-							if (alpha_g < 0.0f) alpha_g += 360.0f;
-							if (alpha_g <= 45.0f || alpha_g > 315.0f) {
-								edge->geometry_source_point->x = edge->source->geometry_rect->width;
-								edge->geometry_source_point->y += (-(float)tan(alpha) * edge->source->geometry_rect->width +
-																   edge->source->geometry_rect->height) / 2.0f;
-							} else if (alpha_g > 45.0f && alpha_g <= 135.0f) {
-								edge->geometry_source_point->x += ((float)tan(alpha) * edge->source->geometry_rect->height +
-																  edge->source->geometry_rect->width) / 2.0f;
-								edge->geometry_source_point->y = 0.0f;
-							} else if (alpha_g > 135.0f && alpha_g <= 225.0f) {
-								edge->geometry_source_point->x = 0.0f;
-								edge->geometry_source_point->y += (-(float)tan(alpha) * edge->source->geometry_rect->width +
-																   edge->source->geometry_rect->height) / 2.0f;
-							} else {
-								edge->geometry_source_point->x += (-(float)tan(alpha) * edge->source->geometry_rect->height +
-																   edge->source->geometry_rect->width) / 2.0f;
-								edge->geometry_source_point->y = edge->source->geometry_rect->height;
-							}
-
-							if (edge->geometry_source_point->x < 0) {
-								edge->geometry_source_point->x = 0.0f;
-							}
-							if (edge->geometry_source_point->x > edge->source->geometry_rect->width) {
-								edge->geometry_source_point->x = edge->source->geometry_rect->width;
-							}
-							if (edge->geometry_source_point->y < 0) {
-								edge->geometry_source_point->y = 0.0f;
-							}
-							if (edge->geometry_source_point->y > edge->source->geometry_rect->height) {
-								edge->geometry_source_point->y = edge->source->geometry_rect->height;
-							}
-						}
-					}
-					/* DEBUG("sp: (%f; %f)\n", edge->geometry_source_point->x, edge->geometry_source_point->y); */
-				}
-
-				if (edge->geometry_target_point) {
-					if (edge->target->geometry_point) {
-						if (tgt_from_x == tgt_to_x) {
-							edge->geometry_target_point->x = 0.0f;
-							if (tgt_from_y >= tgt_to_y) {
-								edge->geometry_target_point->y = PSEUDO_NODE_SIZE / 2.0f;
-							} else {
-								edge->geometry_target_point->y = -PSEUDO_NODE_SIZE / 2.0f;							
-							}
-						} else {
-							float alpha = (float)atan((tgt_from_y - tgt_to_y) / (tgt_to_x - tgt_from_x));
-							edge->geometry_target_point->x = (float)cos(alpha) * PSEUDO_NODE_SIZE / 2.0f;
-							edge->geometry_target_point->y = -(float)sin(alpha) * PSEUDO_NODE_SIZE / 2.0f;
-						}
-					} else {
-						if (tgt_from_x == tgt_to_x) {
-							edge->geometry_target_point->x = edge->target->geometry_rect->width / 2.0f;
-							if (tgt_from_y >= tgt_to_y) {
-								edge->geometry_target_point->y = edge->target->geometry_rect->height;
-							} else {
-								edge->geometry_target_point->y = 0.0f;
-							}
-						} else {
-							float alpha = (float)atan((tgt_from_y - tgt_to_y) / (tgt_to_x - tgt_from_x));
-							if (tgt_to_x < tgt_from_x) alpha += (float)M_PI;
-							alpha += (float)M_PI; /* target = incoming edge */
-							float alpha_g = 180.0f * alpha / (float)M_PI;
-/*							DEBUG("tgt alpha %f\n", alpha_g);*/
-							if (alpha_g < 0.0f) alpha_g += 360.0f;
-							if (alpha_g <= 45.0f || alpha_g > 315.0f) {
-								edge->geometry_target_point->x = edge->target->geometry_rect->width;
-								edge->geometry_target_point->y += (-(float)tan(alpha) * edge->target->geometry_rect->width +
-																   edge->target->geometry_rect->height) / 2.0f;
-							} else if (alpha_g > 45.0f && alpha_g <= 135.0f) {
-								edge->geometry_target_point->x += ((float)tan(alpha) * edge->target->geometry_rect->height +
-																   edge->target->geometry_rect->width) / 2.0f;
-								edge->geometry_target_point->y = 0.0f;
-							} else if (alpha_g > 135.0f && alpha_g <= 225.0f) {
-								edge->geometry_target_point->x = 0.0f;
-								edge->geometry_target_point->y += (-(float)tan(alpha) * edge->target->geometry_rect->width +
-																   edge->target->geometry_rect->height) / 2.0f;
-							} else {
-								edge->geometry_target_point->x += (-(float)tan(alpha) * edge->target->geometry_rect->height +
-																   edge->target->geometry_rect->width) / 2.0f;
-								edge->geometry_target_point->y = edge->target->geometry_rect->height;
-							}
-						}
-
-						if (edge->geometry_target_point->x < 0) {
-							edge->geometry_target_point->x = 0.0f;
-						}
-						if (edge->geometry_target_point->x > edge->target->geometry_rect->width) {
-							edge->geometry_target_point->x = edge->target->geometry_rect->width;
-						}
-						if (edge->geometry_target_point->y < 0) {
-							edge->geometry_target_point->y = 0.0f;
-						}
-						if (edge->geometry_target_point->y > edge->target->geometry_rect->height) {
-							edge->geometry_target_point->y = edge->target->geometry_rect->height;
-						}
-					}
-					/* DEBUG("tp: (%f; %f)\n", edge->geometry_target_point->x, edge->geometry_target_point->y); */
-				}				
-			}
-		}
-
-		for (node = sm->nodes; node; node = node->next) {
-			cyberiada_graphs_reconstruct_node_geometry_from_yed(node, 0.0f, 0.0f);
-		}
-	}
-	
-	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_graphs_reconstruct_geometry_to_yed(CyberiadaDocument* doc)
-{
 	return CYBERIADA_NO_ERROR;
 }
 
@@ -1961,20 +1606,10 @@ static int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_init_sm(CyberiadaSM* sm)
-{
-	if (sm) {
-		sm->nodes = NULL;
-		sm->edges = NULL;
-		sm->next = NULL;
-	}
-	return CYBERIADA_NO_ERROR;
-}
-
 CyberiadaSM* cyberiada_new_sm(void)
 {
 	CyberiadaSM* sm = (CyberiadaSM*)malloc(sizeof(CyberiadaSM));
-	cyberiada_init_sm(sm);
+	memset(sm, 0, sizeof(CyberiadaSM));
 	return sm;
 }
 
@@ -1982,6 +1617,9 @@ static int cyberiada_destroy_sm(CyberiadaSM* sm)
 {
 	CyberiadaEdge *edge, *e;
 	if (sm) {
+		if (sm->bounding_rect) {
+			free(sm->bounding_rect);
+		}
 		if (sm->nodes) {
 			cyberiada_destroy_all_nodes(sm->nodes);
 		}
@@ -2266,7 +1904,7 @@ static int cyberiada_get_element_text(char* buffer, size_t buffer_len,
 
 static int cyberiada_xml_read_coord(xmlNode* xml_node,
 									const char* attr_name,
-									float* result)
+									double* result)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2275,7 +1913,7 @@ static int cyberiada_xml_read_coord(xmlNode* xml_node,
 								 attr_name) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	*result = (float)atof(buffer);
+	*result = (double)atof(buffer);
 	return CYBERIADA_NO_ERROR;
 }
 
@@ -2528,8 +2166,8 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 	}
 	if (type == cybNodeInitial) {
 		current->geometry_point = cyberiada_new_point();
-		current->geometry_point->x = rect->x + rect->width / 2.0f;
-		current->geometry_point->y = rect->y + rect->height / 2.0f;
+		current->geometry_point->x = rect->x + rect->width / 2.0;
+		current->geometry_point->y = rect->y + rect->height / 2.0;
 		free(rect);
 		return gpsNodeStart;
 	} else if (type == cybNodeComment) {
@@ -2574,8 +2212,10 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 		return gpsInvalid;
 	}
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
-	/* DEBUG("Set node %s title %s\n", current->id, buffer); */
+	DEBUG("Set node %s title '%s'\n", current->id, buffer);
 	cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
+	cyberiada_string_trim(current->title);
+	DEBUG("After trim: '%s'\n", current->title);
 	return gpsNodeAction;
 }
 
@@ -2658,7 +2298,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
-	float x = 0.0, y = 0.0;
+	double x = 0.0, y = 0.0;
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -2870,6 +2510,7 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 		}
 		/* DEBUG("Set node %s title %s\n", current->id, buffer); */
 		cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
+		cyberiada_string_trim(current->title);
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_STATE_MACHINE_NAME) == 0) {
 		if (current->type != cybNodeSM) {
 			ERROR("Using state machine key outside the graph element in %s\n", current->id);
@@ -3466,40 +3107,74 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 /* -----------------------------------------------------------------------------
  * GraphML reader interface
  * ----------------------------------------------------------------------------- */
-
-int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename, CyberiadaXMLFormat format)
+static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlDoc* doc, CyberiadaXMLFormat format, int flags)
 {
 	int res;
-	xmlDoc* doc = NULL;
 	xmlNode* root = NULL;
 	CyberiadaSM* sm;
 	NamesList* nl = NULL;
+	int geom_flags;
+
+	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
+		ERROR("Round geometry flag is not supported on import\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY &&
+		flags != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+		ERROR("The skip geometry flag is not compatible with other flags\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	
+	geom_flags = flags & (CYBERIADA_FLAG_ABSOLUTE_GEOMETRY |
+						  CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY |
+						  CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY);	
+	if (geom_flags &&
+		geom_flags != CYBERIADA_FLAG_ABSOLUTE_GEOMETRY &&
+		geom_flags != CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY &&
+		geom_flags != CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY) {
+		ERROR("Single geometry flag (abs, left-top, center) can be used at the same time\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (!(flags & CYBERIADA_FLAG_SKIP_GEOMETRY) && !geom_flags) {
+		/* set default geometry flag */
+		flags |= CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY;
+	}
+
+	geom_flags = flags & (CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY |
+						  CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY |
+						  CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY);
+	if (geom_flags &&
+		geom_flags != CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY &&
+		geom_flags != CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY &&
+		geom_flags != CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY) {
+		ERROR("Single geometry edge flag (border, center) can be used at the same time\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (!(flags & CYBERIADA_FLAG_SKIP_GEOMETRY) && !geom_flags) {
+		/* set default edge geometry flag */
+		flags |= CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY;
+	}
 	
 	cyberiada_init_sm_document(cyb_doc);
 	cyberiada_init_action_regexps();
-	xmlInitParser();
 
 	do {
-	
-		/* parse the file and get the DOM */
-		if ((doc = xmlReadFile(filename, NULL, 0)) == NULL) {
-			ERROR("error: could not parse file %s\n", filename);
-			res = CYBERIADA_XML_ERROR;
-			break;
-		}
 
 		/* get the root element node */
 		root = xmlDocGetRootElement(doc);
 
 		if (strcmp((const char*)root->name, GRAPHML_GRAPHML_ELEMENT) != 0) {
-			ERROR("error: could not find GraphML root node %s\n", filename);
+			ERROR("error: could not find GraphML root node\n");
 			res = CYBERIADA_XML_ERROR;
 			break;
 		}
 
 		/* check whether the xml is graphml */
 		if (cyberiada_check_graphml_ns(root, &format)) {
-			ERROR("error: no valid graphml namespace in %s\n", filename);
+			ERROR("error: no valid graphml namespace\n");
 			res = CYBERIADA_XML_ERROR;
 			break;
 		}
@@ -3512,8 +3187,7 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 		} else if (format == cybxmlCyberiada10) {
 			res = cyberiada_decode_cyberiada_xml(root, cyb_doc);
 		} else {
-			ERROR("error: unsupported GraphML format of file %s\n",
-				  filename);
+			ERROR("error: unsupported GraphML format of file\n");
 			res = CYBERIADA_XML_ERROR;
 			break;
 		}
@@ -3523,31 +3197,77 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 		}
 
 		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
-			if ((res = cyberiada_graphs_reconstruct_nodes(sm->nodes, &nl)) != CYBERIADA_NO_ERROR) {
-				ERROR("error: cannot reconstruct graph nodes file %s\n",
-					  filename);
+			if ((res = cyberiada_graphs_reconstruct_node_identifiers(sm->nodes, &nl)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: cannot reconstruct graph nodes' indentifiers\n");
 				break;
 			}
 		}
 		
-		if ((res = cyberiada_graphs_reconstruct_edges(cyb_doc, &nl)) != CYBERIADA_NO_ERROR) {
-			ERROR("error: cannot reconstruct graph edges from file %s\n",
-				  filename);
+		if ((res = cyberiada_graphs_reconstruct_edge_identifiers(cyb_doc, &nl)) != CYBERIADA_NO_ERROR) {
+			ERROR("error: cannot reconstruct graph edges' identifier\n");
 			break;
 		}
-		
-		if (format == cybxmlYED && res == CYBERIADA_NO_ERROR) {
-			cyberiada_graphs_reconstruct_geometry_from_yed(cyb_doc);
+
+		if (res == CYBERIADA_NO_ERROR) {
+			if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
+				cyberiada_clean_document_geometry(cyb_doc);
+			} else {
+				cyberiada_import_document_geometry(cyb_doc, flags, format);
+			}
 		}
 		
 	} while(0);
 
 	cyberiada_free_name_list(&nl);
 	cyberiada_free_action_regexps();
-	xmlFreeDoc(doc);
-	xmlCleanupParser();
 	
-    return res;
+    return res;	
+}
+
+int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
+							   CyberiadaXMLFormat format, int flags)
+{
+	int res;
+	xmlDoc* doc = NULL;
+	xmlInitParser();
+
+	/* parse the file and get the DOM */
+	if ((doc = xmlReadFile(filename, NULL, 0)) == NULL) {
+		ERROR("error: could not parse file %s\n", filename);
+		xmlCleanupParser();
+		return CYBERIADA_XML_ERROR;
+	}
+
+	res = cyberiada_process_decode_sm_document(cyb_doc, doc, format, flags);
+	
+	if (doc) {
+		xmlFreeDoc(doc);
+	}
+	xmlCleanupParser();
+	return res;
+}
+
+int cyberiada_decode_sm_document(CyberiadaDocument* cyb_doc, const char* buffer, size_t buffer_size,
+								 CyberiadaXMLFormat format, int flags)
+{
+	int res;
+	xmlDoc* doc = NULL;
+	xmlInitParser();
+
+	/* parse the file and get the DOM */
+	if ((doc = xmlReadMemory(buffer, buffer_size, XML_READMEMORY_BASENAME, NULL, 0)) == NULL) {
+		ERROR("error: could not read buffer\n");
+		xmlCleanupParser();
+		return CYBERIADA_XML_ERROR;
+	}
+
+	res = cyberiada_process_decode_sm_document(cyb_doc, doc, format, flags);
+	
+	if (doc) {
+		xmlFreeDoc(doc);
+	}
+	xmlCleanupParser();
+	return res;
 }
 
 /* -----------------------------------------------------------------------------
@@ -4695,11 +4415,38 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
  * GraphML writer interface
  * ----------------------------------------------------------------------------- */
 
-int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format)
+static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextWriterPtr writer,
+												CyberiadaXMLFormat format, int flags)
 {
 	CyberiadaDocument* copy_doc = NULL;
-	xmlTextWriterPtr writer;
 	int res;
+
+	if (flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
+		ERROR("Geometry reconstructioin flag is not supported on export\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
+		if (flags != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+			ERROR("The skip geometry flag is not compatible with other flags\n");
+			return CYBERIADA_BAD_PARAMETER;
+		}
+		if (format == cybxmlYED) {
+			ERROR("Skip geometry flag is not allowed for YED export\n");
+			return CYBERIADA_BAD_PARAMETER;
+		}
+	}
+	
+	if (CYBERIADA_FLAG_ABSOLUTE_GEOMETRY |
+		CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY |
+		CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY |
+		CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY |
+		CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY |
+		CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY) {
+
+		ERROR("Geometry flags (abs, left-top, center) & edge geometry flags are not allowed for export\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
 	
 	if (format != cybxmlCyberiada10 && format != cybxmlYED) {
 		ERROR("unsupported SM format for write: %d\n", format);
@@ -4711,16 +4458,12 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	xmlInitParser();
-
+	if (format == cybxmlYED && (!doc->state_machines ||doc->state_machines->next)) {
+		ERROR("YED format supports only single SM documents\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	
 	do {
-		
-		writer = xmlNewTextWriterFilename(filename, 0);
-		if (!writer) {
-			ERROR("cannot open xml writter for file %s\n", filename);
-			res = CYBERIADA_XML_ERROR;
-		}
-
 		res = xmlTextWriterStartDocument(writer, NULL, GRAPHML_XML_ENCODING, NULL);
 		if (res < 0) {
 			ERROR("error writing xml start document: %d\n", res);
@@ -4728,22 +4471,20 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 			break;
 		}
 
+		copy_doc = cyberiada_copy_sm_document(doc);
+
+		if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
+			cyberiada_clean_document_geometry(copy_doc);
+		} else {
+			cyberiada_export_document_geometry(copy_doc, flags, format);
+		}		
 		if (format == cybxmlYED) {
-			if (!doc->state_machines || doc->state_machines->next) {
-				ERROR("YED format supports only single SM documents\n");
-				res = CYBERIADA_BAD_PARAMETER;
-				break;
-			}
-			
-			copy_doc = cyberiada_copy_sm_document(doc);
-			cyberiada_graphs_reconstruct_geometry_to_yed(copy_doc);
-
 			res = cyberiada_write_sm_document_yed(copy_doc, writer);
-
-			cyberiada_destroy_sm_document(copy_doc);
 		} else if (format == cybxmlCyberiada10) {
-			res = cyberiada_write_sm_document_cyberiada(doc, writer);
+			res = cyberiada_write_sm_document_cyberiada(copy_doc, writer);
 		}
+		cyberiada_destroy_sm_document(copy_doc);
+
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error writing xml %d\n", res);
 			res = CYBERIADA_XML_ERROR;
@@ -4760,12 +4501,72 @@ int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, Cy
 		res = CYBERIADA_NO_ERROR;
 	} while (0);
 	
-	xmlFreeTextWriter(writer);
-	xmlCleanupParser();
-	
 	if (res != CYBERIADA_NO_ERROR) {
 		return res;
 	} else {
 		return CYBERIADA_NO_ERROR;
 	}
+}
+
+int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename,
+								CyberiadaXMLFormat format, int flags)
+{
+	int res;
+	xmlTextWriterPtr writer = NULL;	
+	xmlInitParser();
+	writer = xmlNewTextWriterFilename(filename, 0);
+	if (!writer) {
+		ERROR("cannot open xml writter for file %s\n", filename);
+		xmlCleanupParser();
+		return CYBERIADA_XML_ERROR;
+	}
+
+	res = cyberiada_process_encode_sm_document(doc, writer, format, flags);
+	
+	xmlFreeTextWriter(writer);
+	xmlCleanupParser();
+
+	return res;
+}
+
+int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* buffer_size,
+								 CyberiadaXMLFormat format, int flags)
+{
+	int res;
+	xmlBufferPtr xml_buffer;
+	xmlTextWriterPtr writer = NULL;	
+
+	xmlInitParser();
+	xml_buffer = xmlBufferCreate();
+	if (!xml_buffer) {
+		ERROR("cannot create xml buffer\n");
+		xmlCleanupParser();
+		return CYBERIADA_XML_ERROR;
+	}
+	writer = xmlNewTextWriterMemory(xml_buffer, 0);
+	if (!writer) {
+		ERROR("cannot create buffer writter\n");
+		xmlBufferFree(xml_buffer);
+		xmlCleanupParser();
+		return CYBERIADA_XML_ERROR;
+	}
+
+	res = cyberiada_process_encode_sm_document(doc, writer, format, flags);
+
+	if (res == CYBERIADA_NO_ERROR) {
+		size_t size = xml_buffer->use;
+		*buffer = (char*)malloc(size + 1);
+		memcpy(*buffer, xml_buffer->content, size);
+		(*buffer)[size] = 0;
+		*buffer_size = size;
+	} else {
+		*buffer = NULL;
+		*buffer_size = 0;
+	}
+	
+	xmlBufferFree(xml_buffer);
+	xmlFreeTextWriter(writer);
+	xmlCleanupParser();
+
+	return res;
 }

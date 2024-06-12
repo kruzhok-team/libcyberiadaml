@@ -70,11 +70,11 @@ typedef enum {
 /* SM node & transitions geometry */
 
 typedef struct {
-    float x, y;
+    double x, y;
 } CyberiadaPoint;
 
 typedef struct {
-    float x, y, width, height;
+    double x, y, width, height;
 } CyberiadaRect;
 
 typedef struct _CyberiadaPolyline {
@@ -108,14 +108,26 @@ typedef struct _CyberiadaLink {
 	size_t                      ref_len;
 } CyberiadaLink;
 
-/* SM node (state) */
+/* SM node (state)
+ *
+ * Comment on the node geometry: 
+ * - if the top-level node (state machine) has geometry, it is calculated in
+ *   absolute coordinates (x: left-to-right, y: top-to-bottom);
+ * - if the state machine has no geometry, the first level nodes (comporite states, initial
+ *   vertexes, etc.) are calculated in absolute coordinates;
+ * - the child nodes are calculated in local coordinates relative to the _center_ of the
+ *   parent node. 
+ *
+ * NOTE: this geomerty is different from the Cyberiada GraphML 1.0 / YED formats geometry
+ * and is being converted during the document import/export.
+ */
 typedef struct _CyberiadaNode {
     CyberiadaNodeType           type;
     char*                       id;
     size_t                      id_len;
     char*                       title;
     size_t                      title_len;
-	CyberiadaAction*            actions;        /* for simple & composite nodes */
+	CyberiadaAction*            actions;        /* for simple & composite state nodes */
 	CyberiadaCommentData*       comment_data;   /* for comments */
 	CyberiadaLink*              link;           /* for submachine states */
 	CyberiadaPoint*             geometry_point; /* for some pseudostates & final state */
@@ -139,7 +151,19 @@ typedef struct _CyberiadaCommentSubject {
 	size_t                      fragment_len;
 } CyberiadaCommentSubject;
 	
-/* SM edge (transition) */
+/* SM edge (transition) 
+ *
+ * Comment on the edge geometry: 
+ * - the source and target points are calculated in local coordinates relative
+ *   to the center of the corresponding source/target node;
+ * - the label point is calculated in local coordinates relative to the geometrical
+ *   center of the edge (based on the bounding rectangle);
+ * - the polyline points are calculated in local coordinated relative to the center of
+ *   the source node.
+ *
+ * NOTE: this geomerty is different from the Cyberiada GraphML 1.0 / YED formats geometry
+ * and is being converted during the document import/export.
+ */
 typedef struct _CyberiadaEdge {
     CyberiadaEdgeType            type;
     char*                        id;
@@ -165,6 +189,7 @@ typedef struct _CyberiadaEdge {
 typedef struct _CyberiadaSM {
     CyberiadaNode*               nodes;
     CyberiadaEdge*               edges;
+	CyberiadaRect*               bounding_rect;
     struct _CyberiadaSM*         next;
 } CyberiadaSM;
 
@@ -211,22 +236,52 @@ typedef struct {
 	char*                        markup_language;
 	size_t                       markup_language_len;
 } CyberiadaMetainformation;
-	
+
+/* SM document node coordinates format */
+typedef enum {
+	cybCoordNone = 0,                    /* no geometry information */
+	cybCoordAbsolute = 1,                /* absolute coordinates (used in YED) */ 
+	cybCoordLeftTop = 2,                 /* left-top-oriented local coordinates (used in Cyberiada10) */
+	cybCoordLocalCenter = 4,             /* center-oriented local coordinates (used by default) */	
+} CyberiadaGeometryCoordFormat;
+
+/* SM document edges source/target point placement & coordinates format */
+typedef enum {
+	cybEdgeNone = 0,
+	cybEdgeLocalCenter = 1,               /* source & target points are bind to a node's center */
+	cybEdgeLeftTopBorder = 2,             /* source & target points are placed on a node's border with left-top coordinates */
+	cybEdgeCenterBorder = 4,              /* source & target points are placed on a node's border with center coordinates */
+} CyberiadaGeometryEdgeFormat;
+
 /* SM document */
 typedef struct {
-    char*                       format;         /* SM document format string */
-    size_t                      format_len;     /* SM document format string length */
-    CyberiadaMetainformation*   meta_info;      /* SM document metainformation */
-    CyberiadaSM*                state_machines; /* State machines */
+    char*                            format;           /* SM document format string (additional info) */
+    size_t                           format_len;       /* SM document format string length */
+    CyberiadaMetainformation*        meta_info;        /* SM document metainformation */
+	CyberiadaGeometryCoordFormat     geometry_format;  /* SM document geometry coordinates format */
+	CyberiadaGeometryEdgeFormat      edge_geom_format; /* SM document edges geometry format */ 
+    CyberiadaSM*                     state_machines;   /* State machines */
 } CyberiadaDocument;
 	
 /* Cyberiada GraphML Library supported formats */
 typedef enum {
-    cybxmlCyberiada10 = 0,                      /* Cyberiada 1.0 format */
-    cybxmlYED = 1,                              /* Old YED-based Berloga/Ostranna format */
-    cybxmlUnknown = 99                          /* Format is not specified */
+    cybxmlCyberiada10 = 0,                       /* Cyberiada 1.0 format */
+    cybxmlYED = 1,                               /* Old YED-based Berloga/Ostranna format */
+    cybxmlUnknown = 99                           /* Format is not specified */
 } CyberiadaXMLFormat;
-    
+
+/* Cyberiada GraphML Library import/export flags */
+#define CYBERIADA_FLAG_NO                           0
+#define CYBERIADA_FLAG_ABSOLUTE_GEOMETRY            1   /* convert imported geometry to absolute coordinates */ 
+#define CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY       2   /* convert imported geometry to left-top-oriented local coordinates */
+#define CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY        4   /* convert imported geometry to center-oriented local coordinates */
+#define CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY         8   /* convert imported geometry to center edge coordinates */
+#define CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY 16  /* convert imported geometry to border edge coordinates (left-top) */
+#define CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY  32  /* convert imported geometry to border edge coordinates (center) */
+#define CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY         64  /* reconstruct absent node/edge geometry on import */
+#define CYBERIADA_FLAG_SKIP_GEOMETRY                128 /* skip geometry node/edge during import/export */
+#define CYBERIADA_FLAG_ROUND_GEOMETRY               256 /* export geometry with round coordinates to 0.001 */
+
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
  * ----------------------------------------------------------------------------- */
@@ -263,10 +318,19 @@ typedef enum {
 
     /* Read an XML file and decode the SM structure */
     /* Allocate the SM document structure first */
-    int cyberiada_read_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format);
+    int cyberiada_read_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format, int flags);
 
     /* Encode the SM document structure and write the data to an XML file */
-    int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format);
+    int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename, CyberiadaXMLFormat format, int flags);
+
+    /* Decode the SM structure */
+    /* Allocate the SM document structure first */
+    int cyberiada_decode_sm_document(CyberiadaDocument* doc, const char* buffer, size_t buffer_size,
+									 CyberiadaXMLFormat format, int flags);
+
+    /* Encode the SM document structure */
+    int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* buffer_size,
+									 CyberiadaXMLFormat format, int flags);
 	
     /* Print the SM structure to stdout */
     int cyberiada_print_sm_document(CyberiadaDocument* doc);
@@ -301,7 +365,15 @@ typedef enum {
 	/* Allocate and initialize the SM polyline structure in memory */
 	CyberiadaPolyline* cyberiada_new_polyline(void);
 
-	/* Allocate and initialize the SM metainformation structure in memory */
+	/* Free the SM polyline structure in memory */
+	int cyberiada_destroy_polyline(CyberiadaPolyline* polyline);
+
+	/* Change the SM document geometry format and convert the SMs geometry data */
+	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
+											CyberiadaGeometryCoordFormat new_format,
+											CyberiadaGeometryEdgeFormat new_edge_format);
+
+    /* Allocate and initialize the SM metainformation structure in memory */
 	CyberiadaMetainformation* cyberiada_new_meta(void);
 	
 	/* Initialize and copy string. Use this function to initialize strings in Cyberiada structures */

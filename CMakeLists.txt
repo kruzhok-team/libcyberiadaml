@@ -7,7 +7,9 @@ if(!LibXml2_FOUND)
 	message(FATAL_ERROR "Cannot find libxml2 library")
 endif()
 
-add_library(cyberiadaml SHARED cyberiadaml.c utf8enc.c cyb_types.c cyb_string.c)
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
+
+add_library(cyberiadaml SHARED cyberiadaml.c utf8enc.c cyb_types.c cyb_string.c geometry.c)
 target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			               $<INSTALL_INTERFACE:include/cyberiada>
