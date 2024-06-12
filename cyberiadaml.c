@@ -2212,10 +2212,10 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 		return gpsInvalid;
 	}
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
-	DEBUG("Set node %s title '%s'\n", current->id, buffer);
+	/* DEBUG("Set node %s title '%s'\n", current->id, buffer); */
 	cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
 	cyberiada_string_trim(current->title);
-	DEBUG("After trim: '%s'\n", current->title);
+	/* DEBUG("After trim: '%s'\n", current->title); */
 	return gpsNodeAction;
 }
 
