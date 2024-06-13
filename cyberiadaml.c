@@ -3207,15 +3207,19 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			ERROR("error: cannot reconstruct graph edges' identifier\n");
 			break;
 		}
-
+		
 		if (res == CYBERIADA_NO_ERROR) {
 			if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
 				cyberiada_clean_document_geometry(cyb_doc);
-			} else {
+			} else if (cyberiada_document_has_geometry(cyb_doc) ||
+					   flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
 				cyberiada_import_document_geometry(cyb_doc, flags, format);
+			} else {
+				/* document has no geometry */
+				cyb_doc->geometry_format = cybCoordNone;
+				cyb_doc->edge_geom_format = cybEdgeNone;
 			}
 		}
-		
 	} while(0);
 
 	cyberiada_free_name_list(&nl);
@@ -4437,12 +4441,12 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		}
 	}
 	
-	if (CYBERIADA_FLAG_ABSOLUTE_GEOMETRY |
-		CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY |
-		CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY |
-		CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY |
-		CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY |
-		CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY) {
+	if (flags & (CYBERIADA_FLAG_ABSOLUTE_GEOMETRY |
+				 CYBERIADA_FLAG_LEFTTOP_LOCAL_GEOMETRY |
+				 CYBERIADA_FLAG_CENTER_LOCAL_GEOMETRY |
+				 CYBERIADA_FLAG_LEFTTOP_BORDER_EDGE_GEOMETRY |
+				 CYBERIADA_FLAG_CENTER_BORDER_EDGE_GEOMETRY |
+				 CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY)) {
 
 		ERROR("Geometry flags (abs, left-top, center) & edge geometry flags are not allowed for export\n");
 		return CYBERIADA_BAD_PARAMETER;
@@ -4551,7 +4555,7 @@ int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* 
 		return CYBERIADA_XML_ERROR;
 	}
 
-	res = cyberiada_process_encode_sm_document(doc, writer, format, flags);
+ 	res = cyberiada_process_encode_sm_document(doc, writer, format, flags);
 
 	if (res == CYBERIADA_NO_ERROR) {
 		size_t size = xml_buffer->use;

@@ -368,6 +368,9 @@ typedef enum {
 	/* Free the SM polyline structure in memory */
 	int cyberiada_destroy_polyline(CyberiadaPolyline* polyline);
 
+	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
+	int cyberiada_document_has_geometry(CyberiadaDocument* doc);
+	
 	/* Change the SM document geometry format and convert the SMs geometry data */
 	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 											CyberiadaGeometryCoordFormat new_format,

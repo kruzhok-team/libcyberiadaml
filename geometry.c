@@ -1136,7 +1136,7 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 			bounding_rect->x = bounding_rect->y = bounding_rect->width = bounding_rect->height = 0.0;
 			cyberiada_build_bounding_rect(sm->nodes, bounding_rect, old_format);
 			sm->bounding_rect = bounding_rect;
-		}		
+		}
 
 		cyberiada_convert_node_geometry(sm->nodes, sm->bounding_rect,
 										old_format, new_format);
@@ -1188,6 +1188,8 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 
 	if (flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
 		cyberiada_reconstruct_document_geometry(doc);
+	} else if (!cyberiada_document_has_geometry(doc)) {
+		return CYBERIADA_NO_ERROR;
 	}
 	
 	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
@@ -1195,8 +1197,10 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 	}
 	
 	for (sm = doc->state_machines; sm; sm = sm->next) {
-		cyberiada_convert_node_geometry(sm->nodes, sm->bounding_rect,
-										doc->geometry_format, to_format);
+		if (sm->bounding_rect) {
+			cyberiada_convert_node_geometry(sm->nodes, sm->bounding_rect,
+											doc->geometry_format, to_format);
+		}
 		if (sm->edges) {
 			cyberiada_convert_edge_geometry(sm->edges,
 											doc->geometry_format, to_format,
@@ -1204,6 +1208,58 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 		}
 	}
 
-	return CYBERIADA_NO_ERROR;	
+	return CYBERIADA_NO_ERROR;
 }
 
+static int cyberiada_node_has_geometry(CyberiadaNode* node)
+{
+	while (node) {
+		if (node->geometry_point) {
+			return 1;
+		}
+		if (node->geometry_rect) {
+			return 1;
+		}
+		if (node->children) {
+			int found = cyberiada_node_has_geometry(node->children);
+			if (found) {
+				return 1;
+			}
+		}
+		node = node->next;
+	}
+	return 0;
+}
+
+int cyberiada_document_has_geometry(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+	CyberiadaEdge* edge;
+
+	if (!doc) {
+		return 0;
+	}
+
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (cyberiada_node_has_geometry(sm->nodes)) {
+			return 1;
+		}
+		edge = sm->edges;
+		while (edge) {
+			if (edge->geometry_polyline) {
+				return 1;
+			}
+			if (edge->geometry_source_point) {
+				return 1;
+			}
+			if (edge->geometry_target_point) {
+				return 1;
+			}
+			if (edge->geometry_label_point) {
+				return 1;
+			}
+			edge = edge->next;
+		}	
+	}
+	return 0;
+}
