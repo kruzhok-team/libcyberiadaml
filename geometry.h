@@ -38,6 +38,7 @@ extern "C" {
 
 	CyberiadaRect*     cyberiada_new_rect(void);
 	CyberiadaRect*     cyberiada_copy_rect(CyberiadaRect* src);
+	int                cyberiada_compare_rects(CyberiadaRect* a, CyberiadaRect* b);
 	
 	CyberiadaPolyline* cyberiada_new_polyline(void);
 	CyberiadaPolyline* cyberiada_copy_polyline(CyberiadaPolyline* src);
