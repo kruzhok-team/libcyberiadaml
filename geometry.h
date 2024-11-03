@@ -21,7 +21,7 @@
  * ----------------------------------------------------------------------------- */
 
 #ifndef __CYBERIADA_GEOMETRY_H
-#define __CYBERIADA_GEOMRTRY_H
+#define __CYBERIADA_GEOMETRY_H
 
 #include "cyberiadaml.h"
 
@@ -33,20 +33,12 @@ extern "C" {
  * The Cyberiada GraphML geometry utilities
  * ----------------------------------------------------------------------------- */
 
-	CyberiadaPoint*    cyberiada_new_point(void);
-	CyberiadaPoint*    cyberiada_copy_point(CyberiadaPoint* src);
-
-	CyberiadaRect*     cyberiada_new_rect(void);
-	CyberiadaRect*     cyberiada_copy_rect(CyberiadaRect* src);
-	int                cyberiada_compare_rects(CyberiadaRect* a, CyberiadaRect* b);
-	
-	CyberiadaPolyline* cyberiada_new_polyline(void);
-	CyberiadaPolyline* cyberiada_copy_polyline(CyberiadaPolyline* src);
-	int                cyberiada_destroy_polyline(CyberiadaPolyline* polyline);
-
+	int                cyberiada_document_no_geometry(CyberiadaDocument* doc);
 	int                cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 	int                cyberiada_convert_document_geometry(CyberiadaDocument* doc,
-														   CyberiadaGeometryCoordFormat new_format,
+														   CyberiadaGeometryCoordFormat new_node_coord_format,
+														   CyberiadaGeometryCoordFormat new_edge_coord_format,
+														   CyberiadaGeometryCoordFormat new_edge_pl_coord_format,
 														   CyberiadaGeometryEdgeFormat new_edge_format);
 	int                cyberiada_import_document_geometry(CyberiadaDocument* doc,
 														  int flags, CyberiadaXMLFormat file_format);

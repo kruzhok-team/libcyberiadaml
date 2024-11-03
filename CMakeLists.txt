@@ -7,6 +7,12 @@ if(!LibXml2_FOUND)
 	message(FATAL_ERROR "Cannot find libxml2 library")
 endif()
 
+set(htgeom_DIR /usr/lib/cmake)
+find_package(htgeom REQUIRED)
+if(!htgeom_FOUND)
+  message(FATAL_ERROR "Cannot find libhtgeom library")
+endif()
+
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
 
 add_library(cyberiadaml SHARED cyberiadaml.c utf8enc.c cyb_types.c cyb_string.c geometry.c)
@@ -14,10 +20,12 @@ target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			               $<INSTALL_INTERFACE:include/cyberiada>
 				       "${LIBXML2_INCLUDE_DIR}")
-target_link_directories(cyberiadaml PUBLIC "${LIBXML2_LIBRARY}")
+target_link_directories(cyberiadaml PUBLIC
+				    "${LIBXML2_LIBRARY}"
+				    "${htgeom_LIBRARY}")
 target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
-				  m)
+				  "${htgeom_LIBRARIES}")
 
 add_executable(cyberiada_test test.c)
 target_include_directories(cyberiada_test PUBLIC
