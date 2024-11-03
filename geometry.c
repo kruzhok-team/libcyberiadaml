@@ -754,7 +754,8 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 			if (edge->geometry_polyline ||
 				edge->geometry_source_point ||
 				edge->geometry_target_point ||
-				edge->geometry_label_point) {
+				edge->geometry_label_point ||
+				edge->geometry_label_rect) {
 				
 				return 1;
 			}
