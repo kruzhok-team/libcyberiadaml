@@ -3071,6 +3071,16 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc)
 		cyberiada_process_graph(sm->nodes, NULL, &cyberiada_update_complex_state);
 	}
 
+	if (!doc->format || strcmp(doc->format, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
+		if (!doc->format) {
+			ERROR("CyberiadaML-GraphML format tag not found\n");
+		} else {
+			ERROR("Wrong CyberiadaML-GraphML format tag: %s\n", doc->format);
+		}
+		return CYBERIADA_FORMAT_ERROR;
+	}
+
+	
 	/*meta_node = cyberiada_graph_find_node_by_id(sm->nodes, "");
 
 	if (meta_node == NULL) {
