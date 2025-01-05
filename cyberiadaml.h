@@ -371,6 +371,12 @@ typedef enum {
 	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
 	int cyberiada_document_has_geometry(CyberiadaDocument* doc);
 	
+	/* Clean the SM document geometry */
+	int cyberiada_clean_document_geometry(CyberiadaDocument* doc);
+
+	/* Reconstruct the SM document geometry from scratch */
+	int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc);
+	
 	/* Change the SM document geometry format and convert the SMs geometry data */
 	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 											CyberiadaGeometryCoordFormat new_node_coord_format,

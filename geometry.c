@@ -685,18 +685,9 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 	}
 
 	htreegeom = cyberiada_to_htree_geometry(doc);
-
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
-	}
-	
-	if (flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
-		if ((res = htree_reconstruct_document_geometry(htreegeom)) != HTREE_OK) {
-			ERROR("Error while reconstructing htree geometry %d\n", res);
-			htree_destroy_document(htreegeom);
-			return CYBERIADA_BAD_PARAMETER;
-		}
 	}
 
 	if ((res = htree_convert_document_geometry(htreegeom,
@@ -715,6 +706,32 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
 		cyberiada_round_document_geometry(doc);
 	}
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+
+int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc)
+{
+	int res;
+	HTDocument* htreegeom;
+
+	cyberiada_clean_document_geometry(doc);
+	
+	htreegeom = cyberiada_to_htree_geometry(doc);
+	if (!htreegeom) {
+		ERROR("Cannot convert document geometry to htree geometry\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if ((res = htree_reconstruct_document_geometry(htreegeom)) != HTREE_OK) {
+		ERROR("Error while reconstructing htree geometry %d\n", res);
+		htree_destroy_document(htreegeom);
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	cyberiada_update_geometry(doc, htreegeom);
+	htree_destroy_document(htreegeom);
 	
 	return CYBERIADA_NO_ERROR;
 }
@@ -762,5 +779,6 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 			edge = edge->next;
 		}	
 	}
+	
 	return 0;
 }
