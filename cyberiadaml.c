@@ -3220,7 +3220,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		if (!geom_flags) {
 			/* set default edge geometry flag */
 			flags |= CYBERIADA_FLAG_BORDER_EDGE_GEOMETRY;	
-		} if (geom_flags != CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY &&
+		} else if (geom_flags != CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY &&
 			  geom_flags != CYBERIADA_FLAG_BORDER_EDGE_GEOMETRY) {
 			ERROR("Single geometry edge flag (border, center) can be used at the same time\n");
 			return CYBERIADA_BAD_PARAMETER;
