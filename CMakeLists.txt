@@ -15,7 +15,14 @@ endif()
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
 
-add_library(cyberiadaml SHARED cyberiadaml.c utf8enc.c cyb_types.c cyb_string.c geometry.c)
+add_library(cyberiadaml SHARED
+			cyberiadaml.c
+			utf8enc.c
+			cyb_types.c
+			cyb_string.c
+			geometry.c
+			isomorph.c)
+
 target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			               $<INSTALL_INTERFACE:include/cyberiada>

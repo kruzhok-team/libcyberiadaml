@@ -3398,7 +3398,7 @@ static int cyberiada_print_action(CyberiadaAction* action, int level)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_print_node(CyberiadaNode* node, int level)
+int cyberiada_print_node(CyberiadaNode* node, int level)
 {
 	CyberiadaNode* cur_node;
 	char levelspace[16];
@@ -3457,7 +3457,7 @@ static int cyberiada_print_node(CyberiadaNode* node, int level)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_print_edge(CyberiadaEdge* edge)
+int cyberiada_print_edge(CyberiadaEdge* edge)
 {
 	CyberiadaPolyline* polyline;
 	printf(" Edge %s [%s %s]->[%s %s] [type %d]\n",
@@ -3514,16 +3514,19 @@ static int cyberiada_print_sm(CyberiadaSM* sm)
 {
 	CyberiadaNode* cur_node;
 	CyberiadaEdge* cur_edge;
+	size_t nodes_cnt = 0, edges_cnt = 0;
 
+	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt);
+	
 	printf("State Machine\n");
 	
-	printf("Nodes:\n");
+	printf("Nodes: %lu\n", nodes_cnt);
 	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
 		cyberiada_print_node(cur_node, 0);
 	}
 	printf("\n");
 
-	printf("Edges:\n");
+	printf("Edges: %lu\n", edges_cnt);
 	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
 		cyberiada_print_edge(cur_edge);
 	}

@@ -294,6 +294,16 @@ typedef enum {
 #define CYBERIADA_FLAG_ROUND_GEOMETRY                     8192 /* export geometry with round coordinates to 0.001 */
 
 /* -----------------------------------------------------------------------------
+ * The Cyberiada isomorphism check codes
+ * ----------------------------------------------------------------------------- */
+
+#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     0    /* the two SM graphs are equal */
+#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                1    /* the two SM graphs are isomorphic */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               2    /* the two SM graphs are not isomorhic and have different states */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              4    /* the two SM graphs are not isomorhic and have different initial pseudostates */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                8    /* the two SM graphs are not isomorhic and have different edges */
+
+/* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
  * ----------------------------------------------------------------------------- */
 
@@ -347,9 +357,18 @@ typedef enum {
     /* Print the SM structure to stdout */
     int cyberiada_print_sm_document(CyberiadaDocument* doc);
 
+	/* Print the node structure to stdout using indent of <level> spaces */
+	int cyberiada_print_node(CyberiadaNode* node, int level);
+
+	/* Print the edge structure to stdout */	
+	int cyberiada_print_edge(CyberiadaEdge* edge);
+	
 	/* Allocate and initialize the SM structure in memory */
 	CyberiadaSM* cyberiada_new_sm(void);
 
+	/* Get SM graph size (vertexes and edges) */
+	int cyberiada_sm_size(const CyberiadaSM* sm, size_t* v, size_t* e);
+	
 	/* Allocate and initialize the SM node structure in memory */
 	CyberiadaNode* cyberiada_new_node(const char* id);
 
@@ -367,7 +386,15 @@ typedef enum {
 
 	/* Allocate and initialize the SM action structure in memory */
 	CyberiadaAction* cyberiada_new_action(CyberiadaActionType type, const char* trigger, const char* guard, const char* behavior);
-	
+
+	/* Compare two SM graphs to detect isomorphism and the difference if the graphs are not isomorphic */
+	int cyberiada_check_isomorphism(const CyberiadaSM* sm1, const CyberiadaSM* sm2,
+									int* result_flags, CyberiadaNode** new_initial,
+									size_t* sm2_new_nodes_size, CyberiadaNode** sm2_new_nodes,
+									size_t* sm1_missing_nodes_size, CyberiadaNode** sm1_missing_nodes,
+									size_t* sm2_new_edges_size, CyberiadaEdge** sm2_new_edges,
+									size_t* sm1_missing_edges_size, CyberiadaEdge** sm1_missing_edges);
+
 	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
 	int cyberiada_document_has_geometry(CyberiadaDocument* doc);
 	
