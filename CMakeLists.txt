@@ -34,12 +34,7 @@ target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
 				  "${htgeom_LIBRARIES}")
 
-add_executable(cyberiada_test test.c)
-target_include_directories(cyberiada_test PUBLIC
-			   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
-			   $<INSTALL_INTERFACE:include/cyberiada>)
-target_link_directories(cyberiada_test PUBLIC "${PROJECT_BINARY_DIR}")
-target_link_libraries(cyberiada_test PUBLIC cyberiadaml)
+add_subdirectory(parser)
 
 install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml)
 install(FILES cyberiadaml.h ${CMAKE_CURRENT_SOURCE_DIR}/cyberiadaml.h
