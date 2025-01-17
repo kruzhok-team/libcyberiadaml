@@ -390,10 +390,12 @@ typedef enum {
 	/* Compare two SM graphs to detect isomorphism and the difference if the graphs are not isomorphic */
 	int cyberiada_check_isomorphism(const CyberiadaSM* sm1, const CyberiadaSM* sm2,
 									int* result_flags, CyberiadaNode** new_initial,
-									size_t* sm2_new_nodes_size, CyberiadaNode** sm2_new_nodes,
-									size_t* sm1_missing_nodes_size, CyberiadaNode** sm1_missing_nodes,
-									size_t* sm2_new_edges_size, CyberiadaEdge** sm2_new_edges,
-									size_t* sm1_missing_edges_size, CyberiadaEdge** sm1_missing_edges);
+									size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes,
+									size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
+									size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
+									size_t* sm_diff_edges_size, CyberiadaEdge*** sm_diff_edges,
+									size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
+									size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
 
 	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
 	int cyberiada_document_has_geometry(CyberiadaDocument* doc);

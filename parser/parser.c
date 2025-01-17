@@ -233,9 +233,10 @@ int main(int argc, char** argv)
 	} else if (command == CMD_DIFF) {
 		CyberiadaDocument doc2;
 		int result_flags;
-		size_t sm2_new_nodes_size = 0, sm1_missing_nodes_size = 0, sm2_new_edges_size = 0, sm1_missing_edges_size = 0;
-		CyberiadaNode *new_initial = NULL, *sm1_missing_nodes = NULL, *sm2_new_nodes = NULL;
-		CyberiadaEdge *sm2_new_edges = NULL, *sm1_missing_edges = NULL;
+		size_t sm_diff_nodes_size = 0, sm2_new_nodes_size = 0, sm1_missing_nodes_size = 0,
+			sm_diff_edges_size = 0, sm2_new_edges_size = 0, sm1_missing_edges_size = 0;
+		CyberiadaNode *new_initial = NULL, **sm_diff_nodes = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
+		CyberiadaEdge **sm_diff_edges, **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
@@ -268,8 +269,10 @@ int main(int argc, char** argv)
 		
 		res = cyberiada_check_isomorphism(doc.state_machines, doc2.state_machines,
 										  &result_flags, &new_initial,
+										  &sm_diff_nodes_size, &sm_diff_nodes,
 										  &sm2_new_nodes_size, &sm2_new_nodes,
 										  &sm1_missing_nodes_size, &sm1_missing_nodes,
+										  &sm_diff_edges_size, &sm_diff_edges,
 										  &sm2_new_edges_size, &sm2_new_edges,
 										  &sm1_missing_edges_size, &sm1_missing_edges);
 
@@ -297,28 +300,40 @@ int main(int argc, char** argv)
 					printf("'\nNew initial pseudostate: ");
 					cyberiada_print_node(new_initial, 0);
 				}
-				if (sm2_new_nodes) {
+				if (sm_diff_nodes_size > 0 && sm_diff_nodes) {
+					printf("\nThe different nodes in the second graph:\n");
+					for (i = 0; i < sm_diff_nodes_size; i++) {
+						cyberiada_print_node(sm_diff_nodes[i], 0);
+					}
+				}
+				if (sm2_new_nodes_size > 0 && sm2_new_nodes) {
 					printf("\nThe new nodes added in the second graph:\n");
 					for (i = 0; i < sm2_new_nodes_size; i++) {
-						cyberiada_print_node(sm2_new_nodes + i, 0);
+						cyberiada_print_node(sm2_new_nodes[i], 0);
 					}
 				}
-				if (sm1_missing_nodes) {
+				if (sm1_missing_nodes_size > 0 && sm1_missing_nodes) {
 					printf("\nThe nodes missing in the first graph:\n");
 					for (i = 0; i < sm1_missing_nodes_size; i++) {
-						cyberiada_print_node(sm1_missing_nodes + i, 0);
+						cyberiada_print_node(sm1_missing_nodes[i], 0);
 					}
 				}
-				if (sm2_new_edges) {
+				if (sm_diff_edges_size > 0 && sm_diff_edges) {
+					printf("\nThe different edges in the second graph:\n");
+					for (i = 0; i < sm_diff_edges_size; i++) {
+						cyberiada_print_edge(sm_diff_edges[i]);
+					}
+				}
+				if (sm2_new_edges_size > 0 && sm2_new_edges) {
 					printf("\nThe new edges added in the second graph:\n");
 					for (i = 0; i < sm2_new_edges_size; i++) {
-						cyberiada_print_edge(sm2_new_edges + i);
+						cyberiada_print_edge(sm2_new_edges[i]);
 					}
 				}
-				if (sm1_missing_edges) {
+				if (sm1_missing_edges_size > 0 && sm1_missing_edges) {
 					printf("\nThe edges missing in the first graph:\n");
 					for (i = 0; i < sm1_missing_edges_size; i++) {
-						cyberiada_print_edge(sm1_missing_edges + i);
+						cyberiada_print_edge(sm1_missing_edges[i]);
 					}
 				}
 			}
@@ -327,8 +342,10 @@ int main(int argc, char** argv)
 		}
 
 		if (new_initial) free(new_initial);
+		if (sm_diff_nodes) free(sm_diff_nodes);
 		if (sm1_missing_nodes) free(sm1_missing_nodes);
 		if (sm2_new_nodes) free(sm2_new_nodes);
+		if (sm_diff_edges) free(sm_diff_edges);
 		if (sm2_new_edges) free(sm2_new_edges);
 		if (sm1_missing_edges) free(sm1_missing_edges);
 		
