@@ -3163,6 +3163,14 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
 	CyberiadaNode* n;
 	size_t initial = 0;
 
+	if (!nodes) {
+		return CYBERIADA_NO_ERROR;
+	}
+	
+	if (!nodes->parent) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	
 	for (n = nodes; n; n = n->next) {
 		if (n->type == cybNodeInitial) {
 			initial++;
@@ -3176,7 +3184,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
 	}
 
 	if (initial > 1) {
-		ERROR("Too many initial pseudostates (%lu) inside the node %s\n", initial, nodes->id);
+		ERROR("Too many initial pseudostates (%lu) inside the node %s\n", initial, nodes->parent->id);
 		return CYBERIADA_FORMAT_ERROR;
 	}
 
