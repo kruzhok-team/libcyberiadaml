@@ -3158,6 +3158,66 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 	return CYBERIADA_NO_ERROR;
 }
 
+static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
+{
+	CyberiadaNode* n;
+	size_t initial = 0;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeInitial) {
+			initial++;
+		}
+		if (n->children) {
+			int res = cyberiada_check_pseudostates(n->children, 0);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+
+	if (initial > 1) {
+		ERROR("Too many initial pseudostates (%lu) in the state %s\n", initial, nodes->id);
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	
+	if (toplevel) {
+		if (initial != 1) {
+			ERROR("SM should have single initial pseudostate on the top level\n");
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeInitial || n->type == cybNodeFinal || n->type == cybNodeTerminate) {
+			if (n->geometry_rect) {
+				ERROR("Point node %s has rect geometry\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			}
+		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
+				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice) {
+			if (n->geometry_point) {
+				ERROR("Rect node %s has point geometry\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			}
+		}
+		if (n->children) {
+			int res = cyberiada_check_nodes_geometry(n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	
+	return CYBERIADA_NO_ERROR;	
+}
+
 /* -----------------------------------------------------------------------------
  * GraphML reader interface
  * ----------------------------------------------------------------------------- */
@@ -3275,6 +3335,19 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		if ((res = cyberiada_graphs_reconstruct_edge_identifiers(cyb_doc, &nl)) != CYBERIADA_NO_ERROR) {
 			ERROR("error: cannot reconstruct graph edges' identifier\n");
 			break;
+		}
+
+		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
+			if (sm->nodes) {
+				if ((res = cyberiada_check_pseudostates(sm->nodes->children, 1)) != CYBERIADA_NO_ERROR) {
+					ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+					break;
+				}
+				if ((res = cyberiada_check_nodes_geometry(sm->nodes)) != CYBERIADA_NO_ERROR) {
+					ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+					break;
+				}
+			}
 		}
 		
 		if (res == CYBERIADA_NO_ERROR) {
