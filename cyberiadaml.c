@@ -3176,16 +3176,17 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
 	}
 
 	if (initial > 1) {
-		ERROR("Too many initial pseudostates (%lu) in the state %s\n", initial, nodes->id);
+		ERROR("Too many initial pseudostates (%lu) inside the node %s\n", initial, nodes->id);
 		return CYBERIADA_FORMAT_ERROR;
 	}
-	
+
+/*	DISABLE MAIN INITIAL CHECK
 	if (toplevel) {
 		if (initial != 1) {
 			ERROR("SM should have single initial pseudostate on the top level\n");
 			return CYBERIADA_FORMAT_ERROR;
 		}
-	}
+	}*/
 	
 	return CYBERIADA_NO_ERROR;
 }
@@ -3216,6 +3217,30 @@ static int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 	}
 	
 	return CYBERIADA_NO_ERROR;	
+}
+
+static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry)
+{
+	int res = CYBERIADA_NO_ERROR;
+	CyberiadaSM* sm;
+
+	if(!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (sm->nodes) {
+			if ((res = cyberiada_check_pseudostates(sm->nodes->children, 1)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+				break;
+			}
+			if (!skip_geometry && (res = cyberiada_check_nodes_geometry(sm->nodes)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+				break;
+			}
+		}
+	}
+	return res;
 }
 
 /* -----------------------------------------------------------------------------
@@ -3337,19 +3362,12 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
-		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
-			if (sm->nodes) {
-				if ((res = cyberiada_check_pseudostates(sm->nodes->children, 1)) != CYBERIADA_NO_ERROR) {
-					ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
-					break;
-				}
-				if ((res = cyberiada_check_nodes_geometry(sm->nodes)) != CYBERIADA_NO_ERROR) {
-					ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
-					break;
-				}
-			}
+		res = cyberiada_check_graphs(cyb_doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY);
+		if (res != CYBERIADA_NO_ERROR) {
+			ERROR("error while checking graphs\n");
+			break;
 		}
-		
+
 		if (res == CYBERIADA_NO_ERROR) {
 			if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
 				cyberiada_clean_document_geometry(cyb_doc);
@@ -4618,7 +4636,13 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		ERROR("YED format supports only single SM documents\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	
+
+	res = cyberiada_check_graphs(doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY);
+	if (res != CYBERIADA_NO_ERROR) {
+		ERROR("error while checking graphs\n");
+		return res;
+	}
+
 	do {
 		res = xmlTextWriterStartDocument(writer, NULL, GRAPHML_XML_ENCODING, NULL);
 		if (res < 0) {
