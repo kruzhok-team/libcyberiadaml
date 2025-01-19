@@ -297,11 +297,25 @@ typedef enum {
  * The Cyberiada isomorphism check codes
  * ----------------------------------------------------------------------------- */
 
-#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     0    /* the two SM graphs are equal */
-#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                1    /* the two SM graphs are isomorphic */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               2    /* the two SM graphs are not isomorhic and have different states */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              4    /* the two SM graphs are not isomorhic and have different initial pseudostates */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                8    /* the two SM graphs are not isomorhic and have different edges */
+#define CYBERIADA_ISOMORPH_FLAG_IDENTICAL                 1    /* the two SM graphs are identical (even ids are the same) */
+#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     2    /* the two SM graphs are equal */
+#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                4    /* the two SM graphs are isomorphic (but there are differences) */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               8    /* the two SM graphs are not isomorhic and have different states */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              16    /* the two SM graphs are not isomorhic and have different initial pseudostates */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                32   /* the two SM graphs are not isomorhic and have different edges */
+#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK           (1 | 2 | 4)
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_MASK                 (8 | 16 | 32)
+	
+#define CYBERIADA_NODE_DIFF_ID                            1    /* the two SM nodes have different identifiers */
+#define CYBERIADA_NODE_DIFF_TYPE                          2    /* the two SM nodes have different types (excluding simple/comp. state) */
+#define CYBERIADA_NODE_DIFF_TITLE                         4    /* the two SM nodes have different titles */
+#define CYBERIADA_NODE_DIFF_ACTIONS                       8    /* the two SM nodes have different actions */
+#define CYBERIADA_NODE_DIFF_SM_LINK                       16   /* the two SM nodes have different links to a state machine */
+#define CYBERIADA_NODE_DIFF_CHILDREN                      32   /* the two SM nodes have different number of children */
+#define CYBERIADA_NODE_DIFF_EDGES                         64   /* the two SM nodes have different incoming/outgoing edges */
+
+#define CYBERIADA_EDGE_DIFF_ID                            1    /* the two SM edges have different identifiers */
+#define CYBERIADA_EDGE_DIFF_ACTION                        2    /* the two SM edges have different actions */
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
@@ -367,7 +381,7 @@ typedef enum {
 	CyberiadaSM* cyberiada_new_sm(void);
 
 	/* Get SM graph size (vertexes and edges) */
-	int cyberiada_sm_size(const CyberiadaSM* sm, size_t* v, size_t* e);
+	int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments);
 	
 	/* Allocate and initialize the SM node structure in memory */
 	CyberiadaNode* cyberiada_new_node(const char* id);
@@ -388,12 +402,13 @@ typedef enum {
 	CyberiadaAction* cyberiada_new_action(CyberiadaActionType type, const char* trigger, const char* guard, const char* behavior);
 
 	/* Compare two SM graphs to detect isomorphism and the difference if the graphs are not isomorphic */
-	int cyberiada_check_isomorphism(const CyberiadaSM* sm1, const CyberiadaSM* sm2,
+	/* Note: this function ignores comment nodes and edges if the ignore_comments flag is set          */
+	int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
 									int* result_flags, CyberiadaNode** new_initial,
-									size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes,
+									size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes, size_t** sm_diff_nodes_flags,
 									size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
 									size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-									size_t* sm_diff_edges_size, CyberiadaEdge*** sm_diff_edges,
+									size_t* sm_diff_edges_size, CyberiadaEdge*** sm_diff_edges, size_t** sm_diff_edges_flags,
 									size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
 									size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
 

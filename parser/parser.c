@@ -237,6 +237,7 @@ int main(int argc, char** argv)
 			sm_diff_edges_size = 0, sm2_new_edges_size = 0, sm1_missing_edges_size = 0;
 		CyberiadaNode *new_initial = NULL, **sm_diff_nodes = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
 		CyberiadaEdge **sm_diff_edges, **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
+		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
@@ -266,20 +267,23 @@ int main(int argc, char** argv)
 
 			return 6;
 		}
-		
-		res = cyberiada_check_isomorphism(doc.state_machines, doc2.state_machines,
+
+		/* ignore comments and do not require the initial state on the top level */
+		res = cyberiada_check_isomorphism(doc.state_machines, doc2.state_machines, 1, 0,
 										  &result_flags, &new_initial,
-										  &sm_diff_nodes_size, &sm_diff_nodes,
+										  &sm_diff_nodes_size, &sm_diff_nodes, &sm_diff_nodes_flags,
 										  &sm2_new_nodes_size, &sm2_new_nodes,
 										  &sm1_missing_nodes_size, &sm1_missing_nodes,
-										  &sm_diff_edges_size, &sm_diff_edges,
+										  &sm_diff_edges_size, &sm_diff_edges, &sm_diff_edges_flags,
 										  &sm2_new_edges_size, &sm2_new_edges,
 										  &sm1_missing_edges_size, &sm1_missing_edges);
 
 		if (res == CYBERIADA_NO_ERROR) {
 			if (!silent) {
 				printf("Graph comparison result: ");
-				if (result_flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
+				if (result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
+					printf("the SM graphs are identical");
+				} else if (result_flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
 					printf("the SM graphs are equal");
 				} else if (result_flags == CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC) {
 					printf("the SM graphs are isomorphic");			
@@ -300,10 +304,42 @@ int main(int argc, char** argv)
 					printf("'\nNew initial pseudostate: ");
 					cyberiada_print_node(new_initial, 0);
 				}
-				if (sm_diff_nodes_size > 0 && sm_diff_nodes) {
-					printf("\nThe different nodes in the second graph:\n");
-					for (i = 0; i < sm_diff_nodes_size; i++) {
-						cyberiada_print_node(sm_diff_nodes[i], 0);
+				if (sm_diff_nodes_size > 0) {
+					printf("\nThere are %lu different nodes in the second graph:\n", sm_diff_nodes_size);
+					if (sm_diff_nodes_flags) {
+						for (i = 0; i < sm_diff_nodes_size; i++) {
+							size_t flag = sm_diff_nodes_flags[i];
+							printf(" %lu. ", i + 1);
+							if (flag & CYBERIADA_NODE_DIFF_ID) {
+								printf("id ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_TYPE) {
+								printf("type ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_TITLE) {
+								printf("title ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_ACTIONS) {
+								printf("actions ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_SM_LINK) {
+								printf("SM-links ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_CHILDREN) {
+								printf("children ");
+							}
+							if (flag & CYBERIADA_NODE_DIFF_EDGES) {
+								printf("edges ");
+							}
+							printf("\n");
+						}
+					}
+					if (sm_diff_nodes) {
+						printf("\n The different nodes (version from the second graph):\n");
+						for (i = 0; i < sm_diff_nodes_size; i++) {
+							printf(" %lu:\n", i + 1);
+							cyberiada_print_node(sm_diff_nodes[i], 1);
+						}
 					}
 				}
 				if (sm2_new_nodes_size > 0 && sm2_new_nodes) {
@@ -318,10 +354,27 @@ int main(int argc, char** argv)
 						cyberiada_print_node(sm1_missing_nodes[i], 0);
 					}
 				}
-				if (sm_diff_edges_size > 0 && sm_diff_edges) {
-					printf("\nThe different edges in the second graph:\n");
-					for (i = 0; i < sm_diff_edges_size; i++) {
-						cyberiada_print_edge(sm_diff_edges[i]);
+				if (sm_diff_edges_size > 0) {
+					printf("\nThere are %lu different edges in the second graph:\n", sm_diff_edges_size);
+					if (sm_diff_edges_flags) {
+						for (i = 0; i < sm_diff_edges_size; i++) {
+							size_t flag = sm_diff_edges_flags[i];
+							printf(" %lu. ", i + 1);
+							if (flag & CYBERIADA_EDGE_DIFF_ID) {
+								printf("id ");
+							}
+							if (flag & CYBERIADA_EDGE_DIFF_ACTION) {
+								printf("action ");
+							}
+							printf("\n");
+						}
+					}
+					if (sm_diff_edges) {
+						printf("\n The different edges (version from the second graph):\n");
+						for (i = 0; i < sm_diff_edges_size; i++) {
+							printf(" %lu: ", i + 1);
+							cyberiada_print_edge(sm_diff_edges[i]);
+						}
 					}
 				}
 				if (sm2_new_edges_size > 0 && sm2_new_edges) {
@@ -341,14 +394,15 @@ int main(int argc, char** argv)
 			fprintf(stderr, "Error while comparing graphs: %d\n", res);			
 		}
 
-		if (new_initial) free(new_initial);
 		if (sm_diff_nodes) free(sm_diff_nodes);
+		if (sm_diff_nodes_flags) free(sm_diff_nodes_flags);
 		if (sm1_missing_nodes) free(sm1_missing_nodes);
 		if (sm2_new_nodes) free(sm2_new_nodes);
 		if (sm_diff_edges) free(sm_diff_edges);
+		if (sm_diff_edges_flags) free(sm_diff_edges_flags);
 		if (sm2_new_edges) free(sm2_new_edges);
 		if (sm1_missing_edges) free(sm1_missing_edges);
-		
+
 		cyberiada_cleanup_sm_document(&doc2);
 	}
 

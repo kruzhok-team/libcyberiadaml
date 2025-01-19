@@ -24,12 +24,14 @@
 #define __CYBERIADA_ERROR_H
 
 #ifdef __DEBUG__
+#include <stdio.h>
 #define DEBUG(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define DEBUG(...)
 #endif
 
 #ifndef __SILENT__
+#include <stdio.h>
 #define ERROR(...) fprintf(stderr, __VA_ARGS__)
 #else
 #define ERROR(...)

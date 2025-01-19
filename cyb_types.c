@@ -127,6 +127,96 @@ void* cyberiada_list_find(CyberiadaList** list, const char* key)
 	return NULL;
 }
 
+void* cyberiada_list_find_key(CyberiadaList** list, void* key)
+{
+	CyberiadaList* item;
+	if (!list || !*list) {
+		return NULL;
+	}
+	item = *list;
+	while (item) {
+		if (item->key == key) {
+			return item->data;
+		}
+		item = item->next;
+	}
+	return NULL;
+}
+
+void* cyberiada_list_find_data(CyberiadaList** list, void* data)
+{
+	CyberiadaList* item;
+	if (!list || !*list) {
+		return NULL;
+	}
+	item = *list;
+	while (item) {
+		if (item->data == data) {
+			return item->key;
+		}
+		item = item->next;
+	}
+	return NULL;
+}
+
+int cyberiada_list_remove_key(CyberiadaList** list, void* key)
+{
+	CyberiadaList *item, *prev;
+	if (!list || !*list) {
+		return NULL;
+	}
+	item = *list;
+	prev = NULL;
+	while (item) {
+		if (item->key == key) {
+			if (item == *list) {
+				*list = item->next;
+			} else {
+				prev->next = item->next;
+			}
+			free(item);
+			break;
+		}
+		prev = item;
+		item = item->next;
+	}
+	return 0;
+}
+
+int cyberiada_list_remove_data(CyberiadaList** list, void* data)
+{
+	CyberiadaList *item, *prev;
+	if (!list || !*list) {
+		return NULL;
+	}
+	item = *list;
+	prev = NULL;
+	while (item) {
+		if (item->data == data) {
+			if (item == *list) {
+				*list = item->next;
+			} else {
+				prev->next = item->next;
+			}
+			free(item);
+			break;
+		}
+		prev = item;
+		item = item->next;
+	}
+	return 0;
+}
+
+size_t cyberiada_list_size(CyberiadaList** list)
+{
+	CyberiadaList* item;
+	size_t s = 0;
+	for (item = *list; item; item = item->next) {
+		s++;
+	}
+	return s;
+}
+
 int   cyberiada_list_free(CyberiadaList** list)
 {
 	CyberiadaList* item;

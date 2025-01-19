@@ -3158,10 +3158,11 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
+static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edges, int toplevel)
 {
-	CyberiadaNode* n;
-	size_t initial = 0;
+	CyberiadaNode *n, *init_n = NULL;
+	CyberiadaEdge *e;
+	size_t initial = 0, initial_edges = 0;
 
 	if (!nodes) {
 		return CYBERIADA_NO_ERROR;
@@ -3174,9 +3175,10 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
 	for (n = nodes; n; n = n->next) {
 		if (n->type == cybNodeInitial) {
 			initial++;
+			init_n = n;
 		}
 		if (n->children) {
-			int res = cyberiada_check_pseudostates(n->children, 0);
+			int res = cyberiada_check_pseudostates(n->children, edges, 0);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
@@ -3188,6 +3190,19 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, int toplevel)
 		return CYBERIADA_FORMAT_ERROR;
 	}
 
+	if (init_n) {
+		for (e = edges; e; e = e->next) {
+			if (e->source && e->source == init_n) {
+				initial_edges++;
+			}
+		}
+		
+		if (initial_edges > 1) {
+			ERROR("Too many edges from the initial pseudostate %s: %lu\n", init_n->id, initial_edges);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	
 /*	DISABLE MAIN INITIAL CHECK
 	if (toplevel) {
 		if (initial != 1) {
@@ -3238,7 +3253,7 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry)
 	
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		if (sm->nodes) {
-			if ((res = cyberiada_check_pseudostates(sm->nodes->children, 1)) != CYBERIADA_NO_ERROR) {
+			if ((res = cyberiada_check_pseudostates(sm->nodes->children, sm->edges, 1)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
 				break;
 			}
@@ -3614,18 +3629,20 @@ static int cyberiada_print_sm(CyberiadaSM* sm)
 	CyberiadaNode* cur_node;
 	CyberiadaEdge* cur_edge;
 	size_t nodes_cnt = 0, edges_cnt = 0;
+	size_t nodes_cnt_wo_cmt = 0, edges_cnt_wo_cmt = 0;
 
-	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt);
+	cyberiada_sm_size(sm, &nodes_cnt_wo_cmt, &edges_cnt_wo_cmt, 1);
+	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt, 0);
 	
 	printf("State Machine\n");
 	
-	printf("Nodes: %lu\n", nodes_cnt);
+	printf("Nodes: %lu (%lu w/o comments)\n", nodes_cnt, nodes_cnt_wo_cmt);
 	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
 		cyberiada_print_node(cur_node, 0);
 	}
 	printf("\n");
 
-	printf("Edges: %lu\n", edges_cnt);
+	printf("Edges: %lu (%lu w/o comments)\n", edges_cnt, edges_cnt_wo_cmt);
 	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
 		cyberiada_print_edge(cur_edge);
 	}

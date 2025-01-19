@@ -39,25 +39,30 @@ extern "C" {
 
 	typedef struct _CyberiadaStruct CyberiadaStack; 
 	
-	int   cyberiada_stack_push(CyberiadaStack** stack);	
-	int   cyberiada_stack_update_top_key(CyberiadaStack** stack, const char* new_key);
-	int   cyberiada_stack_update_top_data(CyberiadaStack** stack, void* new_data);
-	void* cyberiada_stack_get_top_data(CyberiadaStack** stack);
-	int   cyberiada_stack_pop(CyberiadaStack** stack);
-	int   cyberiada_stack_is_empty(CyberiadaStack** stack);
-	int   cyberiada_stack_free(CyberiadaStack** stack);
+	int    cyberiada_stack_push(CyberiadaStack** stack);	
+	int    cyberiada_stack_update_top_key(CyberiadaStack** stack, const char* new_key);
+	int    cyberiada_stack_update_top_data(CyberiadaStack** stack, void* new_data);
+	void*  cyberiada_stack_get_top_data(CyberiadaStack** stack);
+	int    cyberiada_stack_pop(CyberiadaStack** stack);
+	int    cyberiada_stack_is_empty(CyberiadaStack** stack);
+	int    cyberiada_stack_free(CyberiadaStack** stack);
 
 	typedef struct _CyberiadaStruct CyberiadaList; 
-	
-	int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data);	
-	void* cyberiada_list_find(CyberiadaList** list, const char* key);
-	int   cyberiada_list_free(CyberiadaList** list);
+
+	size_t cyberiada_list_size(CyberiadaList** list);
+	int    cyberiada_list_add(CyberiadaList** list, const char* key, void* data);	
+	void*  cyberiada_list_find(CyberiadaList** list, const char* key);
+	void*  cyberiada_list_find_key(CyberiadaList** list, void* key);
+	void*  cyberiada_list_find_data(CyberiadaList** list, void* data);
+	int    cyberiada_list_remove_key(CyberiadaList** list, void* key);
+	int    cyberiada_list_remove_data(CyberiadaList** list, void* data);
+	int    cyberiada_list_free(CyberiadaList** list);
 
 	typedef struct _CyberiadaStruct CyberiadaQueue; 
 	
-	int   cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data);	
-	int   cyberiada_queue_get(CyberiadaQueue** queue, void** key, void**data);
-	int   cyberiada_queue_free(CyberiadaQueue** queue);
+	int    cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data);	
+	int    cyberiada_queue_get(CyberiadaQueue** queue, void** key, void**data);
+	int    cyberiada_queue_free(CyberiadaQueue** queue);
 	
 #ifdef __cplusplus
 }
