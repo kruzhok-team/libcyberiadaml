@@ -314,8 +314,8 @@ typedef enum {
 #define CYBERIADA_NODE_DIFF_CHILDREN                      32   /* the two SM nodes have different number of children */
 #define CYBERIADA_NODE_DIFF_EDGES                         64   /* the two SM nodes have different incoming/outgoing edges */
 
-#define CYBERIADA_EDGE_DIFF_ID                            1    /* the two SM edges have different identifiers */
-#define CYBERIADA_EDGE_DIFF_ACTION                        2    /* the two SM edges have different actions */
+#define CYBERIADA_EDGE_DIFF_ID                            128  /* the two SM edges have different identifiers */
+#define CYBERIADA_EDGE_DIFF_ACTION                        256  /* the two SM edges have different actions */
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
