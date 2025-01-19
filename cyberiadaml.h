@@ -382,6 +382,9 @@ typedef enum {
 
 	/* Get SM graph size (vertexes and edges) */
 	int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments);
+
+	/* Free the SM structure */	
+	int cyberiada_destroy_sm(CyberiadaSM* sm);
 	
 	/* Allocate and initialize the SM node structure in memory */
 	CyberiadaNode* cyberiada_new_node(const char* id);

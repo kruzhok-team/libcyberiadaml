@@ -1625,7 +1625,7 @@ CyberiadaSM* cyberiada_new_sm(void)
 	return sm;
 }
 
-static int cyberiada_destroy_sm(CyberiadaSM* sm)
+int cyberiada_destroy_sm(CyberiadaSM* sm)
 {
 	CyberiadaEdge *edge, *e;
 	if (sm) {
