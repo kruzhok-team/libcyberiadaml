@@ -237,7 +237,7 @@ int main(int argc, char** argv)
 			sm_diff_edges_size = 0, sm2_new_edges_size = 0, sm1_missing_edges_size = 0;
 		CyberiadaNode *new_initial = NULL, **sm_diff_nodes = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
 		CyberiadaEdge **sm_diff_edges, **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
-		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags;
+		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags = NULL;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
