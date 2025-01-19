@@ -325,7 +325,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	cyberiada_sm_size(sm2, &n_v2, &n_e2, ignore_comments);
 
 	if (n_v1 == 0 || n_v2 == 0) {
-		return CYBERIADA_ASSERT;
+		return CYBERIADA_BAD_PARAMETER;
 	}
 
 	M = (char**)malloc(sizeof(char*) * n_v1);
