@@ -147,6 +147,11 @@
 #define CYBERIADA_ACTION_LEGACY_REGEXP         "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*/"
 #define CYBERIADA_ACTION_LEGACY_MATCHES        7
 #define CYBERIADA_ACTION_LEGACY_MATCH_TRIGGER  1
+#define CYBERIADA_ACTION_LEGACY_EDGE_REGEXP    "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*/?\\s*(\\[([^]]+)\\])?(\\s*(.*))?\\s*$"
+#define CYBERIADA_ACTION_LEGACY_EDGE_MATCHES   9
+#define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_TRIGGER 1
+#define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_GUARD 6
+#define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_ACTION 8
 
 /* CybediadaML metadata constants */
 
@@ -676,11 +681,13 @@ static int cyberiada_destroy_edge(CyberiadaEdge* e)
 }
 
 typedef struct {
+	int     berloga_legacy;
 	int     flattened_regexps;
 	/* basic regexps */
 	regex_t edge_action_regexp;
 	regex_t node_action_regexp;
 	regex_t node_legacy_action_regexp;
+	regex_t edge_legacy_action_regexp;
     /*regex_t newline_regexp;*/
 	regex_t spaces_regexp;
 } CyberiadaRegexps;
@@ -691,16 +698,21 @@ static int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattene
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	regexps->flattened_regexps = flattened;
+	regexps->berloga_legacy = 0;
 	if (regcomp(&(regexps->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
 	if (regcomp(&(regexps->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
-		ERROR("cannot compile edge action regexp\n");
+		ERROR("cannot compile node action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
 	if (regcomp(&(regexps->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
-		ERROR("cannot compile edge action regexp\n");
+		ERROR("cannot compile legacy node action regexp\n");
+		return CYBERIADA_ASSERT;
+	}
+	if (regcomp(&(regexps->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP, REG_EXTENDED)) {
+		ERROR("cannot compile legacy edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
 /*	if (regcomp(&(regexps->newline_regexp), CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
@@ -722,6 +734,7 @@ static int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
 	regfree(&(regexps->edge_action_regexp));
 	regfree(&(regexps->node_action_regexp));
 	regfree(&(regexps->node_legacy_action_regexp));
+	regfree(&(regexps->edge_legacy_action_regexp));
 /*	regfree(&cyberiada_newline_regexp);*/
 	regfree(&(regexps->spaces_regexp));
 	return CYBERIADA_NO_ERROR;
@@ -729,21 +742,22 @@ static int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
 
 static int cyberiaga_matchres_action_regexps(const char* text,
 											 const regmatch_t* pmatch, size_t pmatch_size,
-											 char** trigger, char** guard, char** behavior)
+											 char** trigger, char** guard, char** behavior,
+											 size_t match_trigger, size_t match_guard, size_t match_action)
 {
 	size_t i;
 	char* part;
 	int start, end;
 		
-	if (pmatch_size != CYBERIADA_ACTION_REGEXP_MATCHES) {
+	if (pmatch_size > CYBERIADA_ACTION_REGEXP_MATCHES) {
 		ERROR("bad action regexp match array size\n");
 		return CYBERIADA_ASSERT;
 	}
 
 	for (i = 0; i < pmatch_size; i++) {
-		if (i != CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER &&
-			i != CYBERIADA_ACTION_REGEXP_MATCH_GUARD &&
-			i != CYBERIADA_ACTION_REGEXP_MATCH_ACTION) {
+		if (i != match_trigger &&
+			i != match_guard &&
+			i != match_action) {
 			continue;
 		}
 		start = pmatch[i].rm_so;
@@ -755,9 +769,9 @@ static int cyberiaga_matchres_action_regexps(const char* text,
 		} else {
 			part = "";
 		}
-		if (i == CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER) {
+		if (i == match_trigger) {
 			*trigger = part;
-		} else if (i == CYBERIADA_ACTION_REGEXP_MATCH_GUARD) {
+		} else if (i == match_guard) {
 			*guard = part;
 		} else {
 			/* i == ACTION_REGEXP_MATCH_ACTION */
@@ -818,21 +832,45 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 		*action = NULL;
 		return CYBERIADA_NO_ERROR;
 	}
-	
-	if ((res = regexec(&(regexps->edge_action_regexp), buffer,
-					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
-		if (res == REG_NOMATCH) {
-			ERROR("edge action text didn't match the regexp\n");
-			return CYBERIADA_ACTION_FORMAT_ERROR;
-		} else {
-			ERROR("edge action regexp error %d\n", res);
+
+	if (regexps->berloga_legacy) {
+		if ((res = regexec(&(regexps->edge_legacy_action_regexp), buffer,
+						   CYBERIADA_ACTION_LEGACY_EDGE_MATCHES, pmatch, 0)) != 0) {
+			if (res == REG_NOMATCH) {
+				ERROR("legacy edge action text didn't match the regexp\n");
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			} else {
+				ERROR("legacy edge action regexp error %d\n", res);
+				return CYBERIADA_ASSERT;
+			}
+		}
+		if (cyberiaga_matchres_action_regexps(buffer,
+											  pmatch, CYBERIADA_ACTION_LEGACY_EDGE_MATCHES,
+											  &trigger, &guard, &behavior,
+											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_TRIGGER,
+											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_GUARD,
+											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_ACTION) != CYBERIADA_NO_ERROR) {
+			return CYBERIADA_ASSERT;
+		}		
+	} else {
+		if ((res = regexec(&(regexps->edge_action_regexp), buffer,
+						   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
+			if (res == REG_NOMATCH) {
+				ERROR("edge action text didn't match the regexp\n");
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			} else {
+				ERROR("edge action regexp error %d\n", res);
+				return CYBERIADA_ASSERT;
+			}
+		}
+		if (cyberiaga_matchres_action_regexps(buffer,
+											  pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
+											  &trigger, &guard, &behavior,
+											  CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER,
+											  CYBERIADA_ACTION_REGEXP_MATCH_GUARD,
+											  CYBERIADA_ACTION_REGEXP_MATCH_ACTION) != CYBERIADA_NO_ERROR) {
 			return CYBERIADA_ASSERT;
 		}
-	}
-	if (cyberiaga_matchres_action_regexps(buffer,
-										  pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
-										  &trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
-		return CYBERIADA_ASSERT;
 	}
 
 	decode_utf8_strings(&trigger, &guard, &behavior);
@@ -913,7 +951,10 @@ static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction
 	}
 	if (cyberiaga_matchres_action_regexps(text,
 										  pmatch, CYBERIADA_ACTION_REGEXP_MATCHES,
-										  &trigger, &guard, &behavior) != CYBERIADA_NO_ERROR) {
+										  &trigger, &guard, &behavior,
+										  CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER,
+										  CYBERIADA_ACTION_REGEXP_MATCH_GUARD,
+										  CYBERIADA_ACTION_REGEXP_MATCH_ACTION) != CYBERIADA_NO_ERROR) {
 		return CYBERIADA_ASSERT;
 	}
 
@@ -3079,6 +3120,7 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, Cyber
 								 GRAPHML_BERLOGA_SCHEMENAME_ATTR) == CYBERIADA_NO_ERROR) {
 		cyberiada_copy_string(&(doc->format), &(doc->format_len), CYBERIADA_FORMAT_BERLOGA);
 		berloga_format = 1;
+		regexps->berloga_legacy = 1;
 	} else {
 		cyberiada_copy_string(&(doc->format), &(doc->format_len), CYBERIADA_FORMAT_OSTRANNA);
 		berloga_format = 0;
@@ -3377,7 +3419,9 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	}
 
 	skip_geometry = flags & CYBERIADA_FLAG_SKIP_GEOMETRY;
-	if (skip_geometry && flags != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+	if (skip_geometry &&
+		flags != CYBERIADA_FLAG_SKIP_GEOMETRY &&
+		flags != (CYBERIADA_FLAG_SKIP_GEOMETRY | CYBERIADA_FLAG_FLATTENED)) {
 		ERROR("The skip geometry flag is not compatible with other flags\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
