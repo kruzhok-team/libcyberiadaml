@@ -132,6 +132,8 @@
 #define CYBERIADA_ACTION_TRIGGER_ENTRY         "entry"
 #define CYBERIADA_ACTION_TRIGGER_EXIT          "exit"
 #define CYBERIADA_ACTION_TRIGGER_DO            "do"
+#define CYBERIADA_ACTION_SEPARATOR_CHR         '/'
+#define CYBERIADA_ACTION_ENDING_CHR            ')'
 #define CYBERIADA_ACTION_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*))?\\s*$"
 #define CYBERIADA_ACTION_NODE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*)?)\\s*$"
 #define CYBERIADA_ACTION_REGEXP_MATCHES        10
@@ -673,50 +675,61 @@ static int cyberiada_destroy_edge(CyberiadaEdge* e)
 	return CYBERIADA_NO_ERROR;
 }
 
-static regex_t cyberiada_edge_action_regexp;
-static regex_t cyberiada_node_action_regexp;
-static regex_t cyberiada_node_legacy_action_regexp;
-/*static regex_t cyberiada_newline_regexp;*/
-static regex_t cyberiada_spaces_regexp;
+typedef struct {
+	int     flattened_regexps;
+	/* basic regexps */
+	regex_t edge_action_regexp;
+	regex_t node_action_regexp;
+	regex_t node_legacy_action_regexp;
+    /*regex_t newline_regexp;*/
+	regex_t spaces_regexp;
+} CyberiadaRegexps;
 
-static int cyberiada_init_action_regexps(void)
+static int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 {
-	if (regcomp(&cyberiada_edge_action_regexp, CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
+	if (!regexps) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	regexps->flattened_regexps = flattened;
+	if (regcomp(&(regexps->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&cyberiada_node_action_regexp, CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&cyberiada_node_legacy_action_regexp, CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-/*	if (regcomp(&cyberiada_newline_regexp, CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
-		ERROR("cannot compile new line regexp\n");
-		return CYBERIADA_ASSERT;
-		}*/
-	if (regcomp(&cyberiada_spaces_regexp, CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
+/*	if (regcomp(&(regexps->newline_regexp), CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
+	ERROR("cannot compile new line regexp\n");
+	return CYBERIADA_ASSERT;
+	}*/
+	if (regcomp(&(regexps->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile new line regexp\n");
 		return CYBERIADA_ASSERT;
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_free_action_regexps(void)
+static int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
 {
-	regfree(&cyberiada_edge_action_regexp);
-	regfree(&cyberiada_node_action_regexp);
-	regfree(&cyberiada_node_legacy_action_regexp);
+	if (!regexps) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	regfree(&(regexps->edge_action_regexp));
+	regfree(&(regexps->node_action_regexp));
+	regfree(&(regexps->node_legacy_action_regexp));
 /*	regfree(&cyberiada_newline_regexp);*/
-	regfree(&cyberiada_spaces_regexp);
+	regfree(&(regexps->spaces_regexp));
 	return CYBERIADA_NO_ERROR;
 }
 
 static int cyberiaga_matchres_action_regexps(const char* text,
-											   const regmatch_t* pmatch, size_t pmatch_size,
-											   char** trigger, char** guard, char** behavior)
+											 const regmatch_t* pmatch, size_t pmatch_size,
+											 char** trigger, char** guard, char** behavior)
 {
 	size_t i;
 	char* part;
@@ -791,7 +804,7 @@ static int decode_utf8_strings(char** trigger, char** guard, char** behavior)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action)
+static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps)
 {
 	int res;
 	size_t buffer_len;
@@ -806,7 +819,7 @@ static int cyberiada_decode_edge_action(const char* text, CyberiadaAction** acti
 		return CYBERIADA_NO_ERROR;
 	}
 	
-	if ((res = regexec(&cyberiada_edge_action_regexp, buffer,
+	if ((res = regexec(&(regexps->edge_action_regexp), buffer,
 					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 		if (res == REG_NOMATCH) {
 			ERROR("edge action text didn't match the regexp\n");
@@ -883,12 +896,12 @@ static int cyberiada_add_action(const char* trigger, const char* guard, const ch
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** action)
+static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps)
 {
 	int res;
 	char *trigger = "", *guard = "", *behavior = "";
 	regmatch_t pmatch[CYBERIADA_ACTION_REGEXP_MATCHES];
-	if ((res = regexec(&cyberiada_node_action_regexp, text,
+	if ((res = regexec(&(regexps->node_action_regexp), text,
 					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 		if (res == REG_NOMATCH) {
 			ERROR("node block action text didn't match the regexp\n");
@@ -917,7 +930,7 @@ static int cyberiada_decode_state_block_action(const char* text, CyberiadaAction
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions)
+static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps)
 {
 	int res;
 	size_t buffer_len;
@@ -970,11 +983,11 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 			DEBUG("second part: '%s'\n", start);
 			}*/
 		
-		if (regexec(&cyberiada_spaces_regexp, start, 0, NULL, 0) == 0) {
+		if (regexec(&(regexps->spaces_regexp), start, 0, NULL, 0) == 0) {
 			continue ;
 		}
 
-		if ((res = cyberiada_decode_state_block_action(start, actions)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_decode_state_block_action(start, actions, regexps)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
 			return res;
 		}
@@ -985,10 +998,10 @@ static int cyberiada_decode_state_actions(const char* text, CyberiadaAction** ac
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions)
+static int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps)
 {
 	int res;
-	char *buffer, *next, *start, *block;
+	char *buffer, *next, *start, *block, *buffer2 = NULL;
 	size_t buffer_len;
 	CyberiadaList *sections_list = NULL, *list;
 	regmatch_t pmatch[CYBERIADA_ACTION_LEGACY_MATCHES];
@@ -1000,53 +1013,86 @@ static int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction*
 	if (!buffer) {
 		return CYBERIADA_NO_ERROR;
 	}
+	if (regexps->flattened_regexps) {
+		buffer2 = (char*)malloc(buffer_len * 2);
+		memset(buffer2, 0, buffer_len * 2);
+		char* start2 = buffer2;
+		block = buffer2;
 		
-	while (*next) {
 		start = next;
-		while (*start && isspace(*start)) start++;
-		res = regexec(&cyberiada_node_legacy_action_regexp, start,
-					  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
-		if (res != 0 && res != REG_NOMATCH) {
-			ERROR("newline regexp error %d\n", res);
-			res = CYBERIADA_ACTION_FORMAT_ERROR;
-			break;
-		}
-		if (res == 0) {
-			/*DEBUG("add start: '%s'\n", start);*/
-			list = sections_list;
-			cyberiada_list_add(&sections_list, start, NULL);
-			if (list) {
-				block = (char*)list->key;
-				while (*block) {
-					if (block == start) {
-						*(block - 1) = 0;
-						break;
-					}
+		while (*next) {
+			size_t size = (size_t)(next - start + 1);
+			char chr = *next;
+			if (chr == CYBERIADA_ACTION_SEPARATOR_CHR || chr == CYBERIADA_ACTION_ENDING_CHR) {
+				if (chr == CYBERIADA_ACTION_SEPARATOR_CHR && block != buffer2) {
+					*block = 0;
 					block++;
+					cyberiada_list_add(&sections_list, start2, NULL);
+					start2 = block;
+				}
+				memcpy(block, start, size);
+				block += size;
+				*block = '\n';
+				block++;
+				start = next + 1;
+			}
+			next++;
+		}
+
+		if (block != buffer2) {
+			*block = 0;
+			block++;
+			cyberiada_list_add(&sections_list, start2, NULL);
+		}
+		
+	} else {
+		while (*next) {
+			start = next;
+			while (*start && isspace(*start)) start++;
+			res = regexec(&(regexps->node_legacy_action_regexp), start,
+						  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
+			if (res != 0 && res != REG_NOMATCH) {
+				ERROR("newline regexp error %d\n", res);
+				res = CYBERIADA_ACTION_FORMAT_ERROR;
+				break;
+			}
+			if (res == 0) {
+				/*DEBUG("add start: '%s'\n", start);*/
+				list = sections_list;
+				cyberiada_list_add(&sections_list, start, NULL);
+				if (list) {
+					block = (char*)list->key;
+					while (*block) {
+						if (block == start) {
+							*(block - 1) = 0;
+							break;
+						}
+						block++;
+					}
 				}
 			}
+			block = strstr(start, CYBERIADA_SINGLE_NEWLINE);
+			if (block) {
+				next = block + 1;
+			} else {
+				next = start + strlen(start);
+			}
+			res = CYBERIADA_NO_ERROR;
 		}
-		block = strstr(start, CYBERIADA_SINGLE_NEWLINE);
-		if (block) {
-			next = block + 1;
-		} else {
-			next = start + strlen(start);
-		}
-		res = CYBERIADA_NO_ERROR;
 	}
-
 	/*DEBUG("text: %s\n", text);*/
 	for (list = sections_list; list; list = list->next) {
 		start = (char*)list->key;
 		/* DEBUG("section: '%s'\n", start);*/
-		if ((res = cyberiada_decode_state_block_action(start, actions)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_decode_state_block_action(start, actions, regexps)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
 			break;
 		}
 		res = CYBERIADA_NO_ERROR;
 	}
-	
+
 	free(buffer);
+	if (buffer2) free(buffer2);
 	cyberiada_list_free(&sections_list);
 	
 	return res;
@@ -1503,7 +1549,7 @@ int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata)
+static int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps)
 {
 	CyberiadaMetainformation* meta;
 	char  *start, *block, *block2, *next, *parts;
@@ -1533,7 +1579,7 @@ static int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata)
 			block = start;
 			next = start + strlen(block);
 		}
-		if (regexec(&cyberiada_spaces_regexp, start, 0, NULL, 0) == 0) {
+		if (regexec(&(regexps->spaces_regexp), start, 0, NULL, 0) == 0) {
 			continue;
 		}
 
@@ -1988,7 +2034,8 @@ static int cyberiada_xml_read_rect(xmlNode* xml_node,
 
 static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 											CyberiadaDocument* doc,
-											NodeStack** stack)
+											NodeStack** stack,
+											CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2016,7 +2063,8 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 
 static GraphProcessorState handle_new_node(xmlNode* xml_node,	
 										   CyberiadaDocument* doc,
-										   NodeStack** stack)
+										   NodeStack** stack,
+										   CyberiadaRegexps* regexps)
 {
 	CyberiadaNode* node;	
 	CyberiadaNode* parent;	
@@ -2046,7 +2094,8 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 
 static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 										   CyberiadaDocument* doc,
-										   NodeStack** stack)
+										   NodeStack** stack,
+										   CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2078,7 +2127,8 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 											 CyberiadaDocument* doc,
-											 NodeStack** stack)
+											 NodeStack** stack,
+											 CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaPoint* p;
@@ -2113,7 +2163,8 @@ static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_group_node(xmlNode* xml_node,
 											 CyberiadaDocument* doc,
-											 NodeStack** stack)
+											 NodeStack** stack,
+											 CyberiadaRegexps* regexps)
 {
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
@@ -2126,7 +2177,8 @@ static GraphProcessorState handle_group_node(xmlNode* xml_node,
 
 static GraphProcessorState handle_comment_node(xmlNode* xml_node,
 											   CyberiadaDocument* doc,
-											   NodeStack** stack)
+											   NodeStack** stack,
+											   CyberiadaRegexps* regexps)
 {
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
@@ -2141,7 +2193,8 @@ static GraphProcessorState handle_comment_node(xmlNode* xml_node,
 
 static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 											   CyberiadaDocument* doc,
-											   NodeStack** stack)
+											   NodeStack** stack,
+											   CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2169,7 +2222,8 @@ static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 												CyberiadaDocument* doc,
-												NodeStack** stack)
+												NodeStack** stack,
+												CyberiadaRegexps* regexps)
 {
 	CyberiadaNodeType type;
 	CyberiadaNode* current = node_stack_current_node(stack);
@@ -2183,24 +2237,32 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 								&rect) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
-	if (type == cybNodeInitial) {
+	if (type == cybNodeInitial || type == cybNodeFinal) {
 		current->geometry_point = htree_new_point();
 		current->geometry_point->x = rect->x + rect->width / 2.0;
 		current->geometry_point->y = rect->y + rect->height / 2.0;
 		htree_destroy_rect(rect);
 		return gpsNodeStart;
-	} else if (type == cybNodeComment) {
-		current->geometry_rect = rect;
-		return gpsNodeAction;
 	} else {
-		current->geometry_rect = rect;
-		return gpsNodeTitle;
+		if (rect->width == 0.0 && rect->height == 0.0) {
+			/* rect with zero width & height is empty actually */
+			htree_destroy_rect(rect);
+			current->geometry_rect = NULL;
+		} else {
+			current->geometry_rect = rect;
+		}
+		if (type == cybNodeComment) {					
+			return gpsNodeAction;
+		} else {
+			return gpsNodeTitle;
+		}
 	}
 }
 
 static GraphProcessorState handle_property(xmlNode* xml_node,
 										   CyberiadaDocument* doc,
-										   NodeStack** stack)
+										   NodeStack** stack,
+										   CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2216,8 +2278,9 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 }
 
 static GraphProcessorState handle_node_title(xmlNode* xml_node,
-											CyberiadaDocument* doc,
-											NodeStack** stack)
+											 CyberiadaDocument* doc,
+											 NodeStack** stack,
+											 CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2239,8 +2302,9 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 }
 
 static GraphProcessorState handle_node_action(xmlNode* xml_node,
-												CyberiadaDocument* doc,
-												NodeStack** stack)
+											  CyberiadaDocument* doc,
+											  NodeStack** stack,
+											  CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2268,7 +2332,7 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 							  &(current->comment_data->body_len), buffer);
 	} else {
 		/* DEBUG("Set node %s action %s\n", current->id, buffer); */
-		if (cyberiada_decode_state_actions_yed(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
+		if (cyberiada_decode_state_actions_yed(buffer, &(current->actions), regexps) != CYBERIADA_NO_ERROR) {
 			ERROR("cannot decode yed node action\n");
 			return gpsInvalid;
 		}
@@ -2278,7 +2342,8 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 												CyberiadaDocument* doc,
-												NodeStack** stack)
+												NodeStack** stack,
+												CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2312,8 +2377,9 @@ static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 }
 
 static GraphProcessorState handle_edge_label(xmlNode* xml_node,
-											CyberiadaDocument* doc,
-											NodeStack** stack)
+											 CyberiadaDocument* doc,
+											 NodeStack** stack,
+											 CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2334,7 +2400,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
 	/* DEBUG("add edge %s:%s action %s\n",
 	   current->source_id, current->target_id, buffer); */
-	if (cyberiada_decode_edge_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+	if (cyberiada_decode_edge_action(buffer, &(current->action), regexps) != CYBERIADA_NO_ERROR) {
 		ERROR("cannot decode edge action\n");
 		return gpsInvalid;
 	}
@@ -2422,7 +2488,8 @@ static void cyberiada_init_table_free_extensitions(void)
 
 static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 												CyberiadaDocument* doc,
-												NodeStack** stack)
+												NodeStack** stack,
+												CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2452,7 +2519,8 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 
 static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 											   CyberiadaDocument* doc,
-											   NodeStack** stack)
+											   NodeStack** stack,
+											   CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2497,7 +2565,8 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_data(xmlNode* xml_node,
 											CyberiadaDocument* doc,
-											NodeStack** stack)
+											NodeStack** stack,
+											CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2554,14 +2623,14 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 								  &(current->comment_data->body_len), buffer);
 			if (current->type == cybNodeFormalComment &&
 				current->title && strcmp(current->title, CYBERIADA_META_NODE_TITLE) == 0) {
-				if (cyberiada_decode_meta(doc, buffer) != CYBERIADA_NO_ERROR) {
+				if (cyberiada_decode_meta(doc, buffer, regexps) != CYBERIADA_NO_ERROR) {
 					ERROR("Error while decoging metainfo comment\n");
 					return gpsInvalid;
 				}
 			}
 		} else {
 			/* DEBUG("Set node %s action %s\n", current->id, buffer); */
-			if (cyberiada_decode_state_actions(buffer, &(current->actions)) != CYBERIADA_NO_ERROR) {
+			if (cyberiada_decode_state_actions(buffer, &(current->actions), regexps) != CYBERIADA_NO_ERROR) {
 				ERROR("Cannot decode cyberiada node action\n");
 				return gpsInvalid;
 			}
@@ -2635,7 +2704,8 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_point(xmlNode* xml_node,
 											 CyberiadaDocument* doc,
-											 NodeStack** stack)
+											 NodeStack** stack,
+											 CyberiadaRegexps* regexps)
 {
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
@@ -2655,7 +2725,8 @@ static GraphProcessorState handle_node_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_node_rect(xmlNode* xml_node,
 											CyberiadaDocument* doc,
-											NodeStack** stack)
+											NodeStack** stack,
+											CyberiadaRegexps* regexps)
 {
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
@@ -2670,12 +2741,18 @@ static GraphProcessorState handle_node_rect(xmlNode* xml_node,
 							   &(current->geometry_rect)) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
+	if (current->geometry_rect->width == 0.0 && current->geometry_rect->height == 0.0) {
+		/* rect with zero width & height is empty actually */
+		htree_destroy_rect(current->geometry_rect);
+		current->geometry_rect = NULL;
+	}
 	return gpsNode;
 }
 
 static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 											CyberiadaDocument* doc,
-											NodeStack** stack)
+											NodeStack** stack,
+											CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -2705,7 +2782,7 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 			return gpsInvalid;
 		}
 		/* DEBUG("Set edge %s action %s\n", current->id, buffer); */
-		if (cyberiada_decode_edge_action(buffer, &(current->action)) != CYBERIADA_NO_ERROR) {
+		if (cyberiada_decode_edge_action(buffer, &(current->action), regexps) != CYBERIADA_NO_ERROR) {
 			ERROR("cannot decode edge action\n");
 			return gpsInvalid;
 		}
@@ -2766,7 +2843,8 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_source_point(xmlNode* xml_node,
 													CyberiadaDocument* doc,
-													NodeStack** stack)
+													NodeStack** stack,
+													CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2789,7 +2867,8 @@ static GraphProcessorState handle_edge_source_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_target_point(xmlNode* xml_node,
 													CyberiadaDocument* doc,
-													NodeStack** stack)
+													NodeStack** stack,
+													CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2812,7 +2891,8 @@ static GraphProcessorState handle_edge_target_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_label_point(xmlNode* xml_node,
 												   CyberiadaDocument* doc,
-												   NodeStack** stack)
+												   NodeStack** stack,
+												   CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2835,7 +2915,8 @@ static GraphProcessorState handle_edge_label_point(xmlNode* xml_node,
 
 static GraphProcessorState handle_edge_label_rect(xmlNode* xml_node,
 												  CyberiadaDocument* doc,
-												  NodeStack** stack)
+												  NodeStack** stack,
+												  CyberiadaRegexps* regexps)
 {
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2858,7 +2939,8 @@ static GraphProcessorState handle_edge_label_rect(xmlNode* xml_node,
 
 typedef GraphProcessorState (*GraphProcessorHandler)(xmlNode* xml_root,
 													 CyberiadaDocument* doc,
-													 NodeStack** stack);
+													 NodeStack** stack,
+													 CyberiadaRegexps* regexps);
 
 typedef struct {
 	GraphProcessorState		state;
@@ -2920,7 +3002,8 @@ static int dispatch_processor(xmlNode* xml_node,
 							  NodeStack** stack,
 							  GraphProcessorState* gps,
 							  ProcessorTransition* processor_state_table,
-							  size_t processor_state_table_size)
+							  size_t processor_state_table_size,
+							  CyberiadaRegexps* regexps)
 {
 	size_t i;
 	if (xml_node->type == XML_ELEMENT_NODE) {
@@ -2929,7 +3012,7 @@ static int dispatch_processor(xmlNode* xml_node,
 		for (i = 0; i < processor_state_table_size; i++) {
 			if (processor_state_table[i].state == *gps &&
 				strcmp(xml_element_name, processor_state_table[i].symbol) == 0) {
-				*gps = (*(processor_state_table[i].handler))(xml_node, doc, stack);
+				*gps = (*(processor_state_table[i].handler))(xml_node, doc, stack, regexps);
 				return CYBERIADA_NO_ERROR;
 			}
 		}
@@ -2942,7 +3025,8 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 								  NodeStack** stack,
 								  GraphProcessorState* gps,
 								  ProcessorTransition* processor_state_table,
-								  size_t processor_state_table_size)
+								  size_t processor_state_table_size,
+								  CyberiadaRegexps* regexps)
 {
 	xmlNode *cur_xml_node = NULL;
 	/* NodeStack* s = *stack; */
@@ -2961,13 +3045,15 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 			  debug_state_names[*gps]); */
 		node_stack_push(stack);
 		dispatch_processor(cur_xml_node, doc, stack, gps,
-						   processor_state_table, processor_state_table_size);
+						   processor_state_table, processor_state_table_size,
+						   regexps);
 		if (*gps == gpsInvalid) {
 			return CYBERIADA_FORMAT_ERROR;
 		}
 		if (cur_xml_node->children) {
 			int res = cyberiada_build_graphs(cur_xml_node->children, doc, stack, gps,
-											 processor_state_table, processor_state_table_size);
+											 processor_state_table, processor_state_table_size,
+											 regexps);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
@@ -2977,7 +3063,7 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc)
+static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -3001,7 +3087,8 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc)
 	
 	if ((res = cyberiada_build_graphs(root, doc, &stack, &gps,
 									  yed_processor_state_table,
-									  yed_processor_state_table_size)) != CYBERIADA_NO_ERROR) {
+									  yed_processor_state_table_size,
+									  regexps)) != CYBERIADA_NO_ERROR) {
 		return res;
 	}
 	
@@ -3043,7 +3130,7 @@ static int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* pa
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc)
+static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc, CyberiadaRegexps* regexps)
 {
 	GraphProcessorState gps = gpsInit;
 	CyberiadaSM* sm;
@@ -3053,8 +3140,9 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc)
 	CyberiadaEdge *edge, *prev_edge;*/
 	
 	if ((res = cyberiada_build_graphs(root, doc, &stack, &gps,
-									 cyb_processor_state_table,
-									 cyb_processor_state_table_size)) != CYBERIADA_NO_ERROR) {
+									  cyb_processor_state_table,
+									  cyb_processor_state_table_size,
+									  regexps)) != CYBERIADA_NO_ERROR) {
 		cyberiada_init_table_free_extensitions();
 		return res;
 	}
@@ -3227,8 +3315,12 @@ static int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
 				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice) {
 			if (n->geometry_point) {
-				ERROR("Rect node %s has point geometry\n", n->id);
+				ERROR("Rect (node %s) has point geometry\n", n->id);
 				return CYBERIADA_ACTION_FORMAT_ERROR;
+			}
+			if (n->geometry_rect && (n->geometry_rect->width == 0.0 && n->geometry_rect->height)) {
+				ERROR("Rect (node %s) has zero width & height\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;				
 			}
 		}
 		if (n->children) {
@@ -3277,6 +3369,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	CyberiadaSM* sm;
 	NamesList* nl = NULL;
 	int geom_flags;
+	CyberiadaRegexps cyberiada_regexps;
 
 	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
 		ERROR("Round geometry flag is not supported on import\n");
@@ -3336,8 +3429,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	}
 	
 	cyberiada_init_sm_document(cyb_doc);
-	cyberiada_init_action_regexps();
-
+	cyberiada_init_action_regexps(&cyberiada_regexps, flags & CYBERIADA_FLAG_FLATTENED);
+	
 	do {
 
 		/* get the root element node */
@@ -3360,9 +3453,9 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		
 		/* DEBUG("reading format %d\n", format); */
 		if (format == cybxmlYED) {
-			res = cyberiada_decode_yed_xml(root, cyb_doc);
+			res = cyberiada_decode_yed_xml(root, cyb_doc, &cyberiada_regexps);
 		} else if (format == cybxmlCyberiada10) {
-			res = cyberiada_decode_cyberiada_xml(root, cyb_doc);
+			res = cyberiada_decode_cyberiada_xml(root, cyb_doc, &cyberiada_regexps);
 		} else {
 			ERROR("error: unsupported GraphML format of file\n");
 			res = CYBERIADA_XML_ERROR;
@@ -3405,9 +3498,60 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	} while(0);
 
 	cyberiada_free_name_list(&nl);
-	cyberiada_free_action_regexps();
+	cyberiada_free_action_regexps(&cyberiada_regexps);
 	
     return res;	
+}
+
+static int cyberiada_detect_flattened_file(const char* filename, int* flattened)
+{
+	FILE* f;
+	
+	if (!filename || !flattened) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	f = fopen(filename, "r");
+	if (!f) {
+		return CYBERIADA_XML_ERROR;
+	}
+
+	*flattened = 1;
+	
+	while (!feof(f)) {
+		char buffer[2];
+		size_t r;
+		r = fread(buffer, 1, 2, f);
+		if (r < 2) break;
+		if (isspace(buffer[0]) && isspace(buffer[1])) {
+			*flattened = 0;
+			break;
+		}
+	}
+	
+	fclose(f);
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_detect_flattened_buffer(const char* buffer, size_t buffer_size, int* flattened)
+{
+	size_t i;
+	
+	if (!buffer || !flattened) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	*flattened = 1;
+	
+	for (i = 0; i + 1 < buffer_size; i += 2) {
+		if (isspace(buffer[i]) && isspace(buffer[i + 1])) {
+			*flattened = 0;
+			break;
+		}
+	}
+	
+	return CYBERIADA_NO_ERROR;
 }
 
 int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
@@ -3417,6 +3561,15 @@ int cyberiada_read_sm_document(CyberiadaDocument* cyb_doc, const char* filename,
 	xmlDoc* doc = NULL;
 	xmlInitParser();
 
+	if (format != cybxmlCyberiada10) {
+		int flattened = 0;
+		if ((res = cyberiada_detect_flattened_file(filename, &flattened)) != CYBERIADA_NO_ERROR) {
+			ERROR("error: could not read file %s\n", filename);
+			return res;
+		}
+		if (flattened) flags |= CYBERIADA_FLAG_FLATTENED;
+	}
+	
 	/* parse the file and get the DOM */
 	if ((doc = xmlReadFile(filename, NULL, 0)) == NULL) {
 		ERROR("error: could not parse file %s\n", filename);
@@ -3440,6 +3593,15 @@ int cyberiada_decode_sm_document(CyberiadaDocument* cyb_doc, const char* buffer,
 	xmlDoc* doc = NULL;
 	xmlInitParser();
 
+	if (format != cybxmlCyberiada10) {
+		int flattened = 0;
+		if ((res = cyberiada_detect_flattened_buffer(buffer, buffer_size, &flattened)) != CYBERIADA_NO_ERROR) {
+			ERROR("error: could not read buffer\n");
+			return res;
+		}
+		if (flattened) flags |= CYBERIADA_FLAG_FLATTENED;
+	}
+	
 	/* parse the file and get the DOM */
 	if ((doc = xmlReadMemory(buffer, buffer_size, XML_READMEMORY_BASENAME, NULL, 0)) == NULL) {
 		ERROR("error: could not read buffer\n");

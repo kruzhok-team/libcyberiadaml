@@ -293,6 +293,8 @@ typedef enum {
 #define CYBERIADA_FLAG_SKIP_GEOMETRY                      4096 /* skip geometry node/edge during import/export */
 #define CYBERIADA_FLAG_ROUND_GEOMETRY                     8192 /* export geometry with round coordinates to 0.001 */
 
+#define CYBERIADA_FLAG_FLATTENED                          16384 /* the document is flattened  */
+	
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes
  * ----------------------------------------------------------------------------- */
