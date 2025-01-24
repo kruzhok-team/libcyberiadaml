@@ -134,80 +134,6 @@ static int cyberiada_get_initial_pseudostate(CyberiadaSM* sm,
 	return CYBERIADA_NO_ERROR;
 }
 
-/*
-
-static int cyberiada_find_nodes_with_the_same_ids(CyberiadaNode* root1, CyberiadaNode* root2, CyberiadaList** nodes_list)
-{
-	CyberiadaNode *n1;
-
-	if (!root1 || !root2 || !nodes_list) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
-
-	for (n1 = root1; n1; n1 = n1->next) {
-		CyberadaNode* n2 = cyberiada_graph_find_node_by_id(root2, n1->id);
-		if (n2) {
-		cyberiada_list_add(nodes_list, n1, n2);			
-		}
-		if (n1->children) {
-			cyberiada_find_nodes_with_the_same_ids(n1->children, root2, nodes_list);
-		}
-	}
-
-	return CYBERIADA_NO_ERROR;
-	}
-
-	static int cyberiada_compare_nodes(CyberiadaNode* nodes1, CyberiadaNode* nodes2,
-	int* result_flags, size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes,
-	size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
-								   size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes)
-{
-	CyberidaList **origin_list = NULL, **equal_list = ;
-
-	int res = CYBERIADA_NO_ERROR;
-	CyberiadaNode *n1, *n2;
-	CyberiadaList* equal_pairs = NULL;
-	CyberiadaList* isomorphic_candidates = NULL;
-
-	if (!nodes1 || !nodes2 || !result_flags) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
-
-	for (n1 = nodes1; n1; n1 = n1->next) {
-		if (ciberiada_list_find_key(&equal_pairs, n1)) {
-			continue;
-		}
-		for (n2 = nodes2; n2; n2 = n2->next) {
-			int flags = 0, children_flag = 0;
-			if (ciberiada_list_find_data(&equal_pairs, n1)) {
-				continue;
-			}
-
-			cyberiada_compare_two_nodes(n1, n2, &flags);
-
-			if (flag == CYBERIADA_ISOMORPH_FLAG_DIFF_STATES) {
-				continue;
-			}
-			
-			if (nodes1->children && nodes2->children) {
-				cyberiada_compare_nodes(nodes1->children, nodes2->children,
-										&children_flag, sm_diff_nodes_size, sm_diff_nodes,
-										sm2_new_nodes_size, sm2_new_nodes,
-										sm1_missing_nodes_size, sm1_missing_nodes);
-			}
-
-			if ((flag | children_flag) & CYBERIADA_ISOMORPH_FLAG_EQUAL) {
-			cyberiada_list_add(&equal_pairs, n1, n2);
-			} else if ((flag | children_flag) & (CYBERIADA_ISOMORPH_FLAG_EQUAL & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC)) {
-				if (cyberiada_list_find_key(&isomorphic_candidates, n1) != n2) {
-					
-				}
-			}
-	}
-
-	cyberiada_list_free(&equal_pairs);
-	}*/
-
 typedef struct {
 	CyberiadaNode* node;
 	size_t         degree_out;
@@ -276,7 +202,8 @@ int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* 
 		cur_vertex->degree_in = d_in;
 		cur_vertex->degree_out = d_out;
 		cur_vertex->found = 0;
-		/*DEBUG("%lu: %s +%lu -%lu\n", *cur_index, n->id, d_in, d_out);*/
+
+		/* DEBUG("%lu: %s +%lu -%lu\n", *cur_index, n->id, d_in, d_out); */
 
 		if (n->children) {
 			if ((res = cyberiada_enumerate_vertexes(sm, n->children, v_array, v_size, cur_index, ignore_comments)) != CYBERIADA_NO_ERROR) {
@@ -338,8 +265,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	}
 	v1 = (Vertex*)malloc(sizeof(Vertex) * n_v1);
 	v2 = (Vertex*)malloc(sizeof(Vertex) * n_v2);
-	row_num = (size_t*)malloc(sizeof(size_t) * sizeof(n_v1));
-	col_num = (size_t*)malloc(sizeof(size_t) * sizeof(n_v2));
+	row_num = (size_t*)malloc(sizeof(size_t) * n_v1);
+	col_num = (size_t*)malloc(sizeof(size_t) * n_v2);
 	memset(row_num, 0, sizeof(size_t) * n_v1);
 	memset(col_num, 0, sizeof(size_t) * n_v2);
 
@@ -353,8 +280,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 			if ((node1->type == node2->type ||
 				 node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState ||
 				 node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState) &&
-				v1[i].degree_in <= v2[j].degree_in &&
-				v1[i].degree_out <= v2[j].degree_out) {
+				(abs(v1[i].degree_in - v2[j].degree_in) <= 1 || v1[i].degree_in + 1 < v2[j].degree_in) &&
+				(abs(v1[i].degree_out - v2[j].degree_out) <= 1 || v1[i].degree_out + 1 < v2[j].degree_out)) {
 				M[i][j] = 1;
 				row_num[i]++;
 				col_num[j]++;
@@ -364,7 +291,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		}
 	}
 
-	/*debug_matrix("M", M, n_v1, n_v2);*/
+	/* debug_matrix("M", M, n_v1, n_v2);*/
 
 	found = 0;
 
@@ -392,7 +319,6 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		}
 	} else {
 		/* there are different permutations */
-
 		size_t p_max = 0;
 		char** P_max = (char**)malloc(sizeof(char*) * n_v1);
 		for (i = 0; i < n_v1; i++) {
@@ -401,8 +327,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 			memset(P[i], 0, sizeof(char) * n_v2);
 		}
 
-		for (i = 0; i < n_v1 && row_num[i]; i++) {
-			for (j = 0; j < n_v2 && col_num[j]; j++) {
+		for (i = 0; i < n_v1 && row_num[i] && p_max < n_v1; i++) {
+			for (j = 0; j < n_v2 && col_num[j] && p_max < n_v2; j++) {
 				if (M[i][j]) {
 					for (k = 0; k < n_v1; k++) {
 						memset(P[k], 0, sizeof(char) * n_v2);
@@ -480,7 +406,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		free(v2);
 	}
 	if (n_vertexes1) *n_vertexes1 = n_v1;
-	if (n_vertexes2) *n_vertexes2 = n_v1;
+	if (n_vertexes2) *n_vertexes2 = n_v2;
 	if (n_edges1) *n_edges1 = n_e1;
 	if (n_edges2) *n_edges2 = n_e2;
 
@@ -671,7 +597,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	if (sm1_vertexes == sm2_vertexes && sm1_edges == sm2_edges) {
 		*result_flags = CYBERIADA_ISOMORPH_FLAG_IDENTICAL;		
 	} else {
-		*result_flags = 0;
+		*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
 	}
 
 	for (i = 0; i < sm1_vertexes; i++) {
@@ -689,11 +615,16 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 						(*sm_diff_nodes_size)++;
 					}
 					if (*result_flags != CYBERIADA_ISOMORPH_FLAG_DIFF_STATES) {
-						if (*result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
-							*result_flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
-						}
-						if (node_diff != CYBERIADA_NODE_DIFF_ID) {
-							*result_flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
+						if (node_diff == CYBERIADA_NODE_DIFF_ID) {
+							if (*result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
+								*result_flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
+							}
+						} else if (node_diff & (CYBERIADA_NODE_DIFF_CHILDREN | CYBERIADA_NODE_DIFF_TYPE)) {
+							*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+						} else {
+							if (*result_flags & (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | CYBERIADA_ISOMORPH_FLAG_EQUAL)) {
+								*result_flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
+							}
 						}
 					}
 				}
