@@ -190,7 +190,7 @@ int main(int argc, char** argv)
 {
 	int command = 0;
     const char *source_filename, *dest_filename;
-	int silent = 0;
+	int silent = 0, require_initial = 0, ignore_comments = 1;
 	CyberiadaXMLFormat source_format, dest_format;
 	CyberiadaDocument doc;
 	size_t i;
@@ -212,6 +212,8 @@ int main(int argc, char** argv)
 	source_format = parameters[CMD_PARAM_INDEX_FROM_TYPE].arg_format;
 	dest_format = parameters[CMD_PARAM_INDEX_TO_TYPE].arg_format;
 	silent = parameters[CMD_PARAM_INDEX_SILENT].present;
+	require_initial = 0;
+	ignore_comments = 1;
 
 	cyberiada_init_sm_document(&doc);
 	
@@ -238,6 +240,7 @@ int main(int argc, char** argv)
 		CyberiadaNode *new_initial = NULL, **sm_diff_nodes = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
 		CyberiadaEdge **sm_diff_edges = NULL, **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
 		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags = NULL;
+		int flags = CYBERIADA_FLAG_NO;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
@@ -248,8 +251,12 @@ int main(int argc, char** argv)
 		}
 		
 		cyberiada_init_sm_document(&doc2);
-		
-		if ((res = cyberiada_read_sm_document(&doc2, dest_filename, dest_format, CYBERIADA_FLAG_NO)) != CYBERIADA_NO_ERROR) {
+
+		if (require_initial) {
+			flags |= CYBERIADA_FLAG_CHECK_INITIAL;
+		}
+			
+		if ((res = cyberiada_read_sm_document(&doc2, dest_filename, dest_format, flags)) != CYBERIADA_NO_ERROR) {
 			fprintf(stderr, "Error while reading %s file: %d\n",
 					dest_filename, res);
 
@@ -268,8 +275,9 @@ int main(int argc, char** argv)
 			return 6;
 		}
 
+
 		/* ignore comments and do not require the initial state on the top level */
-		res = cyberiada_check_isomorphism(doc.state_machines, doc2.state_machines, 1, 0,
+		res = cyberiada_check_isomorphism(doc.state_machines, doc2.state_machines, ignore_comments, require_initial,
 										  &result_flags, &new_initial,
 										  &sm_diff_nodes_size, &sm_diff_nodes, &sm_diff_nodes_flags,
 										  &sm2_new_nodes_size, &sm2_new_nodes,

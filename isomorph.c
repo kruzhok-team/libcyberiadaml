@@ -56,7 +56,6 @@ static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int i
 int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments)
 {
 	size_t n_cnt = 0, e_cnt = 0;
-	CyberiadaNode* node;
 	CyberiadaEdge* edge;
 	
 	if (!sm) {
@@ -136,15 +135,15 @@ static int cyberiada_get_initial_pseudostate(CyberiadaSM* sm,
 
 typedef struct {
 	CyberiadaNode* node;
-	size_t         degree_out;
-	size_t         degree_in;
+	int            degree_out;
+	int            degree_in;
 	int            found;
 } Vertex;
 
-static int cyberiada_node_degrees(CyberiadaSM* sm, CyberiadaNode* node, size_t* degree_in, size_t* degree_out)
+static int cyberiada_node_degrees(CyberiadaSM* sm, CyberiadaNode* node, int* degree_in, int* degree_out)
 {
 	CyberiadaEdge* e;
-	size_t d_in = 0, d_out = 0;
+	int d_in = 0, d_out = 0;
 
 	if (!sm || !node || !degree_in || !degree_out) {
 		return CYBERIADA_BAD_PARAMETER;
@@ -191,7 +190,7 @@ int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* 
 	}
 	
 	for (n = nodes; n; n = n->next) {
-		size_t d_in, d_out;
+		int d_in, d_out;
 		Vertex* cur_vertex;
 		if (ignore_comments && (n->type == cybNodeComment || n->type == cybNodeFormalComment)) continue;
 		cur_vertex = v_array + (*cur_index)++;
@@ -238,6 +237,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 												   Vertex** vertexes1, Vertex** vertexes2, 
 												   size_t* n_vertexes1, size_t* n_edges1, size_t* n_vertexes2, size_t* n_edges2)
 {
+	(void)&debug_matrix; /* unused */
+
 	size_t i, j, k, x, y, n_v1 = 0, n_v2 = 0, n_e1 = 0, n_e2 = 0;
 	char **M = NULL, **P = NULL;
 	size_t *row_num = NULL, *col_num = NULL; 
@@ -278,8 +279,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 			CyberiadaNode* node1 = v1[i].node;
 			CyberiadaNode* node2 = v2[j].node;
 			if ((node1->type == node2->type ||
-				 node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState ||
-				 node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState) &&
+				 (node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState) ||
+				 (node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState)) &&
 				(abs(v1[i].degree_in - v2[j].degree_in) <= 1 || v1[i].degree_in + 1 < v2[j].degree_in) &&
 				(abs(v1[i].degree_out - v2[j].degree_out) <= 1 || v1[i].degree_out + 1 < v2[j].degree_out)) {
 				M[i][j] = 1;
@@ -654,7 +655,6 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	}
 
 	for (e1 = sm1->edges; e1; e1 = e1->next) {
-		int found = 0;
 		CyberiadaNode *sm2_source = NULL, *sm2_target = NULL;
 
 		if (ignore_comments && (e1->type == cybEdgeComment)) continue;

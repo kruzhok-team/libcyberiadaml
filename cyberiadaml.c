@@ -2078,6 +2078,8 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 											NodeStack** stack,
 											CyberiadaRegexps* regexps)
 {
+	(void)regexps; /* unused parameter */
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaSM* sm = doc->state_machines;
@@ -2107,6 +2109,9 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 										   NodeStack** stack,
 										   CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */
+	(void)regexps; /* unused parameter */
+
 	CyberiadaNode* node;	
 	CyberiadaNode* parent;	
 	char buffer[MAX_STR_LEN];
@@ -2138,6 +2143,9 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 										   NodeStack** stack,
 										   CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	char source_buffer[MAX_STR_LEN];
@@ -2171,6 +2179,9 @@ static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 											 NodeStack** stack,
 											 CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaEdge *current;
 	CyberiadaPoint* p;
 	CyberiadaPolyline *pl, *last_pl;
@@ -2207,6 +2218,10 @@ static GraphProcessorState handle_group_node(xmlNode* xml_node,
 											 NodeStack** stack,
 											 CyberiadaRegexps* regexps)
 {
+	(void)xml_node; /* unused parameter */	
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("current node invalid\n");
@@ -2221,6 +2236,10 @@ static GraphProcessorState handle_comment_node(xmlNode* xml_node,
 											   NodeStack** stack,
 											   CyberiadaRegexps* regexps)
 {
+	(void)xml_node; /* unused parameter */	
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("current node invalid\n");
@@ -2237,6 +2256,9 @@ static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 											   NodeStack** stack,
 											   CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaNode* current = node_stack_current_node(stack);
@@ -2266,6 +2288,9 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 												NodeStack** stack,
 												CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaNodeType type;
 	CyberiadaNode* current = node_stack_current_node(stack);
 	CyberiadaRect* rect;
@@ -2305,6 +2330,10 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 										   NodeStack** stack,
 										   CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	if (cyberiada_get_attr_value(buffer, buffer_len,
@@ -2323,6 +2352,9 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 											 NodeStack** stack,
 											 CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */
+	(void)regexps; /* unused parameter */		
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaNode* current = node_stack_current_node(stack);
@@ -2347,6 +2379,8 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 											  NodeStack** stack,
 											  CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaNode* current = node_stack_current_node(stack);
@@ -2386,6 +2420,9 @@ static GraphProcessorState handle_edge_geometry(xmlNode* xml_node,
 												NodeStack** stack,
 												CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -2422,6 +2459,8 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 											 NodeStack** stack,
 											 CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	double x = 0.0, y = 0.0;
@@ -2532,6 +2571,9 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 												NodeStack** stack,
 												CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	const char* format_name; 
@@ -2563,6 +2605,10 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 											   NodeStack** stack,
 											   CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	char *attr_id = NULL, *attr_for = NULL, *attr_name = NULL;
@@ -2748,6 +2794,9 @@ static GraphProcessorState handle_node_point(xmlNode* xml_node,
 											 NodeStack** stack,
 											 CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("no current node\n");
@@ -2769,6 +2818,9 @@ static GraphProcessorState handle_node_rect(xmlNode* xml_node,
 											NodeStack** stack,
 											CyberiadaRegexps* regexps)
 {
+	(void)doc; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("no current node\n");
@@ -2795,6 +2847,8 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 											NodeStack** stack,
 											CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaEdge *current;
@@ -2887,6 +2941,9 @@ static GraphProcessorState handle_edge_source_point(xmlNode* xml_node,
 													NodeStack** stack,
 													CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -2911,6 +2968,9 @@ static GraphProcessorState handle_edge_target_point(xmlNode* xml_node,
 													NodeStack** stack,
 													CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */
+	(void)regexps; /* unused parameter */
+	
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -2935,6 +2995,9 @@ static GraphProcessorState handle_edge_label_point(xmlNode* xml_node,
 												   NodeStack** stack,
 												   CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -2959,6 +3022,9 @@ static GraphProcessorState handle_edge_label_rect(xmlNode* xml_node,
 												  NodeStack** stack,
 												  CyberiadaRegexps* regexps)
 {
+	(void)stack; /* unused parameter */	
+	(void)regexps; /* unused parameter */	
+	
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
@@ -3288,7 +3354,7 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edges, int toplevel)
+static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edges, int check_initial, int toplevel)
 {
 	CyberiadaNode *n, *init_n = NULL;
 	CyberiadaEdge *e;
@@ -3308,7 +3374,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 			init_n = n;
 		}
 		if (n->children) {
-			int res = cyberiada_check_pseudostates(n->children, edges, 0);
+			int res = cyberiada_check_pseudostates(n->children, edges, check_initial, 0);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
@@ -3333,13 +3399,12 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 		}
 	}
 	
-/*	DISABLE MAIN INITIAL CHECK
-	if (toplevel) {
+	if (check_initial && toplevel) {
 		if (initial != 1) {
 			ERROR("SM should have single initial pseudostate on the top level\n");
 			return CYBERIADA_FORMAT_ERROR;
 		}
-	}*/
+	}
 	
 	return CYBERIADA_NO_ERROR;
 }
@@ -3376,7 +3441,7 @@ static int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry)
+static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial)
 {
 	int res = CYBERIADA_NO_ERROR;
 	CyberiadaSM* sm;
@@ -3384,10 +3449,10 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry)
 	if(!doc) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	
+
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		if (sm->nodes) {
-			if ((res = cyberiada_check_pseudostates(sm->nodes->children, sm->edges, 1)) != CYBERIADA_NO_ERROR) {
+			if ((res = cyberiada_check_pseudostates(sm->nodes->children, sm->edges, check_initial, 1)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
 				break;
 			}
@@ -3420,9 +3485,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 
 	skip_geometry = flags & CYBERIADA_FLAG_SKIP_GEOMETRY;
 	if (skip_geometry &&
-		flags != CYBERIADA_FLAG_SKIP_GEOMETRY &&
-		flags != (CYBERIADA_FLAG_SKIP_GEOMETRY | CYBERIADA_FLAG_FLATTENED)) {
-		ERROR("The skip geometry flag is not compatible with other flags\n");
+		flags & ~CYBERIADA_NON_GEOMETRY_FLAGS_MASK != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+		ERROR("The skip geometry flag is not compatible with other geometry flags\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
@@ -3522,7 +3586,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
-		res = cyberiada_check_graphs(cyb_doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY);
+		res = cyberiada_check_graphs(cyb_doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY, flags & CYBERIADA_FLAG_CHECK_INITIAL);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while checking graphs\n");
 			break;
@@ -4868,7 +4932,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	res = cyberiada_check_graphs(doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY);
+	res = cyberiada_check_graphs(doc, flags & CYBERIADA_FLAG_SKIP_GEOMETRY, flags & CYBERIADA_FLAG_CHECK_INITIAL);
 	if (res != CYBERIADA_NO_ERROR) {
 		ERROR("error while checking graphs\n");
 		return res;

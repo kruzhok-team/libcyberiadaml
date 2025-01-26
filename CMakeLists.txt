@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(cyberiadaml VERSION 1.0)
+project(cyberiadaml VERSION 1.0 LANGUAGES C)
 
 find_package(LibXml2 REQUIRED)
 if(!LibXml2_FOUND)
@@ -14,6 +14,12 @@ if(!htgeom_FOUND)
 endif()
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
+
+if(CMAKE_BUILD_TYPE STREQUAL Debug)
+  add_compile_options(-Wall)
+  add_compile_options(-Wextra) 
+  add_compile_options(-Wpedantic)
+endif()
 
 add_library(cyberiadaml SHARED
 			cyberiadaml.c
