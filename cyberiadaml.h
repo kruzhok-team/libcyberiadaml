@@ -291,13 +291,14 @@ typedef enum {
 #define CYBERIADA_FLAG_ANY_GEOMETRY                       0x7ff
 
 #define CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY               2048 /* reconstruct absent node/edge geometry on import */
-#define CYBERIADA_FLAG_SKIP_GEOMETRY                      4096 /* skip geometry node/edge during import/export */
-#define CYBERIADA_FLAG_ROUND_GEOMETRY                     8192 /* export geometry with round coordinates to 0.001 */
+#define CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY            4096 /* reconstruct absent SM geometry on import */
+#define CYBERIADA_FLAG_SKIP_GEOMETRY                      8192 /* skip geometry node/edge during import/export */
+#define CYBERIADA_FLAG_ROUND_GEOMETRY                     16384 /* export geometry with round coordinates to 0.001 */
 
-#define CYBERIADA_FLAG_FLATTENED                          16384 /* the document is flattened  */
-#define CYBERIADA_FLAG_CHECK_INITIAL                      32768 /* check initial state on the top level  */
-#define CYBERIADA_NON_GEOMETRY_FLAGS_MASK                 (16384 | 32768)
-	
+#define CYBERIADA_FLAG_FLATTENED                          32768 /* the document is flattened  */
+#define CYBERIADA_FLAG_CHECK_INITIAL                      65536 /* check initial state on the top level  */
+#define CYBERIADA_NON_GEOMETRY_FLAGS_MASK                 (32768 | 65536)
+
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes
  * ----------------------------------------------------------------------------- */
@@ -427,7 +428,7 @@ typedef enum {
 	int cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 
 	/* Reconstruct the SM document geometry from scratch */
-	int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc);
+	int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 	
 	/* Change the SM document geometry format and convert the SMs geometry data */
 	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,

@@ -185,7 +185,7 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 		type = htTree;
 	} else if (node->type == cybNodeCompositeState) {
 		type = htCompositeNode;
-	} else if (node->type & (cybNodeSimpleState | cybNodeChoice |cybNodeComment | cybNodeFormalComment)) {
+	} else if (node->type & (cybNodeSimpleState | cybNodeChoice | cybNodeComment | cybNodeFormalComment)) {
 		type = htSimpleNode;
 	} else if (node->type & (cybNodeInitial | cybNodeFinal | cybNodeTerminate)) {
 		type = htPoint;
@@ -630,8 +630,9 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	if (flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
-		if ((res = htree_reconstruct_document_geometry(htreegeom)) != HTREE_OK) {
+	if (flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
+		if ((res = htree_reconstruct_document_geometry(htreegeom,
+													   flags & CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) != HTREE_OK) {
 			ERROR("Error while reconstructing htree geometry %d\n", res);
 			htree_destroy_document(htreegeom);
 			return CYBERIADA_BAD_PARAMETER;
@@ -711,7 +712,7 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 }
 
 
-int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc)
+int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -724,7 +725,7 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc)
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	if ((res = htree_reconstruct_document_geometry(htreegeom)) != HTREE_OK) {
+	if ((res = htree_reconstruct_document_geometry(htreegeom, reconstruct_sm)) != HTREE_OK) {
 		ERROR("Error while reconstructing htree geometry %d\n", res);
 		htree_destroy_document(htreegeom);
 		return CYBERIADA_BAD_PARAMETER;

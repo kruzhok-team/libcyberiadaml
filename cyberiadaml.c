@@ -3600,7 +3600,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
 				cyberiada_clean_document_geometry(cyb_doc);
 			} else if (cyberiada_document_has_geometry(cyb_doc) ||
-					   flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
+					   flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
 				cyberiada_import_document_geometry(cyb_doc, flags, format);
 			} else {
 				/* document has no geometry */
@@ -3809,6 +3809,7 @@ int cyberiada_print_node(CyberiadaNode* node, int level)
 		node->type == cybNodeCompositeState ||
 		node->type == cybNodeSubmachineState ||
 		node->type == cybNodeComment ||
+		node->type == cybNodeFormalComment ||
 		node->type == cybNodeChoice) {
 		
 		if (node->type == cybNodeSubmachineState && node->link && node->link->ref) {
@@ -3942,6 +3943,14 @@ int cyberiada_print_sm_document(CyberiadaDocument* doc)
 
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		cyberiada_print_sm(sm);
+	}
+
+	if (doc->bounding_rect) {
+		printf("\nBounding rect: (%lf, %lf, %lf, %lf)\n",
+			   doc->bounding_rect->x,
+			   doc->bounding_rect->y,
+			   doc->bounding_rect->width,
+			   doc->bounding_rect->height);
 	}
 	
     return CYBERIADA_NO_ERROR;
@@ -4900,7 +4909,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 	CyberiadaDocument* copy_doc = NULL;
 	int res;
 
-	if (flags & CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) {
+	if (flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
 		ERROR("Geometry reconstructioin flag is not supported on export\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
