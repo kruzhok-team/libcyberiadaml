@@ -605,7 +605,7 @@ static CyberiadaCommentSubject* cyberiada_copy_comment_subject(CyberiadaCommentS
 	return dst;
 }
 
-CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target)
+CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target, int external)
 {
 	CyberiadaEdge* new_edge;
 	if (!source || !target) {
@@ -613,7 +613,11 @@ CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char
 	}
 	new_edge = (CyberiadaEdge*)malloc(sizeof(CyberiadaEdge));
 	memset(new_edge, 0, sizeof(CyberiadaEdge));
-	new_edge->type = cybEdgeTransition;
+	if (external) {
+		new_edge->type = cybEdgeTransition;
+	} else {
+		new_edge->type = cybEdgeLocalTransition;
+	}
 	cyberiada_copy_string(&(new_edge->id), &(new_edge->id_len), id);
 	cyberiada_copy_string(&(new_edge->source_id), &(new_edge->source_id_len), source);
 	cyberiada_copy_string(&(new_edge->target_id), &(new_edge->target_id_len), target);
@@ -626,7 +630,7 @@ static CyberiadaEdge* cyberiada_copy_edge(CyberiadaEdge* src)
 	if (!src) {
 		return NULL;
 	}
-	dst = cyberiada_new_edge(src->id, src->source_id, src->target_id);
+	dst = cyberiada_new_edge(src->id, src->source_id, src->target_id, 1);
 	dst->type = src->type;
 	if (src->action) {
 		dst->action = cyberiada_copy_action(src->action);
@@ -1218,14 +1222,14 @@ static int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNod
 	}
 	}*/
 
-static int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, const char* source, const char* target)
+static int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, const char* source, const char* target, int external)
 {
 	CyberiadaEdge* last_edge;
 	CyberiadaEdge* new_edge;
 	if (!sm) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	new_edge = cyberiada_new_edge(id, source, target);
+	new_edge = cyberiada_new_edge(id, source, target, external);
 	last_edge = sm->edges;
 	if (last_edge == NULL) {
 		sm->edges = new_edge;
@@ -2170,7 +2174,7 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 		buffer[0] = 0;
 	}
 	/* DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer); */
-	cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer);
+	cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 1);
 	return gpsEdge;
 }
 

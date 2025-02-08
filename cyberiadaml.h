@@ -58,7 +58,8 @@ typedef unsigned int CyberiadaNodeTypeMask;
 /* SM edge types: */
 typedef enum {
     cybEdgeTransition = 0,
-    cybEdgeComment = 1,
+	cybEdgeLocalTransition = 1,
+    cybEdgeComment = 2,
 } CyberiadaEdgeType;
 
 /* SM action types: */    
@@ -394,7 +395,7 @@ typedef enum {
 	CyberiadaNode* cyberiada_new_node(const char* id);
 
 	/* Allocate and initialize the SM edge structure in memory */
-	CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target);
+	CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target, int external);
 
 	/* Allocate and initialize the SM comment data structure in memory */
 	CyberiadaCommentData* cyberiada_new_comment_data(void);
