@@ -193,7 +193,7 @@
 												           return CYBERIADA_XML_ERROR; \
                                                        }
 #define XML_WRITE_OPEN_E_I(w, e, indent)               xmlTextWriterWriteRaw(w, (const xmlChar *)"\n"); \
-                                                       for (size_t _i = 0; _i < indent; _i++) { \
+                                                       for (int _i = 0; _i < indent; _i++) { \
                                                            xmlTextWriterWriteRaw(w, (const xmlChar *)INDENT_STR); \
                                                        } \
                                                        if ((res = xmlTextWriterStartElement(w, (const xmlChar *)e)) < 0) {	\
@@ -201,7 +201,7 @@
 												           return CYBERIADA_XML_ERROR; \
                                                        }
 #define XML_WRITE_OPEN_E_NS_I(w, e, ns, indent)        xmlTextWriterWriteRaw(w, (const xmlChar *)"\n"); \
-                                                       for (size_t _i = 0; _i < indent; _i++) { \
+                                                       for (int _i = 0; _i < indent; _i++) { \
                                                            xmlTextWriterWriteRaw(w, (const xmlChar *)INDENT_STR); \
                                                        } \
                                                        if ((res = xmlTextWriterStartElementNS(w, (const xmlChar *)ns, \
@@ -226,7 +226,7 @@
 												           return CYBERIADA_XML_ERROR; \
                                                        }
 #define XML_WRITE_CLOSE_E_I(w, indent)                 xmlTextWriterWriteRaw(w, (const xmlChar *)"\n"); \
-                                                       for (size_t _i = 0; _i < indent; _i++) { \
+                                                       for (int _i = 0; _i < indent; _i++) { \
                                                            xmlTextWriterWriteRaw(w, (const xmlChar *)INDENT_STR); \
                                                        } \
                                                        if ((res = xmlTextWriterEndElement(w)) < 0) { \
@@ -3489,7 +3489,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 
 	skip_geometry = flags & CYBERIADA_FLAG_SKIP_GEOMETRY;
 	if (skip_geometry &&
-		flags & ~CYBERIADA_NON_GEOMETRY_FLAGS_MASK != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+		(flags & ~CYBERIADA_NON_GEOMETRY_FLAGS_MASK) != CYBERIADA_FLAG_SKIP_GEOMETRY) {
 		ERROR("The skip geometry flag is not compatible with other geometry flags\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -4001,7 +4001,7 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_geometry_rect_cyberiada(xmlTextWriterPtr writer, CyberiadaRect* rect, size_t indent)
+static int cyberiada_write_geometry_rect_cyberiada(xmlTextWriterPtr writer, CyberiadaRect* rect, int indent)
 {
 	int res;
 	char buffer[MAX_STR_LEN];
@@ -4021,7 +4021,7 @@ static int cyberiada_write_geometry_rect_cyberiada(xmlTextWriterPtr writer, Cybe
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_geometry_point_cyberiada(xmlTextWriterPtr writer, CyberiadaPoint* point, size_t indent)
+static int cyberiada_write_geometry_point_cyberiada(xmlTextWriterPtr writer, CyberiadaPoint* point, int indent)
 {
 	int res;
 	char buffer[MAX_STR_LEN];
@@ -4037,7 +4037,7 @@ static int cyberiada_write_geometry_point_cyberiada(xmlTextWriterPtr writer, Cyb
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode* node, size_t indent)
+static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode* node, int indent)
 {
 	int res, found;
 	CyberiadaNode* cur_node;
@@ -4176,7 +4176,7 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge* edge, size_t indent)
+static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent)
 {
 	int res;
 /*	char buffer[MAX_STR_LEN];
@@ -4467,7 +4467,7 @@ static const char* yed_graphml_attributes[] = {
 };
 const size_t yed_graphml_attributes_count = (sizeof(yed_graphml_attributes) / sizeof(const char*));
 
-static int cyberiada_write_node_style_yed(xmlTextWriterPtr writer, CyberiadaNodeType type, size_t indent)
+static int cyberiada_write_node_style_yed(xmlTextWriterPtr writer, CyberiadaNodeType type, int indent)
 {
 	int res;
 
@@ -4499,7 +4499,7 @@ static int cyberiada_write_node_style_yed(xmlTextWriterPtr writer, CyberiadaNode
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* title, size_t indent)
+static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* title, int indent)
 {
 	int res;
 	
@@ -4529,7 +4529,7 @@ static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* t
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, size_t indent)
+static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, int indent)
 {
 	int res;
 
@@ -4558,7 +4558,7 @@ static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAct
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, size_t indent)
+static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, int indent)
 {
 	int res;
 
@@ -4590,7 +4590,7 @@ static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAct
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_geometry_yed(xmlTextWriterPtr writer, CyberiadaRect* rect, size_t indent)
+static int cyberiada_write_geometry_yed(xmlTextWriterPtr writer, CyberiadaRect* rect, int indent)
 {
 	int res;
 	char buffer[MAX_STR_LEN];
@@ -4610,7 +4610,7 @@ static int cyberiada_write_geometry_yed(xmlTextWriterPtr writer, CyberiadaRect* 
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node, size_t indent)
+static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node, int indent)
 {
 	int res;
 	CyberiadaNode* cur_node;
@@ -4764,7 +4764,7 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge, size_t indent)
+static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent)
 {
 	int res;
 	char buffer[MAX_STR_LEN];
