@@ -611,7 +611,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 											&node_diff);
 				if (node_diff) {
 					if (sm_diff_nodes_size && sm_diff_nodes && sm_diff_nodes_flags) {
-						(*sm_diff_nodes)[*sm_diff_nodes_size] = vertexes1[i].node;
+						(*sm_diff_nodes)[*sm_diff_nodes_size] = vertexes2[j].node;
 						(*sm_diff_nodes_flags)[*sm_diff_nodes_size] = node_diff;	
 						(*sm_diff_nodes_size)++;
 					}
