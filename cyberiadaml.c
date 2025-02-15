@@ -28,7 +28,6 @@
 #include <libxml/encoding.h>
 #include <libxml/xmlwriter.h>
 #include <stddef.h>
-#include <math.h>
 
 #include "cyberiadaml.h"
 #include "cyb_actions.h"
@@ -36,9 +35,9 @@
 #include "cyb_graph.h"
 #include "cyb_graph_recon.h"
 #include "cyb_meta.h"
+#include "cyb_node_stack.h"
 #include "cyb_regexps.h"
 #include "cyb_string.h"
-#include "cyb_structs.h"
 #include "cyb_types.h"
 #include "geometry.h"
 #include "utf8enc.h"
@@ -342,62 +341,6 @@ const char* debug_state_names[] = {
 	"EdgeLabelGeometry",
 	"Invalid"
 };
-
-/* -----------------------------------------------------------------------------
- * The Cyberiada GraphML XML processor node stack
- * ----------------------------------------------------------------------------- */
-
-typedef CyberiadaStack NodeStack;
-/* key  - const char* xml_element
-   data - CyberiadaNode* node */
-
-static int node_stack_push(NodeStack** stack)
-{
-	cyberiada_stack_push(stack);
-	return CYBERIADA_NO_ERROR;
-}
-
-static int node_stack_set_top_node(NodeStack** stack, CyberiadaNode* node)
-{
-	if (!stack || !*stack) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
-	cyberiada_stack_update_top_data((CyberiadaStack**)stack, (void*)node);
-	return CYBERIADA_NO_ERROR;
-}
-
-static int node_stack_set_top_element(NodeStack** stack, const char* element)
-{
-	if (!stack || !*stack) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
-	cyberiada_stack_update_top_key(stack, element);
-	return CYBERIADA_NO_ERROR;	
-}
-
-static CyberiadaNode* node_stack_current_node(NodeStack** stack)
-{
-	return cyberiada_stack_get_top_data(stack);
-}
-
-static int node_stack_pop(NodeStack** stack)
-{
-	if (!stack || !*stack) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
-	cyberiada_stack_pop(stack);
-	return CYBERIADA_NO_ERROR;
-}
-
-static int node_stack_empty(NodeStack** stack)
-{
-	return cyberiada_stack_is_empty(stack);
-}
-
-static int node_stack_free(NodeStack** stack)
-{
-	return cyberiada_stack_free(stack);
-}
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML XML reader functions
@@ -1835,38 +1778,6 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 	}
 	
 	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
-{
-	CyberiadaNode* n;
-
-	for (n = nodes; n; n = n->next) {
-		if (n->type == cybNodeInitial || n->type == cybNodeFinal || n->type == cybNodeTerminate) {
-			if (n->geometry_rect) {
-				ERROR("Point node %s has rect geometry\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;
-			}
-		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
-				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice) {
-			if (n->geometry_point) {
-				ERROR("Rect (node %s) has point geometry\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;
-			}
-			if (n->geometry_rect && (n->geometry_rect->width == 0.0 && n->geometry_rect->height)) {
-				ERROR("Rect (node %s) has zero width & height\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;				
-			}
-		}
-		if (n->children) {
-			int res = cyberiada_check_nodes_geometry(n->children);
-			if (res != CYBERIADA_NO_ERROR) {
-				return res;
-			}
-		}
-	}
-	
-	return CYBERIADA_NO_ERROR;	
 }
 
 static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial)

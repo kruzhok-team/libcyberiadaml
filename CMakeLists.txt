@@ -26,6 +26,7 @@ add_library(cyberiadaml SHARED
 			cyb_error.h
 			cyb_graph.c		
 			cyb_graph_recon.c	
+			cyb_node_stack.c
 			cyb_meta.c
 			cyb_regexps.c
 			cyb_string.c

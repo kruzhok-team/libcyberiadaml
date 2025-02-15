@@ -783,3 +783,35 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 	
 	return 0;
 }
+
+int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeInitial || n->type == cybNodeFinal || n->type == cybNodeTerminate) {
+			if (n->geometry_rect) {
+				ERROR("Point node %s has rect geometry\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			}
+		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
+				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice) {
+			if (n->geometry_point) {
+				ERROR("Rect (node %s) has point geometry\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;
+			}
+			if (n->geometry_rect && (n->geometry_rect->width == 0.0 && n->geometry_rect->height)) {
+				ERROR("Rect (node %s) has zero width & height\n", n->id);
+				return CYBERIADA_ACTION_FORMAT_ERROR;				
+			}
+		}
+		if (n->children) {
+			int res = cyberiada_check_nodes_geometry(n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	
+	return CYBERIADA_NO_ERROR;	
+}
