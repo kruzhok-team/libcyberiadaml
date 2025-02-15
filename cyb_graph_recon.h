@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The basic graph types
+ * The graph reconstruction functions
  *
  * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
  *
@@ -20,16 +20,20 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#ifndef __CYBERIADA_TYPES_H
-#define __CYBERIADA_TYPES_H
+#ifndef __CYBERIADA_GRAPH_RECON_H
+#define __CYBERIADA_GRAPH_RECON_H
 
 #include "cyberiadaml.h"
+#include "cyb_structs.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
+	
+	typedef CyberiadaList NamesList;
+	void cyberiada_free_name_list(NamesList** nl);
+	int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl);
+	int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl);
 	
 #ifdef __cplusplus
 }

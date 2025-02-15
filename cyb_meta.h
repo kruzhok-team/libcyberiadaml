@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The basic graph types
+ * The graph metainformation
  *
  * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
  *
@@ -20,17 +20,24 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#ifndef __CYBERIADA_TYPES_H
-#define __CYBERIADA_TYPES_H
+#ifndef __CYBERIADA_META_H
+#define __CYBERIADA_META_H
 
 #include "cyberiadaml.h"
+#include "cyb_regexps.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
-	
+	CyberiadaMetainformation* cyberiada_new_meta(void);
+	CyberiadaMetainformation* cyberiada_copy_meta(CyberiadaMetainformation* src);
+	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
+	int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name);	
+	int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len);
+	int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps);
+	int cyberiada_print_meta(CyberiadaMetainformation* meta);
+
 #ifdef __cplusplus
 }
 #endif

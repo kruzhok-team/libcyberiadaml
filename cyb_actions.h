@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The basic graph types
+ * The Cyberiada GraphML actions handling
  *
  * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
  *
@@ -20,16 +20,28 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#ifndef __CYBERIADA_TYPES_H
-#define __CYBERIADA_TYPES_H
+#ifndef __CYBERIADA_ACTIONS_H
+#define __CYBERIADA_ACTIONS_H
 
 #include "cyberiadaml.h"
+#include "cyb_regexps.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
+	int cyberiaga_matchres_action_regexps(const char* text,
+										  const regmatch_t* pmatch, size_t pmatch_size,
+										  char** trigger, char** guard, char** behavior,
+										  size_t match_trigger, size_t match_guard, size_t match_action);
+	int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps);
+	int cyberiada_add_action(const char* trigger, const char* guard, const char* behavior,
+							 CyberiadaAction** action);
+	
+	int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps);
+	int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps);
+	int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps);
+	int cyberiada_print_action(CyberiadaAction* action, int level);
 	
 #ifdef __cplusplus
 }

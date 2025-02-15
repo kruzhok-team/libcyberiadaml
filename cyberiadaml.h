@@ -57,8 +57,8 @@ typedef unsigned int CyberiadaNodeTypeMask;
 	
 /* SM edge types: */
 typedef enum {
-    cybEdgeTransition = 0,
-	cybEdgeLocalTransition = 1,
+    cybEdgeLocalTransition = 0,
+	cybEdgeExternalTransition = 1,
     cybEdgeComment = 2,
 } CyberiadaEdgeType;
 

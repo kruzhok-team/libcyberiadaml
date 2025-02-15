@@ -22,257 +22,634 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+
 #include "cyb_types.h"
+#include "cyb_actions.h"
+#include "cyb_meta.h"
+
+CyberiadaCommentData* cyberiada_new_comment_data(void)
+{
+	CyberiadaCommentData* cd = (CyberiadaCommentData*)malloc(sizeof(CyberiadaCommentData));
+	memset(cd, 0, sizeof(CyberiadaCommentData));
+	return cd;
+}
+
+static CyberiadaCommentData* cyberiada_copy_comment_data(CyberiadaCommentData* src)
+{
+	CyberiadaCommentData* cd;
+	if (!src) {
+		return NULL;
+	}
+	cd = cyberiada_new_comment_data();
+	if (src->body) {
+		cyberiada_copy_string(&(cd->body), &(cd->body_len), src->body);
+	}
+	if (src->markup) {
+		cyberiada_copy_string(&(cd->markup), &(cd->markup_len), src->markup);
+	}
+	return cd;
+}
+
+CyberiadaLink* cyberiada_new_link(const char* ref)
+{
+	CyberiadaLink* link = (CyberiadaLink*)malloc(sizeof(CyberiadaLink));
+	memset(link, 0, sizeof(CyberiadaLink));
+	cyberiada_copy_string(&(link->ref), &(link->ref_len), ref);
+	return link;
+}
+
+static CyberiadaLink* cyberiada_copy_link(CyberiadaLink* src)
+{
+	if (!src || !(src->ref)) {
+		return NULL;
+	}
+	return cyberiada_new_link(src->ref);
+}
+
+CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
+									  const char* trigger,
+									  const char* guard,
+									  const char* behavior)
+{
+	CyberiadaAction* action = (CyberiadaAction*)malloc(sizeof(CyberiadaAction));
+	memset(action, 0, sizeof(CyberiadaAction));
+	action->type = type;
+	cyberiada_copy_string(&(action->trigger), &(action->trigger_len), trigger);
+	cyberiada_copy_string(&(action->guard), &(action->guard_len), guard);
+	cyberiada_copy_string(&(action->behavior), &(action->behavior_len), behavior);
+	return action;
+}
+
+static CyberiadaAction* cyberiada_copy_action(CyberiadaAction* src)
+{
+	if (!src) {
+		return NULL;
+	}
+	return cyberiada_new_action(src->type, src->trigger, src->guard, src->behavior);
+}
+
+CyberiadaNode* cyberiada_new_node(const char* id)
+{
+	CyberiadaNode* new_node = (CyberiadaNode*)malloc(sizeof(CyberiadaNode));
+	memset(new_node, 0, sizeof(CyberiadaNode));
+	cyberiada_copy_string(&(new_node->id), &(new_node->id_len), id);
+	new_node->type = cybNodeSimpleState;
+	return new_node;
+}
+
+static CyberiadaNode* cyberiada_copy_node(CyberiadaNode* src)
+{
+	CyberiadaNode *dst, *n, *dst_child, *src_child;
+	CyberiadaAction *a, *dst_action, *src_action;
+	if (!src || !(src->id)) {
+		return NULL;
+	}
+	dst = cyberiada_new_node(src->id);
+	dst->type = src->type;
+	if (src->title) {
+		cyberiada_copy_string(&(dst->title), &(dst->title_len), src->title);
+	}
+	if (src->geometry_point) {
+		dst->geometry_point = htree_copy_point(src->geometry_point);
+	}
+	if (src->geometry_rect) {
+		dst->geometry_rect = htree_copy_rect(src->geometry_rect);
+	}
+	if (src->color) {
+		cyberiada_copy_string(&(dst->color), &(dst->color_len), src->color);
+	}
+	if (src->link) {
+		dst->link = cyberiada_copy_link(src->link);
+	}
+	if (src->comment_data) {
+		dst->comment_data = cyberiada_copy_comment_data(src->comment_data);
+	}
+	if (src->actions) {
+		for (src_action = src->actions; src_action; src_action = src_action->next) {
+			dst_action = cyberiada_copy_action(src_action);
+			if (dst->actions) {
+				a = dst->actions;
+				while (a->next) a = a->next;
+				a->next = dst_action;
+			} else {
+				dst->actions = dst_action;
+			}
+		}
+	}
+	if (src->children) {
+		for (src_child = src->children; src_child; src_child = src_child->next) {
+			dst_child = cyberiada_copy_node(src_child);
+			dst_child->parent = dst;
+			if (dst->children) {
+				n = dst->children;
+				while (n->next) n = n->next;
+				n->next = dst_child;
+			} else {
+				dst->children = dst_child;
+			}
+		}
+	}
+	return dst;
+}
+
+static int cyberiada_destroy_action(CyberiadaAction* action)
+{
+	CyberiadaAction* a;
+	if (action != NULL) {
+		do {
+			a = action;
+			if (a->trigger) free(a->trigger);
+			if (a->guard) free(a->guard);
+			if (a->behavior) free(a->behavior);
+			action = a->next;
+			free(a);
+		} while (action);
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_destroy_all_nodes(CyberiadaNode* node);
+
+static int cyberiada_destroy_node(CyberiadaNode* node)
+{
+	if(node != NULL) {
+		if (node->id) free(node->id);
+		if (node->title) free(node->title);
+		if (node->children) {
+			cyberiada_destroy_all_nodes(node->children);
+		}
+		if (node->actions) cyberiada_destroy_action(node->actions);
+		if (node->geometry_point) htree_destroy_point(node->geometry_point);
+		if (node->geometry_rect) htree_destroy_rect(node->geometry_rect);
+		if (node->color) free(node->color);
+		if (node->link) {
+			if (node->link->ref) free(node->link->ref);
+			free(node->link);
+		}
+		if (node->comment_data) {
+			if (node->comment_data->body) free(node->comment_data->body);
+			if (node->comment_data->markup) free(node->comment_data->markup);
+			free(node->comment_data);
+		}
+		free(node);
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_destroy_all_nodes(CyberiadaNode* node)
+{
+	CyberiadaNode* n;
+	if(node != NULL) {
+		do {
+			n = node;
+			node = node->next;
+			cyberiada_destroy_node(n);
+		} while (node);
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent)
+{
+	if (parent && parent->type == cybNodeSimpleState &&
+		node->type != cybNodeComment && node->type != cybNodeFormalComment) {
+
+		parent->type = cybNodeCompositeState;
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSubjectType type)
+{
+	CyberiadaCommentSubject* cs = (CyberiadaCommentSubject*)malloc(sizeof(CyberiadaCommentSubject));
+	memset(cs, 0, sizeof(CyberiadaCommentSubject));
+	cs->type = type;
+	return cs;
+}
+
+static CyberiadaCommentSubject* cyberiada_copy_comment_subject(CyberiadaCommentSubject* src)
+{
+	CyberiadaCommentSubject* dst;
+	if (!src) {
+		return NULL;
+	}
+	dst = cyberiada_new_comment_subject(src->type);
+	if (src->fragment) {
+		cyberiada_copy_string(&(dst->fragment), &(dst->fragment_len), src->fragment);
+	}
+	return dst;
+}
+
+CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char* target, int external)
+{
+	CyberiadaEdge* new_edge;
+	if (!source || !target) {
+		return NULL;
+	}
+	new_edge = (CyberiadaEdge*)malloc(sizeof(CyberiadaEdge));
+	memset(new_edge, 0, sizeof(CyberiadaEdge));
+	if (external) {
+		new_edge->type = cybEdgeExternalTransition;
+	} else {
+		new_edge->type = cybEdgeLocalTransition;
+	}
+	cyberiada_copy_string(&(new_edge->id), &(new_edge->id_len), id);
+	cyberiada_copy_string(&(new_edge->source_id), &(new_edge->source_id_len), source);
+	cyberiada_copy_string(&(new_edge->target_id), &(new_edge->target_id_len), target);
+	return new_edge;
+}
+
+static CyberiadaEdge* cyberiada_copy_edge(CyberiadaEdge* src)
+{
+	CyberiadaEdge* dst;
+	if (!src) {
+		return NULL;
+	}
+	dst = cyberiada_new_edge(src->id, src->source_id, src->target_id, 1);
+	dst->type = src->type;
+	if (src->action) {
+		dst->action = cyberiada_copy_action(src->action);
+	}
+	if (src->comment_subject) {
+		dst->comment_subject = cyberiada_copy_comment_subject(src->comment_subject);
+	}
+    if (src->geometry_polyline) {
+		dst->geometry_polyline = htree_copy_polyline(src->geometry_polyline);
+	}
+	if (src->geometry_source_point) {
+		dst->geometry_source_point = htree_copy_point(src->geometry_source_point);
+	}
+	if (src->geometry_target_point) {
+		dst->geometry_target_point = htree_copy_point(src->geometry_target_point);
+	}
+	if (src->geometry_label_point) {
+		dst->geometry_label_point = htree_copy_point(src->geometry_label_point);
+	}
+	if (src->geometry_label_rect) {
+		dst->geometry_label_rect = htree_copy_rect(src->geometry_label_rect);
+	}
+	if (src->color) {
+		cyberiada_copy_string(&(dst->color), &(dst->color_len), src->color);		
+	}
+	return dst;
+}
+
+static int cyberiada_destroy_edge(CyberiadaEdge* e)
+{
+	if (!e) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (e->id) free(e->id);
+	if (e->source_id) free(e->source_id);
+	if (e->target_id) free(e->target_id);
+	if (e->action) cyberiada_destroy_action(e->action);
+	if (e->comment_subject) {
+		if (e->comment_subject->fragment) free(e->comment_subject->fragment);
+		free(e->comment_subject);
+	}
+	if (e->geometry_polyline) {
+		htree_destroy_polyline(e->geometry_polyline);
+	}
+	if (e->geometry_source_point) htree_destroy_point(e->geometry_source_point); 
+	if (e->geometry_target_point) htree_destroy_point(e->geometry_target_point);
+	if (e->geometry_label_point) htree_destroy_point(e->geometry_label_point);
+	if (e->geometry_label_rect) htree_destroy_rect(e->geometry_label_rect);
+	if (e->color) free(e->color);
+	free(e);
+	return CYBERIADA_NO_ERROR;
+}
+
+CyberiadaSM* cyberiada_new_sm(void)
+{
+	CyberiadaSM* sm = (CyberiadaSM*)malloc(sizeof(CyberiadaSM));
+	memset(sm, 0, sizeof(CyberiadaSM));
+	return sm;
+}
+
+int cyberiada_destroy_sm(CyberiadaSM* sm)
+{
+	CyberiadaEdge *edge, *e;
+	if (sm) {
+		if (sm->nodes) {
+			cyberiada_destroy_all_nodes(sm->nodes);
+		}
+		if (sm->edges) {
+			edge = sm->edges;
+			do {
+				e = edge;
+				edge = edge->next;
+				cyberiada_destroy_edge(e);
+			} while (edge);
+		}
+		free(sm);
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
+{
+	CyberiadaSM* dst;
+	CyberiadaNode* node, *new_node, *prev_node;
+	CyberiadaEdge *edge, *new_edge, *prev_edge;
+
+	if (!src) {
+		return NULL;
+	}
+	dst = cyberiada_new_sm();
+	if (src->nodes) {
+		node = src->nodes;
+		while (node) {
+			new_node = cyberiada_copy_node(node);
+			if (dst->nodes) {
+				prev_node->next = new_node;
+			} else {
+				dst->nodes = new_node;
+			}
+			prev_node = new_node;
+			node = node->next;
+		}
+	}
+	if (src->edges) {
+		edge = src->edges; 
+		while (edge) {
+			new_edge = cyberiada_copy_edge(edge);
+			if (dst->edges) {
+				prev_edge->next = new_edge;	
+			} else {
+				dst->edges = new_edge;
+			}
+			prev_edge = new_edge;
+			edge = edge->next;	
+		}
+	}
+	edge = dst->edges;
+	while (edge) {
+		CyberiadaNode* source = cyberiada_graph_find_node_by_id(dst->nodes, edge->source_id);
+		CyberiadaNode* target = cyberiada_graph_find_node_by_id(dst->nodes, edge->target_id);
+		if (!source || !target) {
+			cyberiada_destroy_sm(dst);
+			return NULL;
+		}
+		edge->source = source;
+		edge->target = target;
+		edge = edge->next;
+	}
+	return dst;
+}
+
+CyberiadaDocument* cyberiada_new_sm_document(void)
+{
+	CyberiadaDocument* doc = (CyberiadaDocument*)malloc(sizeof(CyberiadaDocument));
+	cyberiada_init_sm_document(doc);
+	return doc;
+}
+
+CyberiadaDocument* cyberiada_copy_sm_document(CyberiadaDocument* src)
+{
+	CyberiadaDocument* dst;
+	CyberiadaSM *sm, *new_sm, *prev_sm;
+	if (!src) {
+		return NULL;
+	}
+	dst = cyberiada_new_sm_document();
+	cyberiada_copy_string(&(dst->format), &(dst->format_len), src->format);
+	if (src->meta_info) {
+		dst->meta_info = cyberiada_copy_meta(src->meta_info);
+	}
+	if (src->state_machines) {
+		sm = src->state_machines;
+		while (sm) {
+			new_sm = cyberiada_copy_sm(sm);
+			if (dst->state_machines) {
+				prev_sm->next = new_sm;
+			} else {
+				dst->state_machines = new_sm;
+			}
+			prev_sm = new_sm;
+			sm = sm->next;
+		}
+	}
+	dst->node_coord_format = src->node_coord_format;
+	dst->edge_coord_format = src->edge_coord_format;
+	dst->edge_pl_coord_format = src->edge_pl_coord_format;
+	dst->edge_geom_format = src->edge_geom_format;
+	if (src->bounding_rect) {
+		dst->bounding_rect = htree_copy_rect(src->bounding_rect);
+	}
+	return dst;
+}
+
+int cyberiada_init_sm_document(CyberiadaDocument* doc)
+{
+	if (doc) {
+		memset(doc, 0, sizeof(CyberiadaDocument));
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_cleanup_sm_document(CyberiadaDocument* doc)
+{
+	CyberiadaSM *sm, *sm2;
+	if (doc) {
+		if (doc->format) {
+			free(doc->format);
+		}
+		if (doc->meta_info) {
+			cyberiada_destroy_meta(doc->meta_info);
+		}
+		if (doc->state_machines) {
+			sm = doc->state_machines;
+			do {
+				sm2 = sm;
+				sm = sm->next;
+				cyberiada_destroy_sm(sm2);
+			} while (sm);
+		}
+		if (doc->bounding_rect) {
+			htree_destroy_rect(doc->bounding_rect);
+		}
+		cyberiada_init_sm_document(doc);
+	}
+	return CYBERIADA_NO_ERROR;	
+}
+
+int cyberiada_destroy_sm_document(CyberiadaDocument* doc)
+{
+	int res = cyberiada_cleanup_sm_document(doc);
+	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	}
+	free(doc);
+	return CYBERIADA_NO_ERROR;
+}	
+
+int cyberiada_print_node(CyberiadaNode* node, int level)
+{
+	CyberiadaNode* cur_node;
+	char levelspace[16];
+	int i;
+
+	memset(levelspace, 0, sizeof(levelspace));
+	for(i = 0; i < level; i++) {
+		if (i == 14) break;
+		levelspace[i] = ' ';
+	}
+
+	printf("%sNode {id: %s, title: \"%s\", type: %d",
+		   levelspace, node->id, node->title, (int)node->type);
+	printf("}\n");
+	if (node->color) {
+		printf("%sColor: %s\n", levelspace, node->color);
+	}
+	if (node->type == cybNodeSM ||
+		node->type == cybNodeSimpleState ||
+		node->type == cybNodeCompositeState ||
+		node->type == cybNodeSubmachineState ||
+		node->type == cybNodeComment ||
+		node->type == cybNodeFormalComment ||
+		node->type == cybNodeChoice) {
+		
+		if (node->type == cybNodeSubmachineState && node->link && node->link->ref) {
+			printf("%sLink to SM: %s\n", levelspace, node->link->ref);
+		} else if (node->type == cybNodeComment && node->comment_data) {
+			printf("%sComment data [markup: %s]:\n", levelspace,
+				   node->comment_data->markup ? node->comment_data->markup : "");
+			printf("%s%s\n", levelspace, node->comment_data->body);
+		}
+		if (node->geometry_rect) {
+			printf("%sGeometry: (%lf, %lf, %lf, %lf)\n",
+			   levelspace,
+				   node->geometry_rect->x,
+				   node->geometry_rect->y,
+				   node->geometry_rect->width,
+				   node->geometry_rect->height);
+		}
+	} else {
+		if (node->geometry_point) {
+			printf("%sGeometry: (%lf, %lf)\n",
+				   levelspace,
+				   node->geometry_point->x,
+				   node->geometry_point->y);
+		}
+	}
 	
-int   cyberiada_stack_push(CyberiadaStack** stack)
-{
-	CyberiadaStack* new_item = (CyberiadaStack*)malloc(sizeof(CyberiadaStack));
-	memset(new_item, 0, sizeof(CyberiadaStack));
-	new_item->next = (*stack);
-	*stack = new_item;
-	return 0;
+	cyberiada_print_action(node->actions, level + 1);
+	
+	printf("%sChildren:\n", levelspace);
+	for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
+		cyberiada_print_node(cur_node, level + 1);
+	}
+
+	return CYBERIADA_NO_ERROR;
 }
 
-int   cyberiada_stack_update_top_key(CyberiadaStack** stack, const char* new_key)
+int cyberiada_print_edge(CyberiadaEdge* edge)
 {
-	if (!stack || !*stack) {
-		return -1;
+	CyberiadaPolyline* polyline;
+	printf(" Edge %s [%s %s]->[%s %s] [type %d]\n",
+		   edge->id,
+		   edge->source_id,
+		   edge->source->type == cybNodeInitial ? "INIT" : edge->source->title,
+		   edge->target_id,
+		   edge->target->type == cybNodeInitial ? "INIT" : edge->target->title,
+		   edge->type);
+	if (edge->color) {
+		printf("  Color: %s\n", edge->color);
 	}
-	(*stack)->key = (void*)new_key;	
-	return 0;
-}
-
-int   cyberiada_stack_update_top_data(CyberiadaStack** stack, void* new_data)
-{
-	if (!stack || !*stack) {
-		return -1;
-	}
-	(*stack)->data = new_data;
-	return 0;
-}
-
-void* cyberiada_stack_get_top_data(CyberiadaStack** stack)
-{
-	CyberiadaStack* s;
-	if (!stack || !*stack) {
-		return NULL;
-	}
-	s = *stack;
-	while (s) {
-		if (s->data)
-			return s->data;
-		s = s->next;
-	}
-	return NULL;
-}
-
-int   cyberiada_stack_pop(CyberiadaStack** stack)
-{
-	CyberiadaStack* to_pop;
-	if (!stack || !*stack) {
-		return -1;
-	}
-	to_pop = *stack;
-	*stack = to_pop->next;
-	free(to_pop);
-	return 0;
-}
-
-int   cyberiada_stack_is_empty(CyberiadaStack** stack)
-{
-	return !stack || !*stack;
-}
-
-int   cyberiada_stack_free(CyberiadaStack** stack)
-{
-	while (!cyberiada_stack_is_empty(stack)) {
-		cyberiada_stack_pop(stack);
-	}
-	return 0;
-}
-
-int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data)
-{
-	CyberiadaList *item, *new_item;
-	if (!list) {
-		return -1;
-	}
-	new_item = (CyberiadaList*)malloc(sizeof(CyberiadaList));
-	new_item->key = (void*)key;
-	new_item->data = data;
-	new_item->next = NULL;
-	if (!*list) {
-		*list = new_item;
-	} else {
-		item = *list;
-		while (item->next) item = item->next;
-		item->next = new_item;
-	}
-	return 0;
-}
-
-void* cyberiada_list_find(CyberiadaList** list, const char* key)
-{
-	CyberiadaList* item;
-	if (!list || !*list) {
-		return NULL;
-	}
-	item = *list;
-	while (item) {
-		if (item->key && strcmp((const char*)item->key, key) == 0) {
-			return item->data;
+	if (edge->comment_subject) {
+		printf("  Comment subject [type: %d]\n", edge->comment_subject->type);
+		if (edge->comment_subject->fragment) {
+			printf("   Fragment: %s\n", edge->comment_subject->fragment);
 		}
-		item = item->next;
 	}
-	return NULL;
-}
-
-void* cyberiada_list_find_key(CyberiadaList** list, void* key)
-{
-	CyberiadaList* item;
-	if (!list || !*list) {
-		return NULL;
-	}
-	item = *list;
-	while (item) {
-		if (item->key == key) {
-			return item->data;
+	printf("  Geometry: ");
+	if (edge->geometry_polyline) {
+		printf("   Polyline:");
+		for (polyline = edge->geometry_polyline; polyline; polyline = polyline->next) {
+			printf(" (%lf, %lf)", polyline->point.x, polyline->point.y);
 		}
-		item = item->next;
+		printf("\n");
 	}
-	return NULL;
+	if (edge->geometry_source_point) {
+		printf("   Source point: (%lf, %lf)\n",
+			   edge->geometry_source_point->x,
+			   edge->geometry_source_point->y);
+	}
+	if (edge->geometry_target_point) {
+		printf("   Target point: (%lf, %lf)\n",
+			   edge->geometry_target_point->x,
+			   edge->geometry_target_point->y);
+	}
+	if (edge->geometry_label_point) {
+		printf("   Label point: (%lf, %lf)\n",
+			   edge->geometry_label_point->x,
+			   edge->geometry_label_point->y);
+	}
+	if (edge->geometry_label_rect) {
+		printf("   Label rect: (%lf, %lf, %lf, %lf)\n",
+			   edge->geometry_label_rect->x,
+			   edge->geometry_label_rect->y,
+			   edge->geometry_label_rect->width,
+			   edge->geometry_label_rect->height);
+	}
+	cyberiada_print_action(edge->action, 2);
+	return CYBERIADA_NO_ERROR;
 }
 
-void* cyberiada_list_find_data(CyberiadaList** list, void* data)
+static int cyberiada_print_sm(CyberiadaSM* sm)
 {
-	CyberiadaList* item;
-	if (!list || !*list) {
-		return NULL;
+	CyberiadaNode* cur_node;
+	CyberiadaEdge* cur_edge;
+	size_t nodes_cnt = 0, edges_cnt = 0;
+	size_t nodes_cnt_wo_cmt = 0, edges_cnt_wo_cmt = 0;
+
+	cyberiada_sm_size(sm, &nodes_cnt_wo_cmt, &edges_cnt_wo_cmt, 1);
+	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt, 0);
+	
+	printf("State Machine\n");
+	
+	printf("Nodes: %lu (%lu w/o comments)\n", nodes_cnt, nodes_cnt_wo_cmt);
+	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
+		cyberiada_print_node(cur_node, 0);
 	}
-	item = *list;
-	while (item) {
-		if (item->data == data) {
-			return item->key;
+	printf("\n");
+
+	printf("Edges: %lu (%lu w/o comments)\n", edges_cnt, edges_cnt_wo_cmt);
+	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
+		cyberiada_print_edge(cur_edge);
+	}
+	printf("\n");
+
+	/*if (sm->extensions) {
+		printf("Extensions:\n");
+		for (cur_ext = sm->extensions; cur_ext; cur_ext = cur_ext->next) {
+			cyberiada_print_extension(cur_ext);
 		}
-		item = item->next;
-	}
-	return NULL;
+		printf("\n");
+		}*/
+	
+    return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_list_remove_key(CyberiadaList** list, void* key)
+int cyberiada_print_sm_document(CyberiadaDocument* doc)
 {
-	CyberiadaList *item, *prev;
-	if (!list || !*list) {
-		return NULL;
-	}
-	item = *list;
-	prev = NULL;
-	while (item) {
-		if (item->key == key) {
-			if (item == *list) {
-				*list = item->next;
-			} else {
-				prev->next = item->next;
-			}
-			free(item);
-			break;
-		}
-		prev = item;
-		item = item->next;
-	}
-	return 0;
-}
+	CyberiadaSM* sm;
 
-int cyberiada_list_remove_data(CyberiadaList** list, void* data)
-{
-	CyberiadaList *item, *prev;
-	if (!list || !*list) {
-		return NULL;
-	}
-	item = *list;
-	prev = NULL;
-	while (item) {
-		if (item->data == data) {
-			if (item == *list) {
-				*list = item->next;
-			} else {
-				prev->next = item->next;
-			}
-			free(item);
-			break;
-		}
-		prev = item;
-		item = item->next;
-	}
-	return 0;
-}
+	printf("\nDocument:\n");
+	cyberiada_print_meta(doc->meta_info);
 
-size_t cyberiada_list_size(CyberiadaList** list)
-{
-	CyberiadaList* item;
-	size_t s = 0;
-	for (item = *list; item; item = item->next) {
-		s++;
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		cyberiada_print_sm(sm);
 	}
-	return s;
-}
 
-int   cyberiada_list_free(CyberiadaList** list)
-{
-	CyberiadaList* item;
-	if (!list) {
-		return 0;
+	if (doc->bounding_rect) {
+		printf("\nBounding rect: (%lf, %lf, %lf, %lf)\n",
+			   doc->bounding_rect->x,
+			   doc->bounding_rect->y,
+			   doc->bounding_rect->width,
+			   doc->bounding_rect->height);
 	}
-	while(*list) {
-		item = *list;
-		*list = item->next;
-		free(item);
-	}
-	return 0;
+	
+    return CYBERIADA_NO_ERROR;
 }
-
-int   cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data)
-{
-	CyberiadaQueue* new_item = (CyberiadaQueue*)malloc(sizeof(CyberiadaQueue));
-	memset(new_item, 0, sizeof(CyberiadaQueue));
-	new_item->key = key;
-	new_item->data = data;
-	new_item->next = (*queue);
-	*queue = new_item;
-	return 0;	
-}
-
-int cyberiada_queue_get(CyberiadaQueue** queue, void** key, void** data)
-{
-	CyberiadaQueue *q, *prev = NULL;
-	if (!queue || !key || !data) return 1;
-	q = *queue;
-	while (q->next) {
-		prev = q;
-		q = q->next;
-	}
-	*key = q->key;
-	*data = q->data;
-	free(q);
-	if (prev) {
-		prev->next = NULL;
-	} else {
-		*queue = NULL;
-	}
-	return 0;
-}
-
-int   cyberiada_queue_free(CyberiadaQueue** queue)
-{
-	CyberiadaQueue* item;
-	if (!queue) {
-		return 0;
-	}
-	while(*queue) {
-		item = *queue;
-		*queue = item->next;
-		free(item);
-	}
-	return 0;
-}
-

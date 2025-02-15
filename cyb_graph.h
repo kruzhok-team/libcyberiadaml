@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The basic graph types
+ * The graph manipulation functions
  *
  * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
  *
@@ -20,17 +20,22 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#ifndef __CYBERIADA_TYPES_H
-#define __CYBERIADA_TYPES_H
+#ifndef __CYBERIADA_GRAPH_H
+#define __CYBERIADA_GRAPH_H
 
 #include "cyberiadaml.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
 	
+	CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id);
+	CyberiadaNode* cyberiada_graph_find_node_by_type(CyberiadaNode* root, CyberiadaNodeTypeMask mask);
+	CyberiadaEdge* cyberiada_graph_find_edge_by_id(CyberiadaEdge* root, const char* id);
+	int cyberiada_graph_add_sibling_node(CyberiadaNode* sibling, CyberiadaNode* new_node);
+	int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, const char* source, const char* target, int external);
+	CyberiadaEdge* cyberiada_graph_find_last_edge(CyberiadaSM* sm);
+
 #ifdef __cplusplus
 }
 #endif

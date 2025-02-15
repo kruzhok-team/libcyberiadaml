@@ -31,7 +31,10 @@ extern "C" {
  * The Cyberiada GraphML string utilities
  * ----------------------------------------------------------------------------- */
 
-#define MAX_STR_LEN							     4096
+    #define MAX_STR_LEN							   4096
+	#define CYBERIADA_SINGLE_NEWLINE               "\n"
+    #define CYBERIADA_NEWLINE                      "\n\n"
+    #define CYBERIADA_NEWLINE_RN                   "\r\n\r\n"
 	
 	int cyberiada_copy_string(char** target, size_t* size, const char* source);
 	int cyberiada_string_is_empty(const char* s);

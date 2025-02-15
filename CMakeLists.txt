@@ -22,12 +22,20 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
 endif()
 
 add_library(cyberiadaml SHARED
-			cyberiadaml.c
-			utf8enc.c
-			cyb_types.c
+			cyb_actions.c
+			cyb_error.h
+			cyb_graph.c		
+			cyb_graph_recon.c	
+			cyb_meta.c
+			cyb_regexps.c
 			cyb_string.c
+			cyb_structs.c
+	 		cyb_types.c
 			geometry.c
-			isomorph.c)
+			isomorph.c
+			utf8enc.c
+			cyberiadaml.c
+)
 
 target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

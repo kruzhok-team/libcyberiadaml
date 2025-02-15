@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The basic graph types
+ * The Cyberiada GraphML actions handling
  *
  * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
  *
@@ -20,8 +20,10 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#ifndef __CYBERIADA_TYPES_H
-#define __CYBERIADA_TYPES_H
+#ifndef __CYBERIADA_REGEXPS_H
+#define __CYBERIADA_REGEXPS_H
+
+#include <regex.h>
 
 #include "cyberiadaml.h"
 
@@ -29,7 +31,20 @@
 extern "C" {
 #endif
 
-	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
+	typedef struct {
+		int     berloga_legacy;
+		int     flattened_regexps;
+		/* basic regexps */
+		regex_t edge_action_regexp;
+		regex_t node_action_regexp;
+		regex_t node_legacy_action_regexp;
+		regex_t edge_legacy_action_regexp;
+		/*regex_t newline_regexp;*/
+		regex_t spaces_regexp;
+	} CyberiadaRegexps;
+	
+	int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened);
+	int cyberiada_free_action_regexps(CyberiadaRegexps* regexps);
 	
 #ifdef __cplusplus
 }

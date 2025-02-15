@@ -24,7 +24,7 @@
 #include <string.h>
 
 #include "cyberiadaml.h"
-#include "cyb_types.h"
+#include "cyb_structs.h"
 #include "cyb_error.h"
 
 static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int ignore_comments)
