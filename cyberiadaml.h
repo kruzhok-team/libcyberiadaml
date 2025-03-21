@@ -125,20 +125,23 @@ typedef HTreeRect     CyberiadaRect;
 typedef HTreePolyline CyberiadaPolyline;
 	
 typedef struct _CyberiadaNode {
-    CyberiadaNodeType           type;
-    char*                       id;
+    CyberiadaNodeType           type;                 /* node type (see above) */
+    char*                       id;                   /* unique node id */
     size_t                      id_len;
-    char*                       title;
+    char*                       title;                /* node name */
     size_t                      title_len;
 	CyberiadaAction*            actions;              /* for simple & composite state nodes */
 	CyberiadaCommentData*       comment_data;         /* for comments */
 	CyberiadaLink*              link;                 /* for submachine states */
 	CyberiadaPoint*             geometry_point;       /* for some pseudostates & final state */
 	CyberiadaRect*              geometry_rect;        /* for sm, states, and choice pseudostate */
+	/* additional parameters */
     char*                       color;                /* for nodes with geometry */
     size_t                      color_len;
+	/* nodes hierarchy */
     struct _CyberiadaNode*      parent;
     struct _CyberiadaNode*      children;
+	/* siblings */
     struct _CyberiadaNode*      next;
 } CyberiadaNode;
 
@@ -168,31 +171,35 @@ typedef struct _CyberiadaCommentSubject {
  * and is being converted during the document import/export.
  */
 typedef struct _CyberiadaEdge {
-    CyberiadaEdgeType            type;
-    char*                        id;
+    CyberiadaEdgeType            type;                  /* edge type (see above) */
+    char*                        id;                    /* unique edge id */
     size_t                       id_len;
-    char*                        source_id;
+    char*                        source_id;             /* the source node id */
     size_t                       source_id_len;
-    char*                        target_id;
+    char*                        target_id;             /* the target node id */
     size_t                       target_id_len;
-    CyberiadaNode*               source;
-    CyberiadaNode*               target;
+    CyberiadaNode*               source;                /* link to the source node */
+    CyberiadaNode*               target;                /* link to the target node */
 	CyberiadaAction*             action;                /* for transition */
 	CyberiadaCommentSubject*     comment_subject;       /* for comment subject */
+    /* base edge geometry */
+    CyberiadaPoint*              geometry_label_point;  /* NULL if the label rect is available */
+	/* extended edge geometry */
     CyberiadaPolyline*           geometry_polyline;
     CyberiadaPoint*              geometry_source_point;
     CyberiadaPoint*              geometry_target_point;
-    CyberiadaPoint*              geometry_label_point;
-	CyberiadaRect*               geometry_label_rect;
-    char*                        color;
+	CyberiadaRect*               geometry_label_rect;   /* NULL if the label point is available */
+	/* additional parameters */
+    char*                        color;                 /* for nodes with geometry */
     size_t                       color_len;
+	/* siblings */
     struct _CyberiadaEdge*       next;
 } CyberiadaEdge;
 
 /* SM graph (state machine) */
 typedef struct _CyberiadaSM {
-    CyberiadaNode*               nodes;
-    CyberiadaEdge*               edges;
+    CyberiadaNode*               nodes;                 /* the tree of nodes (starting from the SM roots) */
+    CyberiadaEdge*               edges;                 /* the list of edges */
     struct _CyberiadaSM*         next;
 } CyberiadaSM;
 
@@ -216,13 +223,10 @@ typedef struct _CyberiadaMetaStringList {
 
 /* SM metainformation */
 typedef struct {
-    /* HSM standard version (required parameter) */
-    char*                        standard_version;
+    char*                        standard_version;       /* HSM standard version (required parameter) */
 	size_t                       standard_version_len;
-    /* transition order flag (0 = not set, 1 = transition first, 2 = exit first) */
-    char                         transition_order_flag;
-    /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
-    char                         event_propagation_flag;
+    char                         transition_order_flag;  /* transition order flag (0 = not set, 1 = transition first, 2 = exit first) */
+    char                         event_propagation_flag; /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
 	CyberiadaMetaStringList*     strings;
 } CyberiadaMetainformation;
 
