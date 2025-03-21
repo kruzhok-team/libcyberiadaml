@@ -34,95 +34,26 @@
 #define CYBERIADA_META_SEPARATOR_CHR             '/'
 #define CYBERIADA_META_NEW_LINE_CHR              '\n'
 #define CYBERIADA_META_NEW_LINE_STR              "\n"
-#define CYBERIADA_META_STANDARD_VERSION          "standardVersion"
-#define CYBERIADA_META_PLATFORM_NAME             "platform"
-#define CYBERIADA_META_PLATFORM_VERSION          "platformVersion"
-#define CYBERIADA_META_PLATFORM_LANGUAGE         "platformLanguage"
-#define CYBERIADA_META_TARGET_SYSTEM             "target"
-#define CYBERIADA_META_NAME                      "name"
-#define CYBERIADA_META_AUTHOR                    "author"
-#define CYBERIADA_META_CONTACT                   "contact"
-#define CYBERIADA_META_DESCRIPTION               "description"
-#define CYBERIADA_META_VERSION                   "version"
-#define CYBERIADA_META_DATE                      "date"
-#define CYBERIADA_META_TRANSITION_ORDER          "transitionOrder"
-#define CYBERIADA_META_AO_TRANSITION             "transitionFirst"
-#define CYBERIADA_META_AO_EXIT                   "exitFirst"
-#define CYBERIADA_META_EVENT_PROPAGATION         "eventPropagation"
-#define CYBERIADA_META_EP_PROPAGATE              "propagate"
-#define CYBERIADA_META_EP_BLOCK                  "block"
-#define CYBERIADA_META_MARKUP_LANGUAGE           "markupLanguage"
 
-typedef struct {
-	const char* name;
-	size_t value_offset;
-	size_t len_offset;
-	const char* title;
-} MetainfoDeclaration;
+CyberiadaMetaStringList* cyberiada_new_meta_string(const char* _name, const char* _value)
+{
+	CyberiadaMetaStringList* metastr = (CyberiadaMetaStringList*)malloc(sizeof(CyberiadaMetaStringList));
+	memset(metastr, 0, sizeof(CyberiadaMetaStringList));
+	cyberiada_copy_string(&(metastr->name), &(metastr->name_len), _name);
+	cyberiada_copy_string(&(metastr->value), &(metastr->value_len), _value);
+	return metastr;
+}
 
-static MetainfoDeclaration cyberiada_metadata[] = {
-	{
-		CYBERIADA_META_STANDARD_VERSION,
-		offsetof(CyberiadaMetainformation, standard_version),
-		offsetof(CyberiadaMetainformation, standard_version_len),
-		"standard version"
-	}, {
-		CYBERIADA_META_PLATFORM_NAME,
-		offsetof(CyberiadaMetainformation, platform_name),
-		offsetof(CyberiadaMetainformation, platform_name_len),
-		"platform name"
-	}, {
-		CYBERIADA_META_PLATFORM_VERSION,
-		offsetof(CyberiadaMetainformation, platform_version),
-		offsetof(CyberiadaMetainformation, platform_version_len),
-		"platform version"
-	}, {
-		CYBERIADA_META_PLATFORM_LANGUAGE,
-		offsetof(CyberiadaMetainformation, platform_language),
-		offsetof(CyberiadaMetainformation, platform_language_len),
-		"platform language"
-	}, {
-		CYBERIADA_META_TARGET_SYSTEM,
-		offsetof(CyberiadaMetainformation, target_system),
-		offsetof(CyberiadaMetainformation, target_system_len),
-		"target system"
-	}, {
-		CYBERIADA_META_NAME,
-		offsetof(CyberiadaMetainformation, name),
-		offsetof(CyberiadaMetainformation, name_len),
-		"document name"
-	}, {
-		CYBERIADA_META_AUTHOR,
-		offsetof(CyberiadaMetainformation, author),
-		offsetof(CyberiadaMetainformation, author_len),
-		"document author"
-	}, {
-		CYBERIADA_META_CONTACT,
-		offsetof(CyberiadaMetainformation, contact),
-		offsetof(CyberiadaMetainformation, contact_len),
-		"document author's contact"
-	}, {
-		CYBERIADA_META_DESCRIPTION,
-		offsetof(CyberiadaMetainformation, description),
-		offsetof(CyberiadaMetainformation, description_len),
-		"document description"
-	}, {
-		CYBERIADA_META_VERSION,
-		offsetof(CyberiadaMetainformation, version),
-		offsetof(CyberiadaMetainformation, version_len),
-		"document version"
-	}, {
-		CYBERIADA_META_DATE,
-		offsetof(CyberiadaMetainformation, date),
-		offsetof(CyberiadaMetainformation, date_len),
-		"document date"
-	}, {
-		CYBERIADA_META_MARKUP_LANGUAGE,
-		offsetof(CyberiadaMetainformation, markup_language),
-		offsetof(CyberiadaMetainformation, markup_language_len),
-		"markup language"
+static int cyberiada_destroy_meta_string(CyberiadaMetaStringList* sl)
+{
+	if (!sl) {
+		return CYBERIADA_BAD_PARAMETER;
 	}
-};
+	if (sl->name) free(sl->name);
+	if (sl->value) free(sl->value);
+	free(sl);
+	return CYBERIADA_NO_ERROR;
+}
 
 CyberiadaMetainformation* cyberiada_new_meta(void)
 {
@@ -139,44 +70,60 @@ CyberiadaMetainformation* cyberiada_new_meta(void)
 
 CyberiadaMetainformation* cyberiada_copy_meta(CyberiadaMetainformation* src)
 {
-	size_t i;
-	char *value;
 	CyberiadaMetainformation* dst;
+	CyberiadaMetaStringList* sl;
 	if (!src) {
 		return NULL;
 	}
 	dst = cyberiada_new_meta();
 	free(dst->standard_version);
-	for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
-		value = *((char**)((char*)src + cyberiada_metadata[i].value_offset));
-		if (value) {
-			cyberiada_copy_string((char**)((char*)dst + cyberiada_metadata[i].value_offset),
-								  (size_t*)((char*)dst + cyberiada_metadata[i].len_offset), value);
-		}
-	}
+	cyberiada_copy_string(&(dst->standard_version), &(dst->standard_version_len), src->standard_version);
 	dst->transition_order_flag = src->transition_order_flag;
-	dst->event_propagation_flag = src->event_propagation_flag;	
+	dst->event_propagation_flag = src->event_propagation_flag;
+	sl = src->strings;
+	while(sl) {
+		CyberiadaMetaStringList* dst_sl = NULL;
+		if (dst->strings) {
+			dst_sl = dst->strings;
+			while (dst_sl->next) dst_sl = dst_sl->next;
+			dst_sl->next = cyberiada_new_meta_string(sl->name, sl->value);
+		} else {
+			dst->strings = cyberiada_new_meta_string(sl->name, sl->value);
+		}
+		sl = sl->next;
+	}
 	return dst;
 }
 
 int cyberiada_destroy_meta(CyberiadaMetainformation* meta)
 {
+	CyberiadaMetaStringList *sl, *next;
 	if (meta) {
 		if (meta->standard_version) free(meta->standard_version);
-		if (meta->platform_name) free(meta->platform_name);
-		if (meta->platform_version) free(meta->platform_version);
-		if (meta->platform_language) free(meta->platform_language);
-		if (meta->target_system) free(meta->target_system);
-		if (meta->name) free(meta->name);
-		if (meta->author) free(meta->author);
-		if (meta->contact) free(meta->contact);
-		if (meta->description) free(meta->description);
-		if (meta->version) free(meta->version);
-		if (meta->date) free(meta->date);
-		if (meta->markup_language) free(meta->markup_language);
+		sl = meta->strings;
+		while (sl) {
+			next = sl->next;
+			cyberiada_destroy_meta_string(sl);
+			sl = next;
+		}
 		free(meta);
 	}
 	return CYBERIADA_NO_ERROR;
+}
+
+const char* cyberiada_find_meta_string(CyberiadaMetainformation* meta, const char* name)
+{
+	CyberiadaMetaStringList *sl;
+	if (!meta || !meta->strings) {
+		return NULL;
+	}
+	while (sl) {
+		if (sl->name && strcmp(sl->name, name) == 0) {
+			return sl->value;
+		}
+		sl = sl->next;
+	}
+	return NULL;
 }
 
 int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name)
@@ -190,7 +137,7 @@ int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name)
 	meta = cyberiada_new_meta();
 
 	if (*sm_name) {
-		cyberiada_copy_string(&(meta->name), &(meta->name_len), sm_name);
+		meta->strings = cyberiada_new_meta_string(CYBERIADA_META_NAME, sm_name);
 	}
 		
 	doc->meta_info = meta;
@@ -199,49 +146,69 @@ int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name)
 
 int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len)
 {
-	size_t i, buffer_len;
+	size_t buffer_len, buffer_len_result;
 	int written;
-	char *buffer, *value;
+	char *buffer;
+	CyberiadaMetaStringList* sl;
 
-	buffer_len = 1;
-	for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
-		value = *((char**)((char*)meta + cyberiada_metadata[i].value_offset));
-		if (value) {
-			buffer_len += (strlen(cyberiada_metadata[i].name) +
-						   *(size_t*)((char*)meta + cyberiada_metadata[i].len_offset) +
-						   4);
-		}
+	if (!meta) {
+		return CYBERIADA_BAD_PARAMETER;
 	}
+	
+	/* calculate buffer length */
+	buffer_len = 1 + strlen(CYBERIADA_META_STANDARD_VERSION) + strlen(meta->standard_version) + 4;
 	buffer_len += (strlen(CYBERIADA_META_TRANSITION_ORDER) +
 				   (meta->transition_order_flag == 1 ? strlen(CYBERIADA_META_AO_TRANSITION) : strlen(CYBERIADA_META_AO_EXIT)) +
 				   strlen(CYBERIADA_META_EVENT_PROPAGATION) +
 				   (meta->event_propagation_flag == 1 ? strlen(CYBERIADA_META_EP_BLOCK) : strlen(CYBERIADA_META_EP_PROPAGATE)) + 
-				   8);		
-	buffer = (char*)malloc(buffer_len);
-	*meta_body = buffer;
-	for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
-		value = *((char**)((char*)meta + cyberiada_metadata[i].value_offset));
-		if (value) {
-			written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
-							   cyberiada_metadata[i].name,
-							   value);
-			buffer_len -= (size_t)written;
-			buffer += written;
+				   8);
+	sl = meta->strings;
+	while (sl) {
+		if (sl->name && sl->value) {
+			buffer_len += strlen(sl->name) + strlen(sl->value) + 4;
 		}
+		sl = sl->next;
 	}
-	written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
-					   CYBERIADA_META_TRANSITION_ORDER,
-					   meta->transition_order_flag == 1 ? CYBERIADA_META_AO_TRANSITION : CYBERIADA_META_AO_EXIT);
-	buffer_len -= (size_t)written;
-	buffer += written;
-	written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
-					   CYBERIADA_META_EVENT_PROPAGATION,
-					   meta->event_propagation_flag == 1 ? CYBERIADA_META_EP_BLOCK : CYBERIADA_META_EP_PROPAGATE);
-	buffer_len -= (size_t)written;
-	buffer += written;
-	*buffer = 0;
+	buffer_len_result = buffer_len;
+
+	if (meta_body) {
+		/* write data to buffer */
+		buffer = (char*)malloc(buffer_len);
+		*meta_body = buffer;
+		written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
+						   CYBERIADA_META_STANDARD_VERSION,
+						   meta->standard_version);
+		buffer_len -= (size_t)written;
+		buffer += written;
+		sl = meta->strings;
+		while (sl) {
+			if (sl->name && sl->value) {
+				written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
+								   sl->name,
+								   sl->value);
+				buffer_len -= (size_t)written;
+				buffer += written;
+			}
+			sl = sl->next;
+		}
+		written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
+						   CYBERIADA_META_TRANSITION_ORDER,
+						   meta->transition_order_flag == 1 ? CYBERIADA_META_AO_TRANSITION : CYBERIADA_META_AO_EXIT);
+		buffer_len -= (size_t)written;
+		buffer += written;
+		written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
+						   CYBERIADA_META_EVENT_PROPAGATION,
+						   meta->event_propagation_flag == 1 ? CYBERIADA_META_EP_BLOCK : CYBERIADA_META_EP_PROPAGATE);
+		buffer_len -= (size_t)written;
+		buffer += written;
+		*buffer = 0;
+	}
 	if (meta_body_len) {
-		*meta_body_len = strlen(*meta_body);
+		if (meta_body) {
+			*meta_body_len = strlen(*meta_body);
+		} else {
+			*meta_body_len = buffer_len_result;
+		}
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -250,8 +217,6 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 {
 	CyberiadaMetainformation* meta;
 	char  *start, *block, *block2, *next, *parts;
-	size_t i;
-	char found;
 	
 	if (doc->meta_info) {
 		return CYBERIADA_BAD_PARAMETER;
@@ -286,51 +251,46 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 			cyberiada_destroy_meta(meta);
 			return CYBERIADA_METADATA_FORMAT_ERROR;
 		}
-		*parts = 0;		
+		*parts = 0;
 		do {
 			parts++;
 		} while (isspace(*parts));
+		cyberiada_string_trim(parts);
 		
-		found = 0;
-		for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
-			if (strcmp(start, cyberiada_metadata[i].name) == 0) {
-				if (*(char**)((char*)meta + cyberiada_metadata[i].value_offset) != NULL) {
-					ERROR("Error decoding SM metainformation: double parameter %s\n",
-						  cyberiada_metadata[i].title);
-					cyberiada_destroy_meta(meta);
-					return CYBERIADA_METADATA_FORMAT_ERROR;					
-				}
-				cyberiada_copy_string((char**)((char*)meta + cyberiada_metadata[i].value_offset),
-									  (size_t*)((char*)meta + cyberiada_metadata[i].len_offset), parts);
-				found = 1;
-				break;
-			}
-		}
-		if (!found) {
-			if (strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0) {
-				if (strcmp(parts, CYBERIADA_META_AO_TRANSITION) == 0) {
-					meta->transition_order_flag = 1;
-				} else if (strcmp(parts, CYBERIADA_META_AO_EXIT) == 0) {
-					meta->transition_order_flag = 2;
-				} else {
-					ERROR("Error decoding SM metainformation: bad value of actions order flag parameter\n");
-					cyberiada_destroy_meta(meta);
-					return CYBERIADA_METADATA_FORMAT_ERROR;					
-				}
-			} else if (strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0) {
-				if (strcmp(parts, CYBERIADA_META_EP_BLOCK) == 0) {
-					meta->event_propagation_flag = 1;
-				} else if (strcmp(parts, CYBERIADA_META_EP_PROPAGATE) == 0) {
-					meta->event_propagation_flag = 2;
-				} else {
-					ERROR("Error decoding SM metainformation: bad value of event propagation flag parameter\n");
-					cyberiada_destroy_meta(meta);
-					return CYBERIADA_METADATA_FORMAT_ERROR;					
-				}
+		if (strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0) {
+			cyberiada_copy_string(&(meta->standard_version), &(meta->standard_version_len), parts);
+		} else if (strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0) {
+			if (strcmp(parts, CYBERIADA_META_AO_TRANSITION) == 0) {
+				meta->transition_order_flag = 1;
+			} else if (strcmp(parts, CYBERIADA_META_AO_EXIT) == 0) {
+				meta->transition_order_flag = 2;
 			} else {
-				ERROR("Error decoding SM metainformation: bad key %s\n", start);
+				ERROR("Error decoding SM metainformation: bad value of actions order flag parameter\n");
 				cyberiada_destroy_meta(meta);
-				return CYBERIADA_METADATA_FORMAT_ERROR;
+				return CYBERIADA_METADATA_FORMAT_ERROR;					
+			}
+		} else if (strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0) {
+			if (strcmp(parts, CYBERIADA_META_EP_BLOCK) == 0) {
+				meta->event_propagation_flag = 1;
+			} else if (strcmp(parts, CYBERIADA_META_EP_PROPAGATE) == 0) {
+				meta->event_propagation_flag = 2;
+			} else {
+				ERROR("Error decoding SM metainformation: bad value of event propagation flag parameter\n");
+				cyberiada_destroy_meta(meta);
+				return CYBERIADA_METADATA_FORMAT_ERROR;					
+			}
+		} else if (strlen(start) == 0) {
+			ERROR("Error decoding SM metainformation: empty key\n");
+			cyberiada_destroy_meta(meta);
+			return CYBERIADA_METADATA_FORMAT_ERROR;
+		} else {
+			CyberiadaMetaStringList *sl;
+			if (meta->strings) {
+				sl = meta->strings;
+				while (sl->next) sl = sl->next;
+				sl->next = cyberiada_new_meta_string(start, parts);
+			} else {
+				meta->strings = cyberiada_new_meta_string(start, parts);
 			}
 		}
 	}
@@ -363,16 +323,21 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 
 int cyberiada_print_meta(CyberiadaMetainformation* meta)
 {
-	size_t i;
-	char* value;
+	CyberiadaMetaStringList *sl;
+	
 	printf("Meta information:\n");
 
-	if (meta) {
-		for (i = 0; i < sizeof(cyberiada_metadata) / sizeof(MetainfoDeclaration); i++) {
-			value = *((char**)((char*)meta + cyberiada_metadata[i].value_offset));
-			if (value) {
-				printf(" %s: %s\n", cyberiada_metadata[i].title, value);
+	if (meta) {		
+		if (meta->standard_version) {
+			printf(" %s: %s\n", CYBERIADA_META_STANDARD_VERSION, meta->standard_version);
+		}
+
+		sl = meta->strings;
+		while (sl) {
+			if (sl->name && sl->value) {
+				printf(" %s: %s\n", sl->name, sl->value);
 			}
+			sl = sl->next;
 		}
 	
 		if (meta->transition_order_flag) {

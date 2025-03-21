@@ -196,48 +196,34 @@ typedef struct _CyberiadaSM {
     struct _CyberiadaSM*         next;
 } CyberiadaSM;
 
+/* SM mandatory metainformation constants */
+#define CYBERIADA_META_STANDARD_VERSION          "standardVersion"
+#define CYBERIADA_META_NAME                      "name"
+#define CYBERIADA_META_TRANSITION_ORDER          "transitionOrder"
+#define CYBERIADA_META_AO_TRANSITION             "transitionFirst"
+#define CYBERIADA_META_AO_EXIT                   "exitFirst"
+#define CYBERIADA_META_EVENT_PROPAGATION         "eventPropagation"
+#define CYBERIADA_META_EP_PROPAGATE              "propagate"
+#define CYBERIADA_META_EP_BLOCK                  "block"
+
+typedef struct _CyberiadaMetaStringList {
+	char*                            name;
+	size_t                           name_len;
+	char*                            value;
+	size_t                           value_len;
+	struct _CyberiadaMetaStringList* next; 
+} CyberiadaMetaStringList;
+
 /* SM metainformation */
 typedef struct {
     /* HSM standard version (required parameter) */
     char*                        standard_version;
-    size_t                       standard_version_len;
-    /* target platform name */
-    char*                        platform_name;         
-    size_t                       platform_name_len;
-    /* target platform version */
-    char*                        platform_version;
-    size_t                       platform_version_len;
-    /* target platform language */
-    char*                        platform_language;
-    size_t                       platform_language_len;
-    /* target system controlled by the SM */
-    char*                        target_system;         
-    size_t                       target_system_len;
-    /* document name */
-    char*                        name;
-    size_t                       name_len;
-    /* document author */
-    char*                        author;
-    size_t                       author_len;
-    /* document author's contact */
-    char*                        contact;
-    size_t                       contact_len;
-    /* document description */
-    char*                        description;
-    size_t                       description_len;
-    /* document version */
-    char*                        version;
-    size_t                       version_len;
-    /* document date */
-    char*                        date;
-    size_t                       date_len;
+	size_t                       standard_version_len;
     /* transition order flag (0 = not set, 1 = transition first, 2 = exit first) */
     char                         transition_order_flag;
     /* event propagation flag (0 = not set, 1 = block events, 2 = propagate events) */
     char                         event_propagation_flag;
-	/* default comments markup language */
-	char*                        markup_language;
-	size_t                       markup_language_len;
+	CyberiadaMetaStringList*     strings;
 } CyberiadaMetainformation;
 
 /* SM document node coordinates format */
@@ -446,6 +432,9 @@ typedef enum {
 	/* Encode metainformation to string */
 	int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len);
 
+	/* Initialize new metainfo string parameter */
+	CyberiadaMetaStringList* cyberiada_new_meta_string(const char* _name, const char* _value);
+	
     /* Free metainformation struct */
 	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
 	

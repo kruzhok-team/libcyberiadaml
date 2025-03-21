@@ -2946,6 +2946,7 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
 	CyberiadaNode* cur_node;
 	CyberiadaEdge* cur_edge;
 	CyberiadaSM* sm = doc->state_machines;
+	const char* name = NULL;
 	
 	XML_WRITE_OPEN_E(writer, GRAPHML_GRAPHML_ELEMENT);
 
@@ -2953,9 +2954,13 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
 	for (i = 0; i < yed_graphml_attributes_count; i += 2) {
 		XML_WRITE_ATTR(writer, yed_graphml_attributes[i], yed_graphml_attributes[i + 1]);		
 	}
+
 	/* add scheme name if it is available */
-	if (doc->meta_info && doc->meta_info->name && *doc->meta_info->name) {
-		XML_WRITE_ATTR(writer, GRAPHML_BERLOGA_SCHEMENAME_ATTR, doc->meta_info->name);
+	if (doc->meta_info) {
+		name = cyberiada_find_meta_string(doc->meta_info, CYBERIADA_META_NAME);
+	}
+	if (name) {
+		XML_WRITE_ATTR(writer, GRAPHML_BERLOGA_SCHEMENAME_ATTR, name);
 	}
 
 	/* write graphml keys */
