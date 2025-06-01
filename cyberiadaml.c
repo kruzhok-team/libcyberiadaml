@@ -131,6 +131,7 @@
 
 #define CYBERIADA_META_NODE_DEFAULT_ID           "nMeta"
 #define CYBERIADA_META_NODE_TITLE                "CGML_META"
+#define YED_CORE_META                            "coreMeta"
 
 /* Misc. constants */
 
@@ -337,6 +338,7 @@ typedef enum {
 	gpsNodeTitle,
 	gpsNodeAction,
 	gpsNodeStart,
+	gpsMeta,
 	/* The invalid state */
 	gpsInvalid
 } GraphProcessorState;
@@ -357,6 +359,7 @@ const char* debug_state_names[] = {
 	"NodeTitle",
 	"NodeAction",
 	"NodeStart",
+	"Meta",
 
 	"Invalid",
 };
@@ -630,6 +633,98 @@ static GraphProcessorState handle_edge_point(xmlNode* xml_node,
 /* -----------------------------------------------------------------------------
  * YED-specific handlers for the GraphML processor 
  * ----------------------------------------------------------------------------- */
+
+static GraphProcessorState handle_new_yed_node(xmlNode* xml_node,	
+											   CyberiadaDocument* doc,
+											   NodeStack** stack,
+											   CyberiadaRegexps* regexps)
+{
+	(void)doc; /* unused parameter */
+	(void)regexps; /* unused parameter */
+
+	CyberiadaNode* node;	
+	CyberiadaNode* parent;	
+	char buffer[MAX_STR_LEN];
+	size_t buffer_len = sizeof(buffer) - 1;
+	if (cyberiada_get_attr_value(buffer, buffer_len,
+								 xml_node,
+								 GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
+		return gpsInvalid;
+	}
+	/* DEBUG("found node %s\n", buffer); */
+	parent = node_stack_current_node(stack);
+	if (parent == NULL) {
+		ERROR("Cannot process new node: current node is invalid\n");
+		return gpsInvalid;
+	}
+	node = cyberiada_new_node(buffer);
+	node->parent = parent;
+	node_stack_set_top_node(stack, node);
+	if (parent->children) {
+		cyberiada_graph_add_sibling_node(parent->children, node);
+	} else {
+		parent->children = node;
+	}
+	if (strcmp(buffer, YED_CORE_META) == 0) {
+		/* comment node */
+		node->type = cybNodeFormalComment;
+		return gpsMeta;
+	} else {
+		return gpsNode;
+	}
+}
+
+static GraphProcessorState handle_meta_data(xmlNode* xml_node,
+											CyberiadaDocument* doc,
+											NodeStack** stack,
+											CyberiadaRegexps* regexps)
+{
+	char buffer[MAX_STR_LEN];
+	char metabuffer[MAX_STR_LEN + 32];
+	size_t buffer_len = sizeof(buffer) - 1;
+	CyberiadaNode* current = node_stack_current_node(stack);
+	if (current == NULL) {
+		ERROR("no current node\n");
+		return gpsInvalid;
+	}
+	if (current->type != cybNodeFormalComment) {
+		ERROR("trying to read meta data for non-comment node\n");
+		return gpsInvalid;		
+	}
+	if (cyberiada_get_attr_value(buffer, buffer_len,
+								 xml_node,
+								 GRAPHML_KEY_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
+		ERROR("no data node key attribute\n");
+		return gpsInvalid;
+	}
+	if (strcmp(buffer, GRAPHML_CYB_KEY_DATA) != 0) {
+		ERROR("bad metainfo data attribute: %s\n", buffer);
+		return gpsInvalid;
+	}
+		
+	if (current->comment_data != NULL) {
+		if (current->comment_data->body) {
+			ERROR("Trying to set metadata comment %s body twice\n", current->id);
+			return gpsInvalid;
+		}
+	} else {
+		current->comment_data = cyberiada_new_comment_data();
+	}
+
+	cyberiada_get_element_text(buffer, buffer_len, xml_node);
+	snprintf(metabuffer, sizeof(metabuffer) - 1, "%s/ %s\n\n%s",
+			 CYBERIADA_META_STANDARD_VERSION,
+			 CYBERIADA_STANDARD_VERSION_CYBERIADAML,
+			 buffer);
+	
+	cyberiada_copy_string(&(current->comment_data->body),
+						  &(current->comment_data->body_len), metabuffer);
+	if (cyberiada_decode_meta(doc, metabuffer, regexps) != CYBERIADA_NO_ERROR) {
+		ERROR("Error while decoging metainfo comment\n");
+		return gpsInvalid;
+	}
+	return gpsGraph;
+}
 
 static GraphProcessorState handle_group_node(xmlNode* xml_node,
 											 CyberiadaDocument* doc,
@@ -1551,7 +1646,7 @@ const size_t cyb_processor_state_table_size = sizeof(cyb_processor_state_table) 
 
 static ProcessorTransition yed_processor_state_table[] = {
 	{gpsInit,         GRAPHML_GRAPH_ELEMENT,    &handle_new_graph},
-	{gpsGraph,        GRAPHML_NODE_ELEMENT,     &handle_new_node},
+	{gpsGraph,        GRAPHML_NODE_ELEMENT,     &handle_new_yed_node},
 	{gpsGraph,        GRAPHML_EDGE_ELEMENT,     &handle_new_edge},
 	{gpsGraph,        GRAPHML_GRAPH_ELEMENT,    &handle_new_graph},
 	{gpsNode,         GRAPHML_YED_COMMENTNODE,  &handle_comment_node},
@@ -1566,6 +1661,7 @@ static ProcessorTransition yed_processor_state_table[] = {
 	{gpsNodeTitle,    GRAPHML_YED_LABELNODE,    &handle_node_title},
 	{gpsNodeAction,   GRAPHML_YED_LABELNODE,    &handle_node_action},
 	{gpsNodeAction,   GRAPHML_NODE_ELEMENT,     &handle_new_node},
+	{gpsMeta,         GRAPHML_DATA_ELEMENT,     &handle_meta_data},
 	{gpsEdge,         GRAPHML_EDGE_ELEMENT,     &handle_new_edge},
 	{gpsEdge,         GRAPHML_YED_PATHNODE,     &handle_edge_geometry},
 	{gpsEdgeGeometry, GRAPHML_YED_POINTNODE,    &handle_edge_point},
@@ -2028,9 +2124,11 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			} else if (cyberiada_document_has_geometry(cyb_doc) ||
 					   flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
 				cyberiada_import_document_geometry(cyb_doc, flags, format);
+				cyb_doc->geometry_format = cybgeomFull;
 			} else {
 				/* document has no geometry */
 				cyberiada_document_no_geometry(cyb_doc);
+				cyb_doc->geometry_format = cybgeomNone;	
 			}
 		}
 	} while(0);

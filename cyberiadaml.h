@@ -221,7 +221,8 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_META_EVENT_PROPAGATION         "eventPropagation"
 #define CYBERIADA_META_EP_PROPAGATE              "propagate"
 #define CYBERIADA_META_EP_BLOCK                  "block"
-
+#define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
+	
 typedef struct _CyberiadaMetaStringList {
 	char*                            name;
 	size_t                           name_len;
@@ -272,7 +273,7 @@ typedef enum {
     cybxmlYED = 1,                                         /* Old YED-based Berloga/Ostranna format */
     cybxmlUnknown = 99                                     /* Format is not specified */
 } CyberiadaXMLFormat;
-
+	
 /* Cyberiada GraphML Library import/export flags */
 #define CYBERIADA_FLAG_NO                                 0
 

@@ -29,8 +29,6 @@
 #include "cyb_string.h"
 #include "cyb_error.h"
 
-#define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
-
 #define CYBERIADA_META_SEPARATOR_CHR             '/'
 #define CYBERIADA_META_NEW_LINE_CHR              '\n'
 #define CYBERIADA_META_NEW_LINE_STR              "\n"
