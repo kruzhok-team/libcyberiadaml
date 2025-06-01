@@ -2261,6 +2261,18 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
 		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
 
+		if (node->geometry_rect) {
+			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_GEOMETRY);
+			if ((res = cyberiada_write_geometry_rect_cyberiada(writer,
+															   node->geometry_rect,
+															   indent + 2)) != CYBERIADA_NO_ERROR) {
+				ERROR("Cannot write node %s geometry rect\n", node->id);
+				return res;
+			}
+			XML_WRITE_CLOSE_E_I(writer, indent + 1);
+		}
+
 		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
 			res = cyberiada_write_node_cyberiada(writer, cur_node, indent + 1);
 			if (res != CYBERIADA_NO_ERROR) {
