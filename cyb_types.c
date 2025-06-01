@@ -436,6 +436,7 @@ CyberiadaDocument* cyberiada_copy_sm_document(CyberiadaDocument* src)
 			sm = sm->next;
 		}
 	}
+	dst->geometry_format = src->geometry_format;
 	dst->node_coord_format = src->node_coord_format;
 	dst->edge_coord_format = src->edge_coord_format;
 	dst->edge_pl_coord_format = src->edge_pl_coord_format;

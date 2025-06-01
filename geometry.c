@@ -33,7 +33,8 @@ int cyberiada_document_no_geometry(CyberiadaDocument* doc)
 	if (!doc) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	
+
+	doc->geometry_format = cybgeomNone;
 	doc->node_coord_format = coordNone;
 	doc->edge_coord_format = coordNone;
 	doc->edge_geom_format = edgeNone;
