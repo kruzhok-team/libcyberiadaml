@@ -668,6 +668,8 @@ static GraphProcessorState handle_new_yed_node(xmlNode* xml_node,
 	if (strcmp(buffer, YED_CORE_META) == 0) {
 		/* comment node */
 		node->type = cybNodeFormalComment;
+		cyberiada_copy_string(&(node->title),
+							  &(node->title_len), CYBERIADA_META_NODE_TITLE);
 		return gpsMeta;
 	} else {
 		return gpsNode;
@@ -710,7 +712,7 @@ static GraphProcessorState handle_meta_data(xmlNode* xml_node,
 	} else {
 		current->comment_data = cyberiada_new_comment_data();
 	}
-
+	
 	cyberiada_get_element_text(buffer, buffer_len, xml_node);
 	snprintf(metabuffer, sizeof(metabuffer) - 1, "%s/ %s\n\n%s",
 			 CYBERIADA_META_STANDARD_VERSION,
