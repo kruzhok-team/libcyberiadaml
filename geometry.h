@@ -33,6 +33,13 @@ extern "C" {
  * The Cyberiada GraphML geometry utilities
  * ----------------------------------------------------------------------------- */
 
+#define NODE_GEOMETRY_RECT   (cybNodeSM | cybNodeSimpleState | cybNodeCompositeState | cybNodeRegion | \
+	                          cybNodeSubmachineState | cybNodeComment | cybNodeFormalComment | \
+                              cybNodeChoice)
+#define NODE_GEOMETRY_POINT  (cybNodeInitial | cybNodeFinal | cybNodeTerminate | \
+	                          cybNodeEntryPoint | cybNodeExitPoint | cybNodeShallowHistory | cybNodeDeepHistory | \
+	                          cybNodeFork | cybNodeJoin)
+	
 	int                cyberiada_document_no_geometry(CyberiadaDocument* doc);
 	int                cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 	int                cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);

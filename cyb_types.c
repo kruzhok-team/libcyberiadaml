@@ -110,12 +110,16 @@ static CyberiadaNode* cyberiada_copy_node(CyberiadaNode* src)
 	if (src->title) {
 		cyberiada_copy_string(&(dst->title), &(dst->title_len), src->title);
 	}
+	if (src->formal_title) {
+		cyberiada_copy_string(&(dst->formal_title), &(dst->formal_title_len), src->formal_title);
+	}
 	if (src->geometry_point) {
 		dst->geometry_point = htree_copy_point(src->geometry_point);
 	}
 	if (src->geometry_rect) {
 		dst->geometry_rect = htree_copy_rect(src->geometry_rect);
 	}
+	dst->collapsed_flag = src->collapsed_flag;
 	if (src->color) {
 		cyberiada_copy_string(&(dst->color), &(dst->color_len), src->color);
 	}
@@ -176,6 +180,7 @@ static int cyberiada_destroy_node(CyberiadaNode* node)
 	if(node != NULL) {
 		if (node->id) free(node->id);
 		if (node->title) free(node->title);
+		if (node->formal_title) free(node->title);
 		if (node->children) {
 			cyberiada_destroy_all_nodes(node->children);
 		}
@@ -383,6 +388,7 @@ static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
 			edge = edge->next;	
 		}
 	}
+	/* update links to the source & target nodes */
 	edge = dst->edges;
 	while (edge) {
 		CyberiadaNode* source = cyberiada_graph_find_node_by_id(dst->nodes, edge->source_id);
@@ -498,7 +504,13 @@ int cyberiada_print_node(CyberiadaNode* node, int level)
 
 	printf("%sNode {id: %s, title: \"%s\", type: %d",
 		   levelspace, node->id, node->title, (int)node->type);
+	if (node->formal_title) {
+		printf(", formal title: \"%s\"", node->formal_title);
+	}
 	printf("}\n");
+	if (node->collapsed_flag) {
+		printf("%sCollapsed\n", levelspace);
+	}
 	if (node->color) {
 		printf("%sColor: %s\n", levelspace, node->color);
 	}
@@ -585,8 +597,7 @@ int cyberiada_print_edge(CyberiadaEdge* edge)
 		printf("   Label point: (%lf, %lf)\n",
 			   edge->geometry_label_point->x,
 			   edge->geometry_label_point->y);
-	}
-	if (edge->geometry_label_rect) {
+	} else if (edge->geometry_label_rect) {
 		printf("   Label rect: (%lf, %lf, %lf, %lf)\n",
 			   edge->geometry_label_rect->x,
 			   edge->geometry_label_rect->y,
@@ -604,8 +615,8 @@ static int cyberiada_print_sm(CyberiadaSM* sm)
 	size_t nodes_cnt = 0, edges_cnt = 0;
 	size_t nodes_cnt_wo_cmt = 0, edges_cnt_wo_cmt = 0;
 
-	cyberiada_sm_size(sm, &nodes_cnt_wo_cmt, &edges_cnt_wo_cmt, 1);
-	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt, 0);
+	cyberiada_sm_size(sm, &nodes_cnt_wo_cmt, &edges_cnt_wo_cmt, 1, 0);
+	cyberiada_sm_size(sm, &nodes_cnt, &edges_cnt, 0, 0);
 	
 	printf("State Machine\n");
 	

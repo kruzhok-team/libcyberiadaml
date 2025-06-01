@@ -35,22 +35,23 @@ extern "C" {
 
 /* SM node types: */    
 typedef enum {
-    cybNodeSM = 0,                /* state machine */
-    cybNodeSimpleState = 1,       /* simple state */
-    cybNodeCompositeState = 2,    /* composite state */
-    cybNodeSubmachineState = 4,   /* submachine state */
-    cybNodeComment = 8,           /* comment node */
-    cybNodeFormalComment = 16,    /* machine-readable comment node */
-    cybNodeInitial = 32,          /* initial pseudostate */
-    cybNodeFinal = 64,            /* final state */
-    cybNodeChoice = 128,          /* choice pseudostate */
-	cybNodeTerminate = 256,       /* terminate pseudostate */
-	cybNodeEntryPoint = 512,      /* entry point pseudostate */
-	cybNodeExitPoint = 1024,      /* exit point pseudostate */
-	cybNodeShallowHistory = 2048, /* shallow history pseudostate */
-	cybNodeDeepHistory = 4096,    /* deep history pseudostate */
-	cybNodeFork = 8192,           /* fork pseudostate */
-	cybNodeJoin = 16384,          /* join pseudostate */
+    cybNodeSM =              0,     /* state machine */
+    cybNodeSimpleState =     1,     /* simple state */
+    cybNodeCompositeState =  2,     /* composite state */
+    cybNodeRegion =          4,     /* region */
+    cybNodeSubmachineState = 8,     /* submachine state */
+    cybNodeComment =         16,    /* comment node */
+    cybNodeFormalComment =   32,    /* machine-readable comment node */
+    cybNodeInitial =         64,    /* initial pseudostate */
+    cybNodeFinal =           128,   /* final state */
+    cybNodeChoice =          256,   /* choice pseudostate */
+	cybNodeTerminate =       512,   /* terminate pseudostate */
+	cybNodeEntryPoint =      1024,  /* entry point pseudostate */
+	cybNodeExitPoint =       2048,  /* exit point pseudostate */
+	cybNodeShallowHistory =  4096,  /* shallow history pseudostate */
+	cybNodeDeepHistory =     8192,  /* deep history pseudostate */
+	cybNodeFork =            16384, /* fork pseudostate */
+	cybNodeJoin =            32768, /* join pseudostate */
 } CyberiadaNodeType;
 
 typedef unsigned int CyberiadaNodeTypeMask;
@@ -125,18 +126,22 @@ typedef HTreeRect     CyberiadaRect;
 typedef HTreePolyline CyberiadaPolyline;
 	
 typedef struct _CyberiadaNode {
-    CyberiadaNodeType           type;                 /* node type (see above) */
-    char*                       id;                   /* unique node id */
+    CyberiadaNodeType           type;                   /* node type (see above) */
+    char*                       id;                     /* unique node id */
     size_t                      id_len;
-    char*                       title;                /* node name */
+    char*                       title;                  /* node name */
     size_t                      title_len;
-	CyberiadaAction*            actions;              /* for simple & composite state nodes */
-	CyberiadaCommentData*       comment_data;         /* for comments */
-	CyberiadaLink*              link;                 /* for submachine states */
-	CyberiadaPoint*             geometry_point;       /* for some pseudostates & final state */
-	CyberiadaRect*              geometry_rect;        /* for sm, states, and choice pseudostate */
+    char*                       formal_title;           /* node formal name (optional) */
+    size_t                      formal_title_len;
+	CyberiadaAction*            actions;                /* for simple & composite state nodes */
+	CyberiadaCommentData*       comment_data;           /* for comments */
+	CyberiadaLink*              link;                   /* for submachine states */
+	/* base geometry */
+	CyberiadaPoint*             geometry_point;         /* for some pseudostates & final state */
+	CyberiadaRect*              geometry_rect;          /* for sm, states, and choice pseudostate */
 	/* additional parameters */
-    char*                       color;                /* for nodes with geometry */
+	char                        collapsed_flag;         /* 1 if node content is visually collapsed, 0 otherwise */
+    char*                       color;                  /* for nodes with geometry */
     size_t                      color_len;
 	/* nodes hierarchy */
     struct _CyberiadaNode*      parent;
@@ -159,7 +164,11 @@ typedef struct _CyberiadaCommentSubject {
 	
 /* SM edge (transition) 
  *
- * Comment on the edge geometry: 
+ * Comment on the edge geometry:
+ *
+ * there are two types of edge source/target coordinates (see htgeom.h) 
+ * 
+ * The default format uses center-oriented coordinates:
  * - the source and target points are calculated in local coordinates relative
  *   to the center of the corresponding source/target node;
  * - the label point is calculated in local coordinates relative to the geometrical
@@ -168,7 +177,7 @@ typedef struct _CyberiadaCommentSubject {
  *   the source node.
  *
  * NOTE: this geomerty is different from the Cyberiada GraphML 1.0 / YED formats geometry
- * and is being converted during the document import/export.
+ * and can be converted during the document import/export.
  */
 typedef struct _CyberiadaEdge {
     CyberiadaEdgeType            type;                  /* edge type (see above) */
@@ -184,23 +193,23 @@ typedef struct _CyberiadaEdge {
 	CyberiadaCommentSubject*     comment_subject;       /* for comment subject */
     /* base edge geometry */
     CyberiadaPoint*              geometry_label_point;  /* NULL if the label rect is available */
-	/* extended edge geometry */
-    CyberiadaPolyline*           geometry_polyline;
-    CyberiadaPoint*              geometry_source_point;
-    CyberiadaPoint*              geometry_target_point;
 	CyberiadaRect*               geometry_label_rect;   /* NULL if the label point is available */
+	/* extended edge geometry */
+    CyberiadaPolyline*           geometry_polyline;     /* if NULL than edge is a straight line */
+    CyberiadaPoint*              geometry_source_point; /* if NULL than s.p. should be reconstructed */
+    CyberiadaPoint*              geometry_target_point; /* if NULL than t.p. should be reconstructed */
 	/* additional parameters */
     char*                        color;                 /* for nodes with geometry */
     size_t                       color_len;
-	/* siblings */
-    struct _CyberiadaEdge*       next;
+	/* list of edges */
+    struct _CyberiadaEdge*       next;                  /* the next edge in the SM */
 } CyberiadaEdge;
 
 /* SM graph (state machine) */
 typedef struct _CyberiadaSM {
     CyberiadaNode*               nodes;                 /* the tree of nodes (starting from the SM roots) */
     CyberiadaEdge*               edges;                 /* the list of edges */
-    struct _CyberiadaSM*         next;
+    struct _CyberiadaSM*         next;                  /* the next SM in the document */
 } CyberiadaSM;
 
 /* SM mandatory metainformation constants */
@@ -236,11 +245,19 @@ typedef HTCoordFormat CyberiadaGeometryCoordFormat;
 /* SM document edges source/target point placement & coordinates format */
 typedef HTEdgeFormat CyberiadaGeometryEdgeFormat;
 
+/* Cyberiada GraphML document geometry format */
+typedef enum {
+    cybgeomNone = 0,                                       /* No geometry */
+    cybgeomShort = 1,                                      /* Base (short) geometry */
+    cybgeomFull = 2                                        /* Full (extend) geometry */
+} CyberiadaGeometryFormat;
+	
 /* SM document */
 typedef struct {
     char*                            format;               /* SM document format string (additional info) */
     size_t                           format_len;           /* SM document format string length */
     CyberiadaMetainformation*        meta_info;            /* SM document metainformation */
+	CyberiadaGeometryFormat          geometry_format;      /* SM document geometry format */ 
 	CyberiadaGeometryCoordFormat     node_coord_format;    /* SM document node geometry coordinates format */
 	CyberiadaGeometryCoordFormat     edge_coord_format;    /* SM document edge (source/target points) geometry coordinates format */
 	CyberiadaGeometryCoordFormat     edge_pl_coord_format; /* SM document edge (polylines) geometry coordinates format */
@@ -251,9 +268,9 @@ typedef struct {
 
 /* Cyberiada GraphML Library supported formats */
 typedef enum {
-    cybxmlCyberiada10 = 0,                       /* Cyberiada 1.0 format */
-    cybxmlYED = 1,                               /* Old YED-based Berloga/Ostranna format */
-    cybxmlUnknown = 99                           /* Format is not specified */
+    cybxmlCyberiada10 = 0,                                 /* Cyberiada 1.0 format */
+    cybxmlYED = 1,                                         /* Old YED-based Berloga/Ostranna format */
+    cybxmlUnknown = 99                                     /* Format is not specified */
 } CyberiadaXMLFormat;
 
 /* Cyberiada GraphML Library import/export flags */
@@ -282,12 +299,15 @@ typedef enum {
 
 #define CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY               2048 /* reconstruct absent node/edge geometry on import */
 #define CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY            4096 /* reconstruct absent SM geometry on import */
-#define CYBERIADA_FLAG_SKIP_GEOMETRY                      8192 /* skip geometry node/edge during import/export */
-#define CYBERIADA_FLAG_ROUND_GEOMETRY                     16384 /* export geometry with round coordinates to 0.001 */
+#define CYBERIADA_FLAG_RECONSTRUCT_FULL_GEOMETRY          8192 /* reconstruct full geometry on import */
+#define CYBERIADA_FLAG_SKIP_GEOMETRY                      16384 /* skip geometry node/edge during import/export */
+#define CYBERIADA_FLAG_SHRINK_GEOMETRY                    32768 /* shrink geometry node/edge during import/export */
+#define CYBERIADA_FLAG_ROUND_GEOMETRY                     65536 /* export geometry with round coordinates to 0.001 */
+#define CYBERIADA_FLAG_EXPORT_GEOMETRY                    (16384 | 32768 | 65536)
 
-#define CYBERIADA_FLAG_FLATTENED                          32768 /* the document is flattened  */
-#define CYBERIADA_FLAG_CHECK_INITIAL                      65536 /* check initial state on the top level  */
-#define CYBERIADA_NON_GEOMETRY_FLAGS_MASK                 (32768 | 65536)
+#define CYBERIADA_FLAG_FLATTENED                          131072 /* the document is flattened  */
+#define CYBERIADA_FLAG_CHECK_INITIAL                      262144 /* check initial state on the top level  */
+#define CYBERIADA_NON_GEOMETRY_FLAGS_MASK                 (131072 | 262144)
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes
@@ -377,7 +397,7 @@ typedef enum {
 	CyberiadaSM* cyberiada_new_sm(void);
 
 	/* Get SM graph size (vertexes and edges) */
-	int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments);
+	int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments, int ignore_regions);
 
 	/* Free the SM structure */	
 	int cyberiada_destroy_sm(CyberiadaSM* sm);

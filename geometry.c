@@ -183,7 +183,7 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 	}
 	if (node->type == cybNodeSM) {
 		type = htTree;
-	} else if (node->type == cybNodeCompositeState) {
+	} else if (node->type == cybNodeCompositeState || node->type == cybNodeRegion) {
 		type = htCompositeNode;
 	} else if (node->type & (cybNodeSimpleState | cybNodeChoice | cybNodeComment | cybNodeFormalComment)) {
 		type = htSimpleNode;

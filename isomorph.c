@@ -27,7 +27,7 @@
 #include "cyb_structs.h"
 #include "cyb_error.h"
 
-static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int ignore_comments)
+static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int ignore_comments, int ignore_regions)
 {
 	size_t cnt = 0;
 	CyberiadaNode* n;
@@ -40,10 +40,12 @@ static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int i
 		if (ignore_comments && (n->type == cybNodeComment || n->type == cybNodeFormalComment)) {
 			continue;
 		}
-		cnt++;
+		if (!ignore_regions || n->type != cybNodeRegion) {
+			cnt++;
+		}
 		if (n->children) {
 			size_t ch_cnt = 0;
-			cyberiada_node_size_recursively(n->children, &ch_cnt, ignore_comments);
+			cyberiada_node_size_recursively(n->children, &ch_cnt, ignore_comments, ignore_regions);
 			cnt += ch_cnt;
 		}
 	}
@@ -53,7 +55,7 @@ static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int i
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments)
+int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments, int ignore_regions)
 {
 	size_t n_cnt = 0, e_cnt = 0;
 	CyberiadaEdge* edge;
@@ -64,7 +66,7 @@ int cyberiada_sm_size(CyberiadaSM* sm, size_t* v, size_t* e, int ignore_comments
 
 	if (sm->nodes) {
 		size_t ch_cnt = 0;
-		cyberiada_node_size_recursively(sm->nodes->children, &ch_cnt, ignore_comments);
+		cyberiada_node_size_recursively(sm->nodes->children, &ch_cnt, ignore_comments, ignore_regions);
 		n_cnt += ch_cnt;
 	}
 
@@ -172,7 +174,8 @@ static int cyberiada_node_degrees(CyberiadaSM* sm, CyberiadaNode* node, int* deg
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* v_array, size_t v_size, size_t* cur_index, int ignore_comments)
+int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* v_array, size_t v_size, size_t* cur_index,
+								 int ignore_comments, int ignore_regions)
 {
 	int res;
 	CyberiadaNode* n;
@@ -193,19 +196,23 @@ int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* 
 		int d_in, d_out;
 		Vertex* cur_vertex;
 		if (ignore_comments && (n->type == cybNodeComment || n->type == cybNodeFormalComment)) continue;
-		cur_vertex = v_array + (*cur_index)++;
-		cur_vertex->node = n;
-		if ((res = cyberiada_node_degrees(sm, n, &d_in, &d_out)) != CYBERIADA_NO_ERROR) {
-			return res;
-		}
-		cur_vertex->degree_in = d_in;
-		cur_vertex->degree_out = d_out;
-		cur_vertex->found = 0;
 
+		if (!ignore_regions || n->type != cybNodeRegion) {
+			cur_vertex = v_array + (*cur_index)++;
+			cur_vertex->node = n;
+			if ((res = cyberiada_node_degrees(sm, n, &d_in, &d_out)) != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+			cur_vertex->degree_in = d_in;
+			cur_vertex->degree_out = d_out;
+			cur_vertex->found = 0;
+		}
+		
 		/* DEBUG("%lu: %s +%lu -%lu\n", *cur_index, n->id, d_in, d_out); */
 
 		if (n->children) {
-			if ((res = cyberiada_enumerate_vertexes(sm, n->children, v_array, v_size, cur_index, ignore_comments)) != CYBERIADA_NO_ERROR) {
+			if ((res = cyberiada_enumerate_vertexes(sm, n->children, v_array, v_size, cur_index,
+													ignore_comments, ignore_regions)) != CYBERIADA_NO_ERROR) {
 				return res;
 			}
 		}
@@ -249,8 +256,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	cyberiada_sm_size(sm1, &n_v1, &n_e1, ignore_comments);
-	cyberiada_sm_size(sm2, &n_v2, &n_e2, ignore_comments);
+	cyberiada_sm_size(sm1, &n_v1, &n_e1, ignore_comments, 1);
+	cyberiada_sm_size(sm2, &n_v2, &n_e2, ignore_comments, 1);
 
 	if (n_v1 == 0 || n_v2 == 0) {
 		return CYBERIADA_BAD_PARAMETER;
@@ -271,8 +278,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	memset(row_num, 0, sizeof(size_t) * n_v1);
 	memset(col_num, 0, sizeof(size_t) * n_v2);
 
-	cyberiada_enumerate_vertexes(sm1, sm1->nodes->children, v1, n_v1, NULL, ignore_comments);
-	cyberiada_enumerate_vertexes(sm2, sm2->nodes->children, v2, n_v2, NULL, ignore_comments);
+	cyberiada_enumerate_vertexes(sm1, sm1->nodes->children, v1, n_v1, NULL, ignore_comments, 1);
+	cyberiada_enumerate_vertexes(sm2, sm2->nodes->children, v2, n_v2, NULL, ignore_comments, 1);
 
 	for (i = 0; i < n_v1; i++) {
 		for (j = 0; j < n_v2; j++) {

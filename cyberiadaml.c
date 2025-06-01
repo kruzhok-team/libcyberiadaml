@@ -200,6 +200,7 @@ typedef struct {
 #define GRAPHML_CYB_KEY_NAME				    "dName"
 #define GRAPHML_CYB_KEY_STATE_MACHINE		    "dStateMachine"
 #define GRAPHML_CYB_KEY_SUBMACHINE              "dSubmachineState"
+#define GRAPHML_CYB_KEY_REGION                  "dRegion"
 #define GRAPHML_CYB_KEY_DATA				    "dData"
 #define GRAPHML_CYB_KEY_COMMENT                 "dNote"
 #define GRAPHML_CYB_KEY_COMMENT_SUBJECT         "dPivot"
@@ -209,12 +210,15 @@ typedef struct {
 #define GRAPHML_CYB_KEY_TARGET_POINT            "dTargetPoint"
 #define GRAPHML_CYB_KEY_LABEL_GEOMETRY          "dLabelGeometry"
 #define GRAPHML_CYB_KEY_VERTEX			        "dVertex"
+#define GRAPHML_CYB_KEY_FORMAL_NAME				"dFormalName"
 #define GRAPHML_CYB_KEY_MARKUP                  "dMarkup"
+#define GRAPHML_CYB_KEY_COLLAPSED			    "dCollapsed"
 #define GRAPHML_CYB_KEY_COLOR			        "dColor"
 
 #define GRAPHML_CYB_KEY_FORMAT_NAME				"format"
 #define GRAPHML_CYB_KEY_NAME_NAME				"name"
 #define GRAPHML_CYB_KEY_STATE_MACHINE_NAME		"stateMachine"
+#define GRAPHML_CYB_KEY_REGION_NAME		        "region"
 #define GRAPHML_CYB_KEY_SUBMACHINE_NAME         "submachineState"
 #define GRAPHML_CYB_KEY_DATA_NAME				"data"
 #define GRAPHML_CYB_KEY_COMMENT_NAME            "note"
@@ -225,30 +229,36 @@ typedef struct {
 #define GRAPHML_CYB_KEY_TARGET_POINT_NAME       "targetPoint"
 #define GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME     "labelGeometry"
 #define GRAPHML_CYB_KEY_VERTEX_NAME			    "vertex"
+#define GRAPHML_CYB_KEY_FORMAL_NAME_NAME		"formalName"
 #define GRAPHML_CYB_KEY_MARKUP_NAME             "markup"
+#define GRAPHML_CYB_KEY_COLLAPSED_NAME          "collapsed"
 #define GRAPHML_CYB_KEY_COLOR_NAME			    "color"
 
 static GraphMLKey cyberiada_graphml_keys[] = {
-	{ GRAPHML_CYB_KEY_FORMAT,          GRAPHML_GRAPHML_ELEMENT, GRAPHML_CYB_KEY_FORMAT_NAME,          "string", NULL },
-	{ GRAPHML_CYB_KEY_NAME,            GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_NAME_NAME,            "string", NULL },	
-	{ GRAPHML_CYB_KEY_NAME,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_NAME_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_STATE_MACHINE,   GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_STATE_MACHINE_NAME,   "string", NULL },
-	{ GRAPHML_CYB_KEY_SUBMACHINE,      GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_SUBMACHINE_NAME,      "string", NULL },
-	{ GRAPHML_CYB_KEY_GEOMETRY,        GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_GEOMETRY_NAME,        NULL,     NULL },
-    { GRAPHML_CYB_KEY_GEOMETRY,        GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,        NULL,     NULL },
-	{ GRAPHML_CYB_KEY_GEOMETRY,        GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,        NULL,     NULL },
-	{ GRAPHML_CYB_KEY_SOURCE_POINT,    GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_SOURCE_POINT_NAME,    NULL,     NULL },
-	{ GRAPHML_CYB_KEY_TARGET_POINT,    GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_TARGET_POINT_NAME,    NULL,     NULL },
-	{ GRAPHML_CYB_KEY_LABEL_GEOMETRY,  GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME,  NULL,     NULL },
-	{ GRAPHML_CYB_KEY_COMMENT,         GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_NAME,         "string", NULL },
-	{ GRAPHML_CYB_KEY_VERTEX,          GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_VERTEX_NAME,          "string", NULL },
-	{ GRAPHML_CYB_KEY_DATA,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_DATA,            GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_MARKUP,          GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_MARKUP_NAME,          "string", NULL },
-	{ GRAPHML_CYB_KEY_COLOR,           GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,           "string", NULL },	  
-	{ GRAPHML_CYB_KEY_COLOR,           GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,           "string", NULL },
-	{ GRAPHML_CYB_KEY_COMMENT_SUBJECT, GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_SUBJECT_NAME, "string", NULL },
-	{ GRAPHML_CYB_KEY_COMMENT_CHUNK,   GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_CHUNK_NAME,   "string", NULL }
+	{ GRAPHML_CYB_KEY_FORMAT,            GRAPHML_GRAPHML_ELEMENT, GRAPHML_CYB_KEY_FORMAT_NAME,            "string", NULL },
+	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL },	
+	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL },
+	{ GRAPHML_CYB_KEY_STATE_MACHINE,     GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_STATE_MACHINE_NAME,     "string", NULL },
+	{ GRAPHML_CYB_KEY_REGION,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_REGION_NAME,            "string", NULL },
+	{ GRAPHML_CYB_KEY_SUBMACHINE,        GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_SUBMACHINE_NAME,        "string", NULL },
+	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
+    { GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
+	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
+	{ GRAPHML_CYB_KEY_SOURCE_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_SOURCE_POINT_NAME,      NULL,     NULL },
+	{ GRAPHML_CYB_KEY_TARGET_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_TARGET_POINT_NAME,      NULL,     NULL },
+	{ GRAPHML_CYB_KEY_LABEL_GEOMETRY,    GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME,    NULL,     NULL },
+	{ GRAPHML_CYB_KEY_COMMENT,           GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_NAME,           "string", NULL },
+	{ GRAPHML_CYB_KEY_VERTEX,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_VERTEX_NAME,            "string", NULL },
+	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL },
+	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL },
+	{ GRAPHML_CYB_KEY_COMMENT_SUBJECT,   GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_SUBJECT_NAME,   "string", NULL },
+	{ GRAPHML_CYB_KEY_COMMENT_CHUNK,     GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_CHUNK_NAME,     "string", NULL },
+	{ GRAPHML_CYB_KEY_COLLAPSED,         GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLLAPSED_NAME,         "string", NULL },
+	{ GRAPHML_CYB_KEY_MARKUP,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_MARKUP_NAME,            "string", NULL },
+	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL },	  
+	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL },
+	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL },	
+	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL }
 };
 static const size_t cyberiada_graphml_keys_count = sizeof(cyberiada_graphml_keys) / sizeof(GraphMLKey); 
 
@@ -311,18 +321,23 @@ static int cyberiada_process_graph(CyberiadaNode* root,
  * ----------------------------------------------------------------------------- */
 
 typedef enum {
+	/* Common states */
 	gpsInit = 0,
 	gpsGraph,
 	gpsNode,
-	gpsNodeGeometry,
-	gpsNodeTitle,
-	gpsNodeAction,
-	gpsNodeStart,
 	gpsEdge,
+	/* CyberiadaML format states */
+	gpsNodeGeometry,
+	gpsRegion,
 	gpsEdgeGeometry,
 	gpsEdgeSourcePoint,
 	gpsEdgeTargetPoint,
 	gpsEdgeLabelGeometry,
+	/* YED format states */
+	gpsNodeTitle,
+	gpsNodeAction,
+	gpsNodeStart,
+	/* The invalid state */
 	gpsInvalid
 } GraphProcessorState;
 
@@ -330,16 +345,20 @@ const char* debug_state_names[] = {
 	"Init",
 	"Graph",
 	"Node",
-	"NodeGeometry",
-	"NodeTitle",
-	"NodeAction",
-	"NodeStart",
 	"Edge",
+	
+	"NodeGeometry",
+	"Region",
 	"EdgeGeometry",
 	"EdgeSourcePoint",
 	"EdgeTargetPoint",
 	"EdgeLabelGeometry",
-	"Invalid"
+
+	"NodeTitle",
+	"NodeAction",
+	"NodeStart",
+
+	"Invalid",
 };
 
 /* -----------------------------------------------------------------------------
@@ -471,9 +490,9 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 								GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
-	/* DEBUG("found graph %s \n", buffer); */
-	while (sm->next) sm = sm->next;
+	/* DEBUG("found graph %s\n", buffer); */
 	if (parent == NULL) {
+		while (sm->next) sm = sm->next;
 		if (sm->nodes != NULL) {
 			sm->next = cyberiada_new_sm();
 			sm = sm->next;
@@ -481,8 +500,26 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 		sm->nodes = cyberiada_new_node(buffer);
 		sm->nodes->type = cybNodeSM;
 		node_stack_set_top_node(stack, sm->nodes);
+		return gpsGraph;
+	} else {
+		/* DEBUG("graph parent %s type %d\n", parent->id, parent->type); */
+		if (parent->type != cybNodeSimpleState && parent->type != cybNodeCompositeState) {
+			ERROR("Children graph for region is allowed only for states\n");
+			return gpsInvalid;
+		}
+		CyberiadaNode* region_node = cyberiada_new_node(buffer);
+		region_node->type = cybNodeRegion;
+		region_node->parent = parent;
+		if (parent->children) {
+			cyberiada_graph_add_sibling_node(parent->children, region_node);		
+		} else {
+			parent->children = region_node;
+		}
+		node_stack_set_top_node(stack, region_node);
+		parent->type = cybNodeCompositeState;
+		/* DEBUG("region node added\n"); */
+		return gpsRegion;
 	}
-	return gpsGraph;
 }
 
 static GraphProcessorState handle_new_node(xmlNode* xml_node,	
@@ -505,16 +542,16 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 	/* DEBUG("found node %s\n", buffer); */
 	parent = node_stack_current_node(stack);
 	if (parent == NULL) {
-		ERROR("current node invalid\n");
+		ERROR("Cannot process new node: current node is invalid\n");
 		return gpsInvalid;
 	}
 	node = cyberiada_new_node(buffer);
 	node->parent = parent;
 	node_stack_set_top_node(stack, node);
-	if (parent->children == NULL) {
-		parent->children = node;
-	} else {
+	if (parent->children) {
 		cyberiada_graph_add_sibling_node(parent->children, node);
+	} else {
+		parent->children = node;
 	}
 	return gpsNode;
 }
@@ -604,11 +641,29 @@ static GraphProcessorState handle_group_node(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	CyberiadaNode* current = node_stack_current_node(stack);
-	if (current == NULL) {
-		ERROR("current node invalid\n");
+	if (!current) {
+		ERROR("Current node invalid\n");
 		return gpsInvalid;
 	}
-	current->type = cybNodeCompositeState;
+	if (!current->parent) {
+		ERROR("Current node %s has no parent", current->id);
+		return gpsInvalid;
+	}
+	if (current->type != cybNodeRegion) {
+		/* DEBUG("group node for simple node\n"); */
+		if (current->type != cybNodeSimpleState) {
+			ERROR("Current node %s is not a simple node: type %d", current->id, current->type);
+			return gpsInvalid;
+		}
+		current->type = cybNodeCompositeState;
+	} else {
+		/* DEBUG("group node for region node\n"); */
+		if (!current->parent->parent) {
+			ERROR("The parent region node %s has no parent", current->parent->id);
+			return gpsInvalid;
+		}
+		current->parent->parent->type = cybNodeCompositeState;
+	}
 	return gpsNodeGeometry;
 }
 
@@ -679,6 +734,7 @@ static GraphProcessorState handle_node_geometry(xmlNode* xml_node,
 		ERROR("current node invalid\n");
 		return gpsInvalid;
 	}
+	/* DEBUG("found geometry node\n"); */
 	type = current->type;
 	if (cyberiada_xml_read_rect(xml_node,
 								&rect) != CYBERIADA_NO_ERROR) {
@@ -976,7 +1032,7 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 			ERROR("Bad Cyberida-GraphML format: %s\n", buffer);
 		}
 	} else {
-		ERROR("No graph version node\n");
+		ERROR("No standard format node\n");
 	}
 	return gpsInvalid;
 }
@@ -1061,21 +1117,35 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 	/* DEBUG("node id %s data key '%s' value '%s'\n", current->id, key_name, buffer); */
 	if (strcmp(key_name, GRAPHML_CYB_KEY_NAME_NAME) == 0) {
 		if (current->title != NULL) {
-			ERROR("Trying to set node %s label twice\n", current->id);
+			ERROR("Trying to set node %s title twice\n", current->id);
 			return gpsInvalid;
 		}
 		/* DEBUG("Set node %s title %s\n", current->id, buffer); */
 		cyberiada_copy_string(&(current->title), &(current->title_len), buffer);
 		cyberiada_string_trim(current->title);
+	} else if (strcmp(key_name, GRAPHML_CYB_KEY_FORMAL_NAME_NAME) == 0) {
+		if (current->formal_title != NULL) {
+			ERROR("Trying to set node %s formal title twice\n", current->id);
+			return gpsInvalid;
+		}
+		/* DEBUG("Set node %s title %s\n", current->id, buffer); */
+		cyberiada_copy_string(&(current->formal_title), &(current->formal_title_len), buffer);
+		cyberiada_string_trim(current->formal_title);
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_STATE_MACHINE_NAME) == 0) {
 		if (current->type != cybNodeSM) {
 			ERROR("Using state machine key outside the graph element in %s\n", current->id);
 			return gpsInvalid;
 		}
 		return gpsGraph;
+	} else if (strcmp(key_name, GRAPHML_CYB_KEY_REGION_NAME) == 0) {
+		if (current->type != cybNodeRegion) {
+			ERROR("Using region key outside the graph element in %s\n", current->id);
+			return gpsInvalid;
+		}
+		return gpsRegion;
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_DATA_NAME) == 0) {
 		if (current->actions != NULL) {
-			ERROR("Trying to set comment node %s action\n", current->id);
+			ERROR("Trying to set node %s action twice\n", current->id);
 			return gpsInvalid;
 		}
 		if (current->type == cybNodeComment || current->type == cybNodeFormalComment) {
@@ -1136,6 +1206,16 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 			return gpsInvalid;
 		}
 		cyberiada_copy_string(&(current->color), &(current->color_len), buffer);
+	} else if (strcmp(key_name, GRAPHML_CYB_KEY_COLLAPSED_NAME) == 0) {
+		if (current->type != cybNodeCompositeState) {
+			ERROR("Trying to set collapsed flag for non-state node %s\n", current->id);
+			return gpsInvalid;			
+		}
+		if (current->collapsed_flag) {
+			ERROR("Trying to set node %s collapsed flag twice\n", current->id);
+			return gpsInvalid;
+		}
+		current->collapsed_flag = 1;
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_MARKUP_NAME) == 0) {
 		if (current->type != cybNodeComment) {
 			ERROR("Trying to set markup for non-comment node %s\n", current->id);
@@ -1215,12 +1295,18 @@ static GraphProcessorState handle_node_rect(xmlNode* xml_node,
 							   &(current->geometry_rect)) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
-	if (current->geometry_rect->width == 0.0 && current->geometry_rect->height == 0.0) {
-		/* rect with zero width & height is empty actually */
-		htree_destroy_rect(current->geometry_rect);
-		current->geometry_rect = NULL;
+	/* if (current->geometry_rect->width == 0.0 && current->geometry_rect->height == 0.0) { */
+	/* 	/\* rect with zero width & height is empty actually *\/ */
+	/* 	htree_destroy_rect(current->geometry_rect); */
+	/* 	current->geometry_rect = NULL; */
+	/* } */
+	if (current->type == cybNodeSM) {
+		return gpsGraph;
+	} else if (current->type == cybNodeRegion) {
+		return gpsRegion;
+	} else {
+		return gpsNode;
 	}
-	return gpsNode;
 }
 
 static GraphProcessorState handle_edge_data(xmlNode* xml_node,
@@ -1437,29 +1523,29 @@ typedef struct {
 } ProcessorTransition;
 
 static ProcessorTransition cyb_processor_state_table[] = {
-	{gpsInit,              GRAPHML_DATA_ELEMENT,  &handle_new_init_data},
-	{gpsInit,              GRAPHML_KEY_ELEMENT,   &handle_new_init_key},
-	{gpsInit,              GRAPHML_GRAPH_ELEMENT, &handle_new_graph},
-	{gpsGraph,             GRAPHML_NODE_ELEMENT,  &handle_new_node},
-	{gpsGraph,             GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
-	{gpsGraph,             GRAPHML_DATA_ELEMENT,  &handle_node_data},
-	{gpsNode,              GRAPHML_DATA_ELEMENT,  &handle_node_data},
-	{gpsNode,              GRAPHML_NODE_ELEMENT,  &handle_new_node},
-	{gpsNode,              GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
-	{gpsNode,              GRAPHML_GRAPH_ELEMENT, &handle_new_graph},
-	{gpsEdge,              GRAPHML_DATA_ELEMENT,  &handle_edge_data},
-	{gpsEdge,              GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
-	{gpsEdge,              GRAPHML_GRAPH_ELEMENT, &handle_new_graph},
-	{gpsNodeGeometry,      GRAPHML_POINT_ELEMENT, &handle_node_point},
-	{gpsNodeGeometry,      GRAPHML_RECT_ELEMENT,  &handle_node_rect},
-	{gpsEdgeGeometry,      GRAPHML_POINT_ELEMENT, &handle_edge_point},
-	{gpsEdgeGeometry,      GRAPHML_DATA_ELEMENT,  &handle_edge_data},
-	{gpsEdgeGeometry,      GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
-	{gpsEdgeGeometry,      GRAPHML_GRAPH_ELEMENT, &handle_new_graph},	
-	{gpsEdgeSourcePoint,   GRAPHML_POINT_ELEMENT, &handle_edge_source_point},
-	{gpsEdgeTargetPoint,   GRAPHML_POINT_ELEMENT, &handle_edge_target_point},
-	{gpsEdgeLabelGeometry, GRAPHML_POINT_ELEMENT, &handle_edge_label_point},
-	{gpsEdgeLabelGeometry, GRAPHML_RECT_ELEMENT,  &handle_edge_label_rect},
+	{gpsInit,                GRAPHML_DATA_ELEMENT,  &handle_new_init_data},
+	{gpsInit,                GRAPHML_KEY_ELEMENT,   &handle_new_init_key},
+	{gpsInit,                GRAPHML_GRAPH_ELEMENT, &handle_new_graph},
+	{gpsGraph,               GRAPHML_NODE_ELEMENT,  &handle_new_node},
+	{gpsGraph,               GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
+	{gpsGraph,               GRAPHML_DATA_ELEMENT,  &handle_node_data},
+	{gpsNode,                GRAPHML_DATA_ELEMENT,  &handle_node_data},
+	{gpsNode,                GRAPHML_NODE_ELEMENT,  &handle_new_node},
+	{gpsNode,                GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
+	{gpsNode,                GRAPHML_GRAPH_ELEMENT, &handle_new_graph},
+	{gpsRegion,              GRAPHML_DATA_ELEMENT,  &handle_node_data},
+	{gpsRegion,              GRAPHML_NODE_ELEMENT,  &handle_new_node},
+	{gpsEdge,                GRAPHML_DATA_ELEMENT,  &handle_edge_data},
+	{gpsEdge,                GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
+	{gpsNodeGeometry,        GRAPHML_POINT_ELEMENT, &handle_node_point},
+	{gpsNodeGeometry,        GRAPHML_RECT_ELEMENT,  &handle_node_rect},
+	{gpsEdgeGeometry,        GRAPHML_POINT_ELEMENT, &handle_edge_point},
+	{gpsEdgeGeometry,        GRAPHML_DATA_ELEMENT,  &handle_edge_data},
+	{gpsEdgeGeometry,        GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
+	{gpsEdgeSourcePoint,     GRAPHML_POINT_ELEMENT, &handle_edge_source_point},
+	{gpsEdgeTargetPoint,     GRAPHML_POINT_ELEMENT, &handle_edge_target_point},
+	{gpsEdgeLabelGeometry,   GRAPHML_POINT_ELEMENT, &handle_edge_label_point},
+	{gpsEdgeLabelGeometry,   GRAPHML_RECT_ELEMENT,  &handle_edge_label_rect},
 };
 const size_t cyb_processor_state_table_size = sizeof(cyb_processor_state_table) / sizeof(ProcessorTransition);
 
@@ -1469,8 +1555,11 @@ static ProcessorTransition yed_processor_state_table[] = {
 	{gpsGraph,        GRAPHML_EDGE_ELEMENT,     &handle_new_edge},
 	{gpsGraph,        GRAPHML_GRAPH_ELEMENT,    &handle_new_graph},
 	{gpsNode,         GRAPHML_YED_COMMENTNODE,  &handle_comment_node},
-	{gpsNode,         GRAPHML_YED_GROUPNODE,    &handle_group_node},
 	{gpsNode,         GRAPHML_YED_GENERICNODE,  &handle_generic_node},
+	{gpsNode,         GRAPHML_GRAPH_ELEMENT,    &handle_new_graph},
+	{gpsNode,         GRAPHML_YED_GROUPNODE,    &handle_group_node},
+	{gpsRegion,       GRAPHML_YED_GROUPNODE,    &handle_group_node},
+	{gpsRegion,       GRAPHML_NODE_ELEMENT,     &handle_new_node},
 	{gpsNodeGeometry, GRAPHML_YED_GEOMETRYNODE, &handle_node_geometry},
 	{gpsNodeStart,    GRAPHML_YED_PROPNODE,     &handle_property},
 	{gpsNodeStart,    GRAPHML_NODE_ELEMENT,     &handle_new_node},
@@ -1481,7 +1570,7 @@ static ProcessorTransition yed_processor_state_table[] = {
 	{gpsEdge,         GRAPHML_YED_PATHNODE,     &handle_edge_geometry},
 	{gpsEdgeGeometry, GRAPHML_YED_POINTNODE,    &handle_edge_point},
 	{gpsEdgeGeometry, GRAPHML_YED_EDGELABEL,    &handle_edge_label},
-	{gpsEdgeGeometry,  GRAPHML_EDGE_ELEMENT,    &handle_new_edge},
+	{gpsEdgeGeometry, GRAPHML_EDGE_ELEMENT,     &handle_new_edge},
 };
 const size_t yed_processor_state_table_size = sizeof(yed_processor_state_table) / sizeof(ProcessorTransition);
 
@@ -1736,6 +1825,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 	}
 	
 	if (!nodes->parent) {
+		ERROR("Node %s has no parent\n", nodes->id);
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
@@ -1747,6 +1837,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 		if (n->children) {
 			int res = cyberiada_check_pseudostates(n->children, edges, check_initial, 0);
 			if (res != CYBERIADA_NO_ERROR) {
+				ERROR("Error while checking pseudostates: %d\n", res);
 				return res;
 			}
 		}
@@ -1792,11 +1883,11 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		if (sm->nodes) {
 			if ((res = cyberiada_check_pseudostates(sm->nodes->children, sm->edges, check_initial, 1)) != CYBERIADA_NO_ERROR) {
-				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+				ERROR("error: state machine %s has wrong structure - bad pseudostates\n", sm->nodes->id);
 				break;
 			}
 			if (!skip_geometry && (res = cyberiada_check_nodes_geometry(sm->nodes)) != CYBERIADA_NO_ERROR) {
-				ERROR("error: state machine %s has wrong structure\n", sm->nodes->id);
+				ERROR("error: state machine %s has wrong structure - bad geometry\n", sm->nodes->id);
 				break;
 			}
 		}
@@ -2162,6 +2253,26 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
 	size_t i;
+
+	if (node->type == cybNodeRegion) {
+		/* the root graph element */
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent);
+		snprintf(buffer, buffer_len, "%s", node->id);
+		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
+		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
+
+		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
+			res = cyberiada_write_node_cyberiada(writer, cur_node, indent + 1);
+			if (res != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing node %s\n", cur_node->id);
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+		
+		XML_WRITE_CLOSE_E_I(writer, indent);
+
+		return CYBERIADA_NO_ERROR;
+	}
 	
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_NODE_ELEMENT, indent);
 	XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, node->id);
@@ -2218,6 +2329,19 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 		XML_WRITE_CLOSE_E(writer);		
 	}
 
+	if (node->formal_title) {
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_FORMAL_NAME);
+		XML_WRITE_TEXT(writer, node->formal_title);
+		XML_WRITE_CLOSE_E(writer);		
+	}
+
+	if (node->collapsed_flag) {
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_COLLAPSED);
+		XML_WRITE_CLOSE_E(writer);		
+	}
+	
 	if ((node->type == cybNodeComment || node->type == cybNodeFormalComment) && node->comment_data) {
 		if (node->comment_data->body) {
 			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
@@ -2272,21 +2396,16 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	}
 
 	if (node->type == cybNodeCompositeState) {
-		/* the root graph element */
-		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
-		snprintf(buffer, buffer_len, "%s:", node->id);
-		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
-		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
-		
-		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
-			res = cyberiada_write_node_cyberiada(writer, cur_node, indent + 2);
-			if (res != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing node %s\n", cur_node->id);
-				return CYBERIADA_XML_ERROR;
-			}
+		if (!node->children || node->children->next) {
+			ERROR("no single region subnode %s\n", node->children->id);
+			return CYBERIADA_XML_ERROR;
 		}
-		
-		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+
+		res = cyberiada_write_node_cyberiada(writer, node->children, indent + 1);
+		if (res != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing node %s\n", node->children->id);
+			return CYBERIADA_XML_ERROR;
+		}
 	}
 
 	XML_WRITE_CLOSE_E_I(writer, indent);
@@ -2859,13 +2978,18 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 			XML_WRITE_CLOSE_E_I(writer, indent + 2);
 			XML_WRITE_CLOSE_E_I(writer, indent + 1);
 
+			if (!node->children || node->children->next) {
+				ERROR("no single region subnode of the composite node %s\n", node->children->id);
+				return CYBERIADA_XML_ERROR;
+			}
+
 			/* the root graph element */
 			XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
-			snprintf(buffer, buffer_len, "%s:", node->id);
+			snprintf(buffer, buffer_len, "%s", node->children->id);
 			XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
 			XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
 
-			for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
+			for (cur_node = node->children->children; cur_node; cur_node = cur_node->next) {
 				res = cyberiada_write_node_yed(writer, cur_node, indent + 2);
 				if (res != CYBERIADA_NO_ERROR) {
 					ERROR("error while writing node %s\n", cur_node->id);
