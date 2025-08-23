@@ -277,62 +277,81 @@ typedef enum {
 /* Cyberiada GraphML Library import/export flags */
 #define CYBERIADA_FLAG_NO                                 0
 
-#define CYBERIADA_FLAG_NODES_ABSOLUTE_GEOMETRY            1    /* convert imported nodes geometry to absolute coordinates */ 
-#define CYBERIADA_FLAG_NODES_LEFTTOP_LOCAL_GEOMETRY       2    /* convert imported nodes geometry to left-top-oriented local coordinates */
-#define CYBERIADA_FLAG_NODES_CENTER_LOCAL_GEOMETRY        4    /* convert imported nodes geometry to center-oriented local coordinates */
-#define CYBERIADA_FLAG_NODES_GEOMETRY                     (1 | 2 | 4)
+#define CYBERIADA_FLAG_NODES_ABSOLUTE_GEOMETRY            0x1    /* convert imported nodes geometry to absolute coordinates */ 
+#define CYBERIADA_FLAG_NODES_LEFTTOP_LOCAL_GEOMETRY       0x2    /* convert imported nodes geometry to left-top-oriented local coordinates */
+#define CYBERIADA_FLAG_NODES_CENTER_LOCAL_GEOMETRY        0x4    /* convert imported nodes geometry to center-oriented local coordinates */
+#define CYBERIADA_FLAG_NODES_GEOMETRY                     (CYBERIADA_FLAG_NODES_ABSOLUTE_GEOMETRY | \
+														   CYBERIADA_FLAG_NODES_LEFTTOP_LOCAL_GEOMETRY | \
+														   CYBERIADA_FLAG_NODES_CENTER_LOCAL_GEOMETRY)
 
-#define CYBERIADA_FLAG_EDGES_ABSOLUTE_GEOMETRY            8    /* convert imported edges geometry to absolute coordinates */ 
-#define CYBERIADA_FLAG_EDGES_LEFTTOP_LOCAL_GEOMETRY       16   /* convert imported edges geometry to left-top-oriented local coordinates */
-#define CYBERIADA_FLAG_EDGES_CENTER_LOCAL_GEOMETRY        32   /* convert imported edges geometry to center-oriented local coordinates */
-#define CYBERIADA_FLAG_EDGES_GEOMETRY                     (8 | 16 | 32)
+#define CYBERIADA_FLAG_EDGES_ABSOLUTE_GEOMETRY            0x8    /* convert imported edges geometry to absolute coordinates */ 
+#define CYBERIADA_FLAG_EDGES_LEFTTOP_LOCAL_GEOMETRY       0x10   /* convert imported edges geometry to left-top-oriented local coordinates */
+#define CYBERIADA_FLAG_EDGES_CENTER_LOCAL_GEOMETRY        0x20   /* convert imported edges geometry to center-oriented local coordinates */
+#define CYBERIADA_FLAG_EDGES_GEOMETRY                     (CYBERIADA_FLAG_EDGES_ABSOLUTE_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_LEFTTOP_LOCAL_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_CENTER_LOCAL_GEOMETRY)
 	
-#define CYBERIADA_FLAG_EDGES_PL_ABSOLUTE_GEOMETRY         64   /* convert imported edge polylines geometry to absolute coordinates */ 
-#define CYBERIADA_FLAG_EDGES_PL_LEFTTOP_LOCAL_GEOMETRY    128  /* convert imported edge polylines geometry to left-top-oriented local coordinates */
-#define CYBERIADA_FLAG_EDGES_PL_CENTER_LOCAL_GEOMETRY     256  /* convert imported edge polylines geometry to center-oriented local coordinates */
-#define CYBERIADA_FLAG_EDGES_PL_GEOMETRY                  (64 | 128 | 256)
+#define CYBERIADA_FLAG_EDGES_PL_ABSOLUTE_GEOMETRY         0x40   /* convert imported edge polylines geometry to absolute coordinates */ 
+#define CYBERIADA_FLAG_EDGES_PL_LEFTTOP_LOCAL_GEOMETRY    0x80  /* convert imported edge polylines geometry to left-top-oriented local coordinates */
+#define CYBERIADA_FLAG_EDGES_PL_CENTER_LOCAL_GEOMETRY     0x100  /* convert imported edge polylines geometry to center-oriented local coordinates */
+#define CYBERIADA_FLAG_EDGES_PL_GEOMETRY                  (CYBERIADA_FLAG_EDGES_PL_ABSOLUTE_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_PL_LEFTTOP_LOCAL_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_PL_CENTER_LOCAL_GEOMETRY)
 
-#define CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY               512  /* convert imported geometry to center edge coordinates */
-#define CYBERIADA_FLAG_BORDER_EDGE_GEOMETRY               1024 /* convert imported geometry to border edge coordinates (left-top) */
-#define CYBERIADA_FLAG_EDGE_TYPE_GEOMETRY                 (512 | 1024)
+#define CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY               0x200  /* convert imported geometry to center edge coordinates */
+#define CYBERIADA_FLAG_BORDER_EDGE_GEOMETRY               0x400 /* convert imported geometry to border edge coordinates (left-top) */
+#define CYBERIADA_FLAG_EDGE_TYPE_GEOMETRY                 (CYBERIADA_FLAG_CENTER_EDGE_GEOMETRY | \
+														   CYBERIADA_FLAG_BORDER_EDGE_GEOMETRY)
 
-#define CYBERIADA_FLAG_ANY_GEOMETRY                       0x7ff
+#define CYBERIADA_FLAG_ANY_GEOMETRY                       (CYBERIADA_FLAG_NODES_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGES_PL_GEOMETRY | \
+														   CYBERIADA_FLAG_EDGE_TYPE_GEOMETRY)
 
-#define CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY               2048 /* reconstruct absent node/edge geometry on import */
-#define CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY            4096 /* reconstruct absent SM geometry on import */
-#define CYBERIADA_FLAG_RECONSTRUCT_FULL_GEOMETRY          8192 /* reconstruct full geometry on import */
-#define CYBERIADA_FLAG_SKIP_GEOMETRY                      16384 /* skip geometry node/edge during import/export */
-#define CYBERIADA_FLAG_SHRINK_GEOMETRY                    32768 /* shrink geometry node/edge during import/export */
-#define CYBERIADA_FLAG_ROUND_GEOMETRY                     65536 /* export geometry with round coordinates to 0.001 */
-#define CYBERIADA_FLAG_EXPORT_GEOMETRY                    (16384 | 32768 | 65536)
+#define CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY               0x800 /* reconstruct absent node/edge geometry on import */
+#define CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY            0x1000 /* reconstruct absent SM geometry on import */
+#define CYBERIADA_FLAG_RECONSTRUCT_FULL_GEOMETRY          0x2000 /* reconstruct full geometry on import */
+#define CYBERIADA_FLAG_SKIP_GEOMETRY                      0x4000 /* skip geometry node/edge during import/export */
+#define CYBERIADA_FLAG_SHRINK_GEOMETRY                    0x8000 /* shrink geometry node/edge during import/export */
+#define CYBERIADA_FLAG_ROUND_GEOMETRY                     0x10000 /* export geometry with round coordinates to 0.001 */
+#define CYBERIADA_FLAG_EXPORT_GEOMETRY                    (CYBERIADA_FLAG_SKIP_GEOMETRY | \
+														   CYBERIADA_FLAG_SHRINK_GEOMETRY | \
+														   CYBERIADA_FLAG_EXPORT_GEOMETRY)
 
-#define CYBERIADA_FLAG_FLATTENED                          131072 /* the document is flattened  */
-#define CYBERIADA_FLAG_CHECK_INITIAL                      262144 /* check initial state on the top level  */
-#define CYBERIADA_NON_GEOMETRY_FLAGS_MASK                 (131072 | 262144)
+#define CYBERIADA_FLAG_FLATTENED                          0x20000 /* the document is flattened  */
+#define CYBERIADA_FLAG_CHECK_INITIAL                      0x40000 /* check initial state on the top level  */
+#define CYBERIADA_FLAG_STRICT_ACTION_ENTRIES              0x80000 /* check initial state on the top level  */
+#define CYBERIADA_FLAG_NON_GEOMETRY                       (CYBERIADA_FLAG_FLATTENED | \
+														   CYBERIADA_FLAG_CHECK_INITIAL | \
+														   CYBERIADA_FLAG_STRICT_ACTION_ENTRIES)
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes
  * ----------------------------------------------------------------------------- */
 
-#define CYBERIADA_ISOMORPH_FLAG_IDENTICAL                 1    /* the two SM graphs are identical (even ids are the same) */
-#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     2    /* the two SM graphs are equal */
-#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                4    /* the two SM graphs are isomorphic (but there are differences) */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               8    /* the two SM graphs are not isomorhic and have different states */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              16    /* the two SM graphs are not isomorhic and have different initial pseudostates */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                32   /* the two SM graphs are not isomorhic and have different edges */
-#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK           (1 | 2 | 4)
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_MASK                 (8 | 16 | 32)
+#define CYBERIADA_ISOMORPH_FLAG_IDENTICAL                 0x1    /* the two SM graphs are identical (even ids are the same) */
+#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     0x2    /* the two SM graphs are equal */
+#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                0x4    /* the two SM graphs are isomorphic (but there are differences) */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               0x8    /* the two SM graphs are not isomorhic and have different states */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              0x10    /* the two SM graphs are not isomorhic and have different initial pseudostates */
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                0x20   /* the two SM graphs are not isomorhic and have different edges */
+#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK           (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | \
+														   CYBERIADA_ISOMORPH_FLAG_EQUAL | \
+														   CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC)
+#define CYBERIADA_ISOMORPH_FLAG_DIFF_MASK                 (CYBERIADA_ISOMORPH_FLAG_DIFF_STATES | \
+														   CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL | \
+														   CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)
 	
-#define CYBERIADA_NODE_DIFF_ID                            1    /* the two SM nodes have different identifiers */
-#define CYBERIADA_NODE_DIFF_TYPE                          2    /* the two SM nodes have different types (excluding simple/comp. state) */
-#define CYBERIADA_NODE_DIFF_TITLE                         4    /* the two SM nodes have different titles */
-#define CYBERIADA_NODE_DIFF_ACTIONS                       8    /* the two SM nodes have different actions */
-#define CYBERIADA_NODE_DIFF_SM_LINK                       16   /* the two SM nodes have different links to a state machine */
-#define CYBERIADA_NODE_DIFF_CHILDREN                      32   /* the two SM nodes have different number of children */
-#define CYBERIADA_NODE_DIFF_EDGES                         64   /* the two SM nodes have different incoming/outgoing edges */
+#define CYBERIADA_NODE_DIFF_ID                            0x1    /* the two SM nodes have different identifiers */
+#define CYBERIADA_NODE_DIFF_TYPE                          0x2    /* the two SM nodes have different types (excluding simple/comp. state) */
+#define CYBERIADA_NODE_DIFF_TITLE                         0x4    /* the two SM nodes have different titles */
+#define CYBERIADA_NODE_DIFF_ACTIONS                       0x8    /* the two SM nodes have different actions */
+#define CYBERIADA_NODE_DIFF_SM_LINK                       0x10   /* the two SM nodes have different links to a state machine */
+#define CYBERIADA_NODE_DIFF_CHILDREN                      0x20   /* the two SM nodes have different number of children */
+#define CYBERIADA_NODE_DIFF_EDGES                         0x40   /* the two SM nodes have different incoming/outgoing edges */
 
-#define CYBERIADA_EDGE_DIFF_ID                            128  /* the two SM edges have different identifiers */
-#define CYBERIADA_EDGE_DIFF_ACTION                        256  /* the two SM edges have different actions */
+#define CYBERIADA_EDGE_DIFF_ID                            0x80   /* the two SM edges have different identifiers */
+#define CYBERIADA_EDGE_DIFF_ACTION                        0x100  /* the two SM edges have different actions */
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes

@@ -2013,7 +2013,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 
 	skip_geometry = flags & CYBERIADA_FLAG_SKIP_GEOMETRY;
 	if (skip_geometry &&
-		(flags & ~CYBERIADA_NON_GEOMETRY_FLAGS_MASK) != CYBERIADA_FLAG_SKIP_GEOMETRY) {
+		(flags & ~CYBERIADA_FLAG_NON_GEOMETRY) != CYBERIADA_FLAG_SKIP_GEOMETRY) {
 		ERROR("The skip geometry flag is not compatible with other geometry flags\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
