@@ -477,3 +477,80 @@ int cyberiada_print_action(CyberiadaAction* action, int level)
 	}
 	return CYBERIADA_NO_ERROR;
 }
+
+int cyberiada_check_action_doubles(CyberiadaAction* a)
+{
+	CyberiadaAction *entry_action = NULL, *exit_action = NULL;
+	while (a) {
+		if (a->type == cybActionEntry) {
+			if (entry_action) {
+				ERROR("Multiple entry actions\n");
+				return CYBERIADA_FORMAT_ERROR;
+			} else {
+				entry_action = a;
+			}
+		} else if (a->type == cybActionExit) {
+			if (exit_action) {
+				ERROR("Multiple exit actions\n");
+				return CYBERIADA_FORMAT_ERROR;
+			} else {
+				exit_action = a;
+			}			
+		}
+		a = a->next;
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+extern int cyberiada_destroy_action(CyberiadaAction* action);
+
+int cyberiada_join_action_doubles(CyberiadaAction** action)
+{
+	CyberiadaAction *entry_action = NULL, *exit_action = NULL, *save_action;
+	CyberiadaAction *a, *to_destroy, *prev = NULL;
+		
+	if (!action) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (!*action) {
+		/* skip empty action */
+		return CYBERIADA_NO_ERROR;
+	}
+
+	a = *action;
+	
+	while(a) {
+		if (a->type == cybActionEntry || a->type == cybActionExit) {
+			save_action = NULL;
+			if (a->type == cybActionEntry) {
+				if (!entry_action) {
+					entry_action = a;
+				} else {
+					save_action = entry_action;
+				}
+			} else {
+				if (!exit_action) {
+					exit_action = a;
+				} else {
+					save_action = exit_action;
+				}
+			}
+			if (save_action && a->behavior) {
+				cyberiada_append_string(&(save_action->behavior),
+										&(save_action->behavior_len),
+										a->behavior,
+										"\n");
+				to_destroy = a;
+				a = a->next;
+				prev->next = a;
+				to_destroy->next = NULL;
+				cyberiada_destroy_action(to_destroy);
+				continue;
+			}
+		}
+		prev = a;
+		a = a->next;
+	}
+	
+	return CYBERIADA_NO_ERROR;
+}

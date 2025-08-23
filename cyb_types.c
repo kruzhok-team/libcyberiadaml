@@ -157,7 +157,7 @@ static CyberiadaNode* cyberiada_copy_node(CyberiadaNode* src)
 	return dst;
 }
 
-static int cyberiada_destroy_action(CyberiadaAction* action)
+int cyberiada_destroy_action(CyberiadaAction* action)
 {
 	CyberiadaAction* a;
 	if (action != NULL) {

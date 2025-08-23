@@ -43,6 +43,9 @@ extern "C" {
 	int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps);
 	int cyberiada_print_action(CyberiadaAction* action, int level);
 	
+	int cyberiada_check_action_doubles(CyberiadaAction* action);
+	int cyberiada_join_action_doubles(CyberiadaAction** action);
+
 #ifdef __cplusplus
 }
 #endif
