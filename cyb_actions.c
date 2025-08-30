@@ -513,7 +513,7 @@ int cyberiada_join_action_doubles(CyberiadaAction** action)
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	if (!*action) {
-		/* skip empty action */
+		/* skip trivial action */
 		return CYBERIADA_NO_ERROR;
 	}
 
@@ -550,6 +550,36 @@ int cyberiada_join_action_doubles(CyberiadaAction** action)
 		}
 		prev = a;
 		a = a->next;
+	}
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_remove_empty_actions(CyberiadaAction** action)
+{
+	CyberiadaAction *a, *prev = NULL;
+		
+	if (!action) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (!*action) {
+		/* skip trivial action */
+		return CYBERIADA_NO_ERROR;
+	}
+
+	a = *action;
+	
+	while(a) {
+		if (!*a->behavior) {
+			CyberiadaAction* to_destroy = a;
+			a = a->next;
+			prev->next = a;
+			to_destroy->next = NULL;
+			cyberiada_destroy_action(to_destroy);
+		} else {
+			prev = a;
+			a = a->next;
+		}
 	}
 	
 	return CYBERIADA_NO_ERROR;

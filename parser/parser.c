@@ -34,18 +34,20 @@
 #define CMD_PARAM_INDEX_GRAPH       2
 #define CMD_PARAM_INDEX_GRAPH2      3
 #define CMD_PARAM_INDEX_SILENT      4
-#define CMD_PARAM_INDEX_SKIP        5
-#define CMD_PARAM_INDEX_RECONSTR    6
-#define CMD_PARAM_INDEX_RECONSTR_SM 7
+#define CMD_PARAM_INDEX_SKIP_GEOM   5
+#define CMD_PARAM_INDEX_SKIP_EMPTY  6
+#define CMD_PARAM_INDEX_RECONSTR    7
+#define CMD_PARAM_INDEX_RECONSTR_SM 8
 
 #define CMD_PARAMETER_FROM_TYPE     1
 #define CMD_PARAMETER_TO_TYPE       2
 #define CMD_PARAMETER_GRAPH         4
 #define CMD_PARAMETER_GRAPH2        8
 #define CMD_PARAMETER_SILENT        16
-#define CMD_PARAMETER_SKIP          32
-#define CMD_PARAMETER_RECONSTR      64
-#define CMD_PARAMETER_RECONSTR_SM   128
+#define CMD_PARAMETER_SKIP_GEOM     32
+#define CMD_PARAMETER_SKIP_EMPTY    64
+#define CMD_PARAMETER_RECONSTR      128
+#define CMD_PARAMETER_RECONSTR_SM   256
 
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
@@ -77,14 +79,15 @@ typedef struct {
 } CyberiadaCommandParameters;
 
 CyberiadaCommandParameters parameters[] = {
-	{CMD_PARAMETER_FROM_TYPE,   "-f",  "--file-format",    argFormat, "source graph format (see below)", 0, NULL, cybxmlUnknown},
-	{CMD_PARAMETER_TO_TYPE,     "-t",  "--output-format",  argFormat, "target/compared graph format (see below)", 0, NULL, cybxmlUnknown},
-	{CMD_PARAMETER_GRAPH,       "-g",  "--graph",          argFile,   "path to the source graph file", 0, NULL, -1},
-	{CMD_PARAMETER_GRAPH2,      "-o",  "--output-graph",   argFile,   "path to the target/compared graph file", 0, NULL, -1},
-	{CMD_PARAMETER_SILENT,      "-s",  "--silent",         argNone,   "do not print information to stdout", 0, NULL, -1},
-	{CMD_PARAMETER_SKIP,        "-S",  "--skip-geometry",  argNone,   "skip geometry of the loaded graph", 0, NULL, -1},
-	{CMD_PARAMETER_RECONSTR,    "-r",  "--reconstruct",    argNone,   "reconstruct geometry of the loaded graph (w/o SM)", 0, NULL, -1},
-	{CMD_PARAMETER_RECONSTR_SM, "-R",  "--reconstruct-sm", argNone,   "reconstruct geometry of the loaded graph (with SM)", 0, NULL, -1},
+	{CMD_PARAMETER_FROM_TYPE,   "-f",  "--file-format",         argFormat, "source graph format (see below)", 0, NULL, cybxmlUnknown},
+	{CMD_PARAMETER_TO_TYPE,     "-t",  "--output-format",       argFormat, "target/compared graph format (see below)", 0, NULL, cybxmlUnknown},
+	{CMD_PARAMETER_GRAPH,       "-g",  "--graph",               argFile,   "path to the source graph file", 0, NULL, -1},
+	{CMD_PARAMETER_GRAPH2,      "-o",  "--output-graph",        argFile,   "path to the target/compared graph file", 0, NULL, -1},
+	{CMD_PARAMETER_SILENT,      "-s",  "--silent",              argNone,   "do not print information to stdout", 0, NULL, -1},
+	{CMD_PARAMETER_SKIP_GEOM,   "-S",  "--skip-geometry",       argNone,   "skip geometry of the loaded graph", 0, NULL, -1},
+	{CMD_PARAMETER_SKIP_EMPTY,  "-e",  "--skip-empty-behavior", argNone,   "skip empty behavior in actions of the loaded graph", 0, NULL, -1},
+	{CMD_PARAMETER_RECONSTR,    "-r",  "--reconstruct",         argNone,   "reconstruct geometry of the loaded graph (w/o SM)", 0, NULL, -1},
+	{CMD_PARAMETER_RECONSTR_SM, "-R",  "--reconstruct-sm",      argNone,   "reconstruct geometry of the loaded graph (with SM)", 0, NULL, -1},
 };
 
 size_t parameters_count = sizeof(parameters) / sizeof(CyberiadaCommandParameters);
@@ -100,13 +103,14 @@ typedef struct {
 
 CyberiadaCommand commands[] = {
 	{CMD_PRINT,   "print", CMD_PARAMETER_GRAPH, CMD_PARAMETER_GRAPH,
-	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM | CMD_PARAMETER_SKIP,
+	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM | CMD_PARAMETER_SKIP_GEOM |
+	 CMD_PARAMETER_SKIP_EMPTY,
 	 "read the HSM diagram and print its content to stdout; use -f key to set the graph format (default - unknown)"},
 	{CMD_CONVERT, "convert", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM,
 	 "convert HSM from -f <from-format> to -t <output-format> into the file named -o <output-graph>"},
 	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
-	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP,
+	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY,
 	 "compare HSMs from <graph> and <output-graph> and print the difference"}
 };
 
@@ -203,7 +207,7 @@ int main(int argc, char** argv)
 	int command = 0;
 	int flags = CYBERIADA_FLAG_NO;
     const char *source_filename, *dest_filename;
-	int silent = 0, require_initial = 0, ignore_comments = 1, reconstruct = 0, reconstruct_sm = 0, skip = 0;
+	int silent = 0, require_initial = 0, ignore_comments = 1, reconstruct = 0, reconstruct_sm = 0, skip = 0, skip_empty = 0;
 	CyberiadaXMLFormat source_format, dest_format;
 	CyberiadaDocument doc;
 	size_t i;
@@ -225,7 +229,8 @@ int main(int argc, char** argv)
 	source_format = parameters[CMD_PARAM_INDEX_FROM_TYPE].arg_format;
 	dest_format = parameters[CMD_PARAM_INDEX_TO_TYPE].arg_format;
 	silent = parameters[CMD_PARAM_INDEX_SILENT].present;
-	skip = parameters[CMD_PARAM_INDEX_SKIP].present;
+	skip = parameters[CMD_PARAM_INDEX_SKIP_GEOM].present;
+	skip_empty = parameters[CMD_PARAM_INDEX_SKIP_EMPTY].present;
 	reconstruct_sm = parameters[CMD_PARAM_INDEX_RECONSTR_SM].present;
 	reconstruct = parameters[CMD_PARAM_INDEX_RECONSTR].present | reconstruct_sm;
 	require_initial = 0;
@@ -240,8 +245,11 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (skip || command == CMD_DIFF) {
+	if (skip) {
 		flags |= CYBERIADA_FLAG_SKIP_GEOMETRY;
+	}
+	if (skip_empty) {
+		flags |= CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR;
 	}
 	
 	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format, flags)) != CYBERIADA_NO_ERROR) {
@@ -269,7 +277,14 @@ int main(int argc, char** argv)
 		CyberiadaEdgePair *sm_diff_edges = NULL;
 		CyberiadaEdge **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
 		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags = NULL;
-		flags = CYBERIADA_FLAG_SKIP_GEOMETRY;
+		flags = CYBERIADA_FLAG_NO;
+
+		if (skip) {
+			flags |= CYBERIADA_FLAG_SKIP_GEOMETRY;
+		}
+		if (skip_empty) {
+			flags |= CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR;
+		}
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);

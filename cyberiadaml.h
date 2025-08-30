@@ -330,10 +330,12 @@ typedef enum {
 
 #define CYBERIADA_FLAG_FLATTENED                          0x20000 /* the document is flattened  */
 #define CYBERIADA_FLAG_CHECK_INITIAL                      0x40000 /* check initial state on the top level  */
-#define CYBERIADA_FLAG_STRICT_ACTION_ENTRIES              0x80000 /* check initial state on the top level  */
+#define CYBERIADA_FLAG_STRICT_ACTION_ENTRIES              0x80000 /* check unique entry/exit action entries  */
+#define CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR                0x100000 /* skip empty behaviour in actions  */
 #define CYBERIADA_FLAG_NON_GEOMETRY                       (CYBERIADA_FLAG_FLATTENED | \
 														   CYBERIADA_FLAG_CHECK_INITIAL | \
-														   CYBERIADA_FLAG_STRICT_ACTION_ENTRIES)
+														   CYBERIADA_FLAG_STRICT_ACTION_ENTRIES | \
+														   CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR)
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes

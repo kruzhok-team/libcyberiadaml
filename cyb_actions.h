@@ -45,6 +45,7 @@ extern "C" {
 	
 	int cyberiada_check_action_doubles(CyberiadaAction* action);
 	int cyberiada_join_action_doubles(CyberiadaAction** action);
+	int cyberiada_remove_empty_actions(CyberiadaAction** action);
 
 #ifdef __cplusplus
 }

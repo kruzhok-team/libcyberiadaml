@@ -1878,7 +1878,7 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc,
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_entry_doubles(CyberiadaNode* nodes, int strict_entries)
+static int cyberiada_check_entry_doubles(CyberiadaNode* nodes, int strict_entries, int skip_empty)
 {
 	int res;
 	CyberiadaNode *n;
@@ -1898,9 +1898,16 @@ static int cyberiada_check_entry_doubles(CyberiadaNode* nodes, int strict_entrie
 					return res;
 				}
 			}
+			if (skip_empty) {
+				res = cyberiada_remove_empty_actions(&(n->actions));
+				if (res != CYBERIADA_NO_ERROR) {
+					ERROR("error removing empty actions in node %s\n", n->id);
+					return res;
+				}				
+			}
 		}
 		if (n->children) {
-			res = cyberiada_check_entry_doubles(n->children, strict_entries);
+			res = cyberiada_check_entry_doubles(n->children, strict_entries, skip_empty);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}			
@@ -2000,7 +2007,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial, int strict_entries)
+static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial, int strict_entries, int skip_empty)
 {
 	int res = CYBERIADA_NO_ERROR;
 	CyberiadaSM* sm;
@@ -2019,7 +2026,7 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 				ERROR("error: state machine %s has wrong structure - bad geometry\n", sm->nodes->id);
 				break;
 			}
-			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries)) != CYBERIADA_NO_ERROR) {
+			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries, skip_empty)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has doubles in the graph's entries\n", sm->nodes->id);
 				break;
 			}
@@ -2152,7 +2159,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		res = cyberiada_check_graphs(cyb_doc,
 									 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 									 flags & CYBERIADA_FLAG_CHECK_INITIAL,
-									 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES);
+									 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES,
+									 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while checking graphs\n");
 			break;
@@ -3336,7 +3344,8 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 	res = cyberiada_check_graphs(doc,
 								 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 								 flags & CYBERIADA_FLAG_CHECK_INITIAL,
-								 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES);
+								 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES,
+								 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR);
 	if (res != CYBERIADA_NO_ERROR) {
 		ERROR("error while checking graphs\n");
 		return res;
