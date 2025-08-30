@@ -240,7 +240,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	if (skip) {
+	if (skip || command == CMD_DIFF) {
 		flags |= CYBERIADA_FLAG_SKIP_GEOMETRY;
 	}
 	
@@ -264,10 +264,12 @@ int main(int argc, char** argv)
 		int result_flags;
 		size_t sm_diff_nodes_size = 0, sm2_new_nodes_size = 0, sm1_missing_nodes_size = 0,
 			sm_diff_edges_size = 0, sm2_new_edges_size = 0, sm1_missing_edges_size = 0;
-		CyberiadaNode *new_initial = NULL, **sm_diff_nodes = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
-		CyberiadaEdge **sm_diff_edges = NULL, **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
+		CyberiadaNode *new_initial = NULL, **sm1_missing_nodes = NULL, **sm2_new_nodes = NULL;
+		CyberiadaNodePair *sm_diff_nodes = NULL;
+		CyberiadaEdgePair *sm_diff_edges = NULL;
+		CyberiadaEdge **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
 		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags = NULL;
-		flags = CYBERIADA_FLAG_NO;
+		flags = CYBERIADA_FLAG_SKIP_GEOMETRY;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
@@ -370,10 +372,12 @@ int main(int argc, char** argv)
 						}
 					}
 					if (sm_diff_nodes) {
-						printf("\n The different nodes (version from the second graph):\n");
+						printf("\n The different nodes:\n");
 						for (i = 0; i < sm_diff_nodes_size; i++) {
-							printf(" %lu:\n", i + 1);
-							cyberiada_print_node(sm_diff_nodes[i], 1);
+							printf(" %lu sm1:\n", i + 1);
+							cyberiada_print_node(sm_diff_nodes[i].n1, 1);
+							printf(" %lu sm2:\n", i + 1);
+							cyberiada_print_node(sm_diff_nodes[i].n2, 1);
 						}
 					}
 				}
@@ -407,8 +411,10 @@ int main(int argc, char** argv)
 					if (sm_diff_edges) {
 						printf("\n The different edges (version from the second graph):\n");
 						for (i = 0; i < sm_diff_edges_size; i++) {
-							printf(" %lu: ", i + 1);
-							cyberiada_print_edge(sm_diff_edges[i]);
+							printf(" %lu sm1: ", i + 1);
+							cyberiada_print_edge(sm_diff_edges[i].e1);
+							printf(" %lu sm2: ", i + 1);
+							cyberiada_print_edge(sm_diff_edges[i].e2);
 						}
 					}
 				}

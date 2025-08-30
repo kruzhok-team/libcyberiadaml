@@ -520,10 +520,10 @@ static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
 
 int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
 								int* result_flags, CyberiadaNode** new_initial,
-								size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes, size_t** sm_diff_nodes_flags,
+								size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes, size_t** sm_diff_nodes_flags,
 								size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
 								size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-								size_t* sm_diff_edges_size, CyberiadaEdge*** sm_diff_edges, size_t** sm_diff_edges_flags,
+								size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges, size_t** sm_diff_edges_flags,
 								size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
 								size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges)
 {
@@ -562,7 +562,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	if (sm_diff_nodes_size) {
 		*sm_diff_nodes_size = 0;
 		if (sm_diff_nodes) {
-			*sm_diff_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm1_vertexes);
+			*sm_diff_nodes = (CyberiadaNodePair*)malloc(sizeof(CyberiadaNodePair) * sm1_vertexes);
 		}
 		if (sm_diff_nodes_flags) {
 			*sm_diff_nodes_flags = (size_t*)malloc(sizeof(size_t) * sm1_vertexes);
@@ -583,7 +583,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	if (sm_diff_edges_size) {
 		*sm_diff_edges_size = 0;
 		if (sm_diff_edges) {
-			*sm_diff_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm1_edges);
+			*sm_diff_edges = (CyberiadaEdgePair*)malloc(sizeof(CyberiadaEdgePair) * sm1_edges);
 		}
 		if (sm_diff_edges_flags) {
 			*sm_diff_edges_flags = (size_t*)malloc(sizeof(size_t) * sm1_edges);
@@ -618,7 +618,8 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 											&node_diff);
 				if (node_diff) {
 					if (sm_diff_nodes_size && sm_diff_nodes && sm_diff_nodes_flags) {
-						(*sm_diff_nodes)[*sm_diff_nodes_size] = vertexes2[j].node;
+						(*sm_diff_nodes)[*sm_diff_nodes_size].n1 = vertexes1[i].node;
+						(*sm_diff_nodes)[*sm_diff_nodes_size].n2 = vertexes2[j].node;
 						(*sm_diff_nodes_flags)[*sm_diff_nodes_size] = node_diff;	
 						(*sm_diff_nodes_size)++;
 					}
@@ -722,7 +723,8 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 					}
 				}
 				if (edge_diff && sm_diff_edges && sm_diff_edges_flags && sm_diff_edges_size) {
-					(*sm_diff_edges)[*sm_diff_edges_size] = e1;
+					(*sm_diff_edges)[*sm_diff_edges_size].e1 = e1;
+					(*sm_diff_edges)[*sm_diff_edges_size].e2 = e2;
 					(*sm_diff_edges_flags)[*sm_diff_edges_size] = edge_diff;	
 					(*sm_diff_edges_size)++;
 				}

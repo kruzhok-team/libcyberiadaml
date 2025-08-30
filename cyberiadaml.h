@@ -149,6 +149,11 @@ typedef struct _CyberiadaNode {
 	/* siblings */
     struct _CyberiadaNode*      next;
 } CyberiadaNode;
+	
+typedef struct {                                        /* the pair of nodes */
+	CyberiadaNode*              n1;
+	CyberiadaNode*              n2;
+} CyberiadaNodePair;
 
 typedef enum {
 	cybCommentSubjectNode = 0,
@@ -205,6 +210,11 @@ typedef struct _CyberiadaEdge {
     struct _CyberiadaEdge*       next;                  /* the next edge in the SM */
 } CyberiadaEdge;
 
+typedef struct {                                        /* the pair of nodes */
+	CyberiadaEdge*               e1;
+	CyberiadaEdge*               e2;
+} CyberiadaEdgePair;
+	
 /* SM graph (state machine) */
 typedef struct _CyberiadaSM {
     CyberiadaNode*               nodes;                 /* the tree of nodes (starting from the SM roots) */
@@ -444,10 +454,10 @@ typedef enum {
 	/* Note: this function ignores comment nodes and edges if the ignore_comments flag is set          */
 	int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
 									int* result_flags, CyberiadaNode** new_initial,
-									size_t* sm_diff_nodes_size, CyberiadaNode*** sm_diff_nodes, size_t** sm_diff_nodes_flags,
+									size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes, size_t** sm_diff_nodes_flags,
 									size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
 									size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-									size_t* sm_diff_edges_size, CyberiadaEdge*** sm_diff_edges, size_t** sm_diff_edges_flags,
+									size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges, size_t** sm_diff_edges_flags,
 									size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
 									size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
 
