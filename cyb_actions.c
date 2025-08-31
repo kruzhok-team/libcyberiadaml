@@ -570,10 +570,14 @@ int cyberiada_remove_empty_actions(CyberiadaAction** action)
 	a = *action;
 	
 	while(a) {
-		if (!*a->behavior) {
+		if (!*a->behavior && !*a->guard) {
 			CyberiadaAction* to_destroy = a;
 			a = a->next;
-			prev->next = a;
+			if (prev) {
+				prev->next = a;
+			} else {
+				*action = a;
+			}
 			to_destroy->next = NULL;
 			cyberiada_destroy_action(to_destroy);
 		} else {
