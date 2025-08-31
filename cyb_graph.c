@@ -23,6 +23,7 @@
 #include <string.h>
 
 #include "cyb_graph.h"
+#include "cyb_error.h"
 
 CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id)
 {
@@ -152,6 +153,10 @@ int cyberiada_graph_add_edge(CyberiadaSM* sm, const char* id, const char* source
 	CyberiadaEdge* last_edge;
 	CyberiadaEdge* new_edge;
 	if (!sm) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (*id && cyberiada_graph_find_edge_by_id(sm->edges, id) != NULL) {
+		ERROR("The edge with the id %s already exists in the SM\n", id);
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	new_edge = cyberiada_new_edge(id, source, target, external);

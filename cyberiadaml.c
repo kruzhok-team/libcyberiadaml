@@ -591,7 +591,9 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 		buffer[0] = 0;
 	}
 	/* DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer); */
-	cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 0);
+	if (cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 0) != CYBERIADA_NO_ERROR) {
+		return gpsInvalid;
+	}
 	return gpsEdge;
 }
 
@@ -1950,6 +1952,29 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 	return CYBERIADA_NO_ERROR;
 }
 
+static int cyberiada_check_node_ids(CyberiadaNode* root, CyberiadaNode* nodes)
+{
+	CyberiadaNode *n;
+
+	if (!nodes) {
+		return CYBERIADA_NO_ERROR;
+	}
+	
+	for (n = nodes; n; n = n->next) {
+		if (cyberiada_graph_find_node_by_id(root, n->id) != n) {
+			ERROR("Two nodes in the SM have the same id: %s\n", n->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		if (n->children) {
+			int res = cyberiada_check_node_ids(root, n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edges, int check_initial, int toplevel)
 {
 	CyberiadaNode *n, *init_n = NULL;
@@ -2028,6 +2053,10 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 			}
 			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries, skip_empty)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has doubles in the graph's entries\n", sm->nodes->id);
+				break;
+			}
+			if ((res = cyberiada_check_node_ids(sm->nodes, sm->nodes)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: state machine %s has wrong structure - non unique state ids\n", sm->nodes->id);
 				break;
 			}
 		}
