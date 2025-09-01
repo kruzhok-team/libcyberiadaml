@@ -65,10 +65,10 @@ typedef enum {
 
 /* SM action types: */    
 typedef enum {
-    cybActionTransition = 0,
-    cybActionEntry = 1,
-    cybActionExit = 2,
-    cybActionDo = 4
+    cybActionTransition = 0x1,
+    cybActionEntry =      0x2,
+    cybActionExit =       0x4,
+    cybActionDo =         0x8
 } CyberiadaActionType;
 
 /* SM behavior */
@@ -365,6 +365,13 @@ typedef enum {
 #define CYBERIADA_EDGE_DIFF_ID                            0x80   /* the two SM edges have different identifiers */
 #define CYBERIADA_EDGE_DIFF_ACTION                        0x100  /* the two SM edges have different actions */
 
+#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ARG                0x1    /* the two nodes' behaviors have different arguments */
+#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ORDER              0x2    /* the two nodes' behaviors have different order */
+#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION             0x4    /* the two nodes' behaviors are differ */
+#define CYBERIADA_ACTION_DIFF_TYPES                       0x100  /* the two nodes' have different action types */
+#define CYBERIADA_ACTION_DIFF_GUARDS                      0x200  /* the two nodes' have different guards */
+#define CYBERIADA_ACTION_DIFF_NUMBER                      0x400  /* the two nodes' have different action numbers */
+
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
  * ----------------------------------------------------------------------------- */
@@ -463,6 +470,9 @@ typedef enum {
 									size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
 									size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
 
+	/* Compare SM nodes actions */
+	int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n2action, int* compare_flags);
+	
 	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
 	int cyberiada_document_has_geometry(CyberiadaDocument* doc);
 	

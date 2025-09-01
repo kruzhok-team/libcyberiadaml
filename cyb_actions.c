@@ -37,6 +37,8 @@
 #define CYBERIADA_ACTION_TRIGGER_DO            "do"
 #define CYBERIADA_ACTION_SEPARATOR_CHR         '/'
 #define CYBERIADA_ACTION_ENDING_CHR            ')'
+#define CYBERIADA_ACTION_BRACKET_CHR           '('
+#define CYBERIADA_ACTION_STRINGS_CHR           '\n'
 
 #define CYBERIADA_ACTION_REGEXP_MATCHES        10
 #define CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER  1
@@ -50,6 +52,7 @@
 #define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_TRIGGER 1
 #define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_GUARD 6
 #define CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_ACTION 8
+
 
 int cyberiaga_matchres_action_regexps(const char* text,
 									  const regmatch_t* pmatch, size_t pmatch_size,
@@ -384,7 +387,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 				}
 				memcpy(block, start, size);
 				block += size;
-				*block = '\n';
+				*block = CYBERIADA_ACTION_STRINGS_CHR;
 				block++;
 				start = next + 1;
 			}
@@ -586,5 +589,163 @@ int cyberiada_remove_empty_actions(CyberiadaAction** action)
 		}
 	}
 	
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_command_arguments_difference(const char* command1, const char* command2)
+{
+	int bracket = 0;
+	/* DEBUG("Comparing commands with arguments %s and %s\n", command1, command2); */
+	for (; *command1 && *command2; command1++, command2++) {
+		if (*command1 == *command2) {
+			if (!bracket && *command1 == CYBERIADA_ACTION_BRACKET_CHR) { 
+				bracket = 1;
+			}
+		} else if (!bracket) {
+			break;
+		} else {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int cyberiada_compare_action_behaviors(const char* behavior1, const char* behavior2, int* compare_flags)
+{
+	char *buffer1 = NULL, *buffer2 = NULL;
+	char **commands1 = NULL, **commands2 = NULL;
+	size_t i, j, commands1_size = 0, commands2_size = 0;
+	char* c;
+	
+	cyberiada_copy_string(&buffer1, NULL, behavior1);
+	commands1_size = 1;
+	c = buffer1;
+	while (*c) {
+		if (*c == CYBERIADA_ACTION_STRINGS_CHR) commands1_size++; 
+		c++;
+	}
+	cyberiada_copy_string(&buffer2, NULL, behavior2);
+	commands2_size = 1;
+	c = buffer2;
+	while (*c) {
+		if (*c == CYBERIADA_ACTION_STRINGS_CHR) commands2_size++; 
+		c++;
+	}
+
+	if (commands1_size != commands2_size && compare_flags) {
+		*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION;
+	}
+	
+	commands1 = (char**)malloc(sizeof(char*) * commands1_size);
+	commands1[0] = buffer1;
+	for (i = 1, c = buffer1; *c && i < commands1_size; c++) { 
+		if (*c == CYBERIADA_ACTION_STRINGS_CHR) {
+			*c = 0;
+			commands1[i++] = c + 1;
+		}
+	}
+
+	commands2 = (char**)malloc(sizeof(char*) * commands2_size);
+	commands2[0] = buffer2;
+	for (i = 1, c = buffer2; *c && i < commands2_size; c++) { 
+		if (*c == CYBERIADA_ACTION_STRINGS_CHR) {
+			*c = 0;
+			commands2[i++] = c + 1;
+		}
+	}
+
+	for (i = 0; i < commands1_size; i++) {
+		for (j = 0; j < commands2_size; j++) {
+			if (!*(commands2[j])) continue;
+			if (strcmp(commands1[i], commands2[j]) == 0) {
+				if (i != j && compare_flags) {
+					*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ORDER;				
+				}
+				*(commands2[j]) = 0;
+				break;
+			} else {
+				if (cyberiada_command_arguments_difference(commands1[i], commands2[j])) {
+					if (compare_flags) {
+						*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ARG;
+					}
+					*(commands2[j]) = 0;
+				}
+			}
+		}
+	}
+
+	for (j = 0; j < commands2_size; j++) {
+		if (*commands2[j]) {
+			*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION;
+			break;
+		}
+	}
+	
+	if (buffer1) free(buffer1);
+	if (buffer2) free(buffer2);
+	if (commands1) free(commands1);
+	if (commands2) free(commands2);
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n2action, int* compare_flags)
+{
+	CyberiadaAction *a1, *a2;
+	size_t n_a1 = 0, n_a2 = 0, n1_types = 0, n2_types = 0;
+
+	if (!n1action && !n2action) {
+		if (compare_flags) {
+			*compare_flags = 0;
+		}
+		return CYBERIADA_NO_ERROR;
+	}
+	if ((n1action && !n2action) || (!n1action && n2action)) {
+		if (compare_flags) {
+			*compare_flags = CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION | CYBERIADA_ACTION_DIFF_TYPES | CYBERIADA_ACTION_DIFF_NUMBER;
+		}
+		return CYBERIADA_NO_ERROR;
+	}
+
+	for (a1 = n1action; a1; a1 = a1->next) {
+		n_a1++;
+		n1_types |= a1->type;
+	}
+	for (a2 = n2action; a2; a2 = a2->next) {
+		n_a2++;
+		n2_types |= a2->type;
+	}
+	
+	if (n_a1 != n_a2 && compare_flags) {
+		*compare_flags |= CYBERIADA_ACTION_DIFF_NUMBER;
+	}
+
+	if (n1_types != n2_types && compare_flags) {
+		*compare_flags |= CYBERIADA_ACTION_DIFF_TYPES;
+	}
+	
+	for (a1 = n1action; a1; a1 = a1->next) {
+		int found = 0;
+		for (a2 = n2action; a2; a2 = a2->next) {
+			if (a1->type == a2->type &&
+				(a2->type != cybActionTransition || strcmp(a1->trigger, a2->trigger) == 0)) {
+				if (strcmp(a1->guard, a2->guard) == 0) {
+					found = 1;
+					if (strcmp(a1->behavior, a2->behavior) != 0) {
+						/*DEBUG("Compare action behaviors %s and %s\n", a1->behavior, a2->behavior);*/
+						cyberiada_compare_action_behaviors(a1->behavior, a2->behavior, compare_flags);
+					}
+					break;
+				} else if(strcmp(a1->behavior, a2->behavior) == 0 && compare_flags) {
+					*compare_flags |= CYBERIADA_ACTION_DIFF_GUARDS;
+				}
+			}
+		}
+		if (!found) {
+			if (compare_flags) *compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION;
+			return CYBERIADA_NO_ERROR;
+		}
+	}
+
 	return CYBERIADA_NO_ERROR;
 }

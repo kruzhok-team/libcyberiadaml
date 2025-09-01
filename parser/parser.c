@@ -332,7 +332,7 @@ int main(int argc, char** argv)
 
 		if (res == CYBERIADA_NO_ERROR) {
 			if (!silent) {
-				printf("Graph comparison result: ");
+				printf("Graph comparison result (%d): ", result_flags);
 				if (result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
 					printf("the SM graphs are identical");
 				} else if (result_flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
