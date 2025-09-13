@@ -27,6 +27,11 @@
 #include "cyb_structs.h"
 #include "cyb_error.h"
 
+#ifdef __DEBUG__
+/* Uncomment this if you need additional debug */
+/*#define EXTRA_DEBUG 1 */
+#endif
+
 static int cyberiada_node_size_recursively(CyberiadaNode* node, size_t* v, int ignore_comments, int ignore_regions)
 {
 	size_t cnt = 0;
@@ -297,9 +302,10 @@ static int calculate_sm_proximity(char** M, char** ProxyM, Vertex* v1, Vertex* v
 							proximity += 20;
 						}
 					}
-					
-					/*DEBUG("Comparing nodes %s [%s] and %s [%s] %d -> %d\n",
-					  node1->id, node1->title, node2->id, node2->title, flags, proximity);*/
+#ifdef EXTRA_DEBUG
+					DEBUG("Comparing nodes %s [%s] and %s [%s] %d -> %d\n",
+					  node1->id, node1->title, node2->id, node2->title, flags, proximity);
+#endif
 					if (proximity > 127) {
 						ProxyM[i][j] = 127;
 					} else {
@@ -481,14 +487,16 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	cyberiada_enumerate_vertexes(sm1, sm1->nodes->children, v1, n_v1, NULL, ignore_comments, 1);
 	cyberiada_enumerate_vertexes(sm2, sm2->nodes->children, v2, n_v2, NULL, ignore_comments, 1);
 
-	/*DEBUG("\nSM1:\n");
+#ifdef EXTRA_DEBUG
+	DEBUG("\nSM1:\n");
 	for (i = 0; i < n_v1; i++) {
 		DEBUG("\t%ld - %s [%s]\n", i + 1, v1[i].node->id, v1[i].node->title);
 	}
 	DEBUG("\nSM2:\n");
 	for (i = 0; i < n_v2; i++) {
 		DEBUG("\t%ld - %s [%s]\n", i + 1, v2[i].node->id, v2[i].node->title);
-		}*/
+	}
+#endif
 	
 	for (i = 0; i < n_v1; i++) {
 		for (j = 0; j < n_v2; j++) {
@@ -508,8 +516,10 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		}
 	}
 
-	/*debug_matrix("M", M, n_v1, n_v2);*/
-
+#ifdef EXTRA_DEBUG
+	debug_matrix("M", M, n_v1, n_v2);
+#endif
+	
 	found = 0;
 
 	for (i = 0; i < n_v1; i++) {
@@ -581,11 +591,13 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 				}
 			}
 			qsort(proximity_levels, proximity_levels_size, sizeof(char), compare_char);
-			/*DEBUG("\nProximity levels: ");
+#ifdef EXTRA_DEBUG
+			DEBUG("\nProximity levels: ");
 			for (i = 0; i < proximity_levels_size; i++) {
 				DEBUG("%d ", proximity_levels[i]);
 			}
-			DEBUG("\n");*/
+			DEBUG("\n");
+#endif
 		}
 
 		for (i = 0; i < n_v1 /*&& row_num[i] && p_max < n_v1*/; i++) {
@@ -633,7 +645,9 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 						}
 					}
 					if (p_total > p_max) {
-						/*debug_matrix("P", P, n_v1, n_v2);*/
+#ifdef EXTRA_DEBUG
+						debug_matrix("P", P, n_v1, n_v2);
+#endif
 						p_max = p_total;
 						proximity_max = calculate_sm_proximity(P, Proxy, v1, v2, n_v1, n_v2);
 						for (k = 0; k < n_v1; k++) {
@@ -643,7 +657,9 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 						int proximity = calculate_sm_proximity(P, Proxy, v1, v2, n_v1, n_v2);
 						if (proximity > proximity_max) {
 							proximity_max = proximity;
-							/*debug_matrix("P", P, n_v1, n_v2);*/
+#ifdef EXTRA_DEBUG
+							debug_matrix("P", P, n_v1, n_v2);
+#endif
 							for (k = 0; k < n_v1; k++) {
 								memcpy(P_max[k], P[k], sizeof(char) * n_v2);
 							}							
@@ -667,7 +683,9 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		}
 	}
 
-	/*debug_matrix("Proxy", Proxy, n_v1, n_v2);*/
+#ifdef EXTRA_DEBUG
+	debug_matrix("Proxy", Proxy, n_v1, n_v2);
+#endif
 	
 	for (i = 0; i < n_v1; i++) {
 		free(M[i]);
@@ -838,7 +856,9 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 		return res;
 	}
 
-	/*debug_matrix("PERM", perm_matrix, sm1_vertexes, sm2_vertexes);*/
+#ifdef EXTRA_DEBUG
+	debug_matrix("PERM", perm_matrix, sm1_vertexes, sm2_vertexes);
+#endif
 	
 	/* allocate memory for results */
 	if (sm_diff_nodes_size) {
