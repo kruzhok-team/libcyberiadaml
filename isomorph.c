@@ -224,15 +224,15 @@ int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, Vertex* 
 static void debug_matrix(const char* name, char** matrix, size_t n, size_t m)
 {
 	size_t i, j;
-	DEBUG("\n%s matrix:\n   ", name);
+	DEBUG("\n%s matrix:\n     ", name);
 	for (j = 0; j < m; j++) {
-		DEBUG("%lu ", j + 1);
+		DEBUG("%3lu ", j + 1);
 	}
 	DEBUG("\n");
 	for (i = 0; i < n; i++) {
-		DEBUG(" %lu ", i + 1);
+		DEBUG(" %3lu ", i + 1);
 		for (j = 0; j < m; j++) {
-			DEBUG("%d ", matrix[i][j]);
+			DEBUG("%3d ", matrix[i][j]);
 		}
 		DEBUG("\n");
 	}
@@ -247,12 +247,22 @@ static int calculate_sm_proximity(char** M, char** ProxyM, Vertex* v1, Vertex* v
 		for (j = 0; j < n2; j++) {
 			if (M[i][j]) {
 				if (ProxyM[i][j] < 0) {
-					char proximity = 0;
+					int proximity = 0;
 					int res;
 					CyberiadaNode* node1 = v1[i].node;
 					CyberiadaNode* node2 = v2[j].node;
 					int flags = 0;
-					
+
+					if (node1->type == node2->type ||
+						(node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState) ||
+						(node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState) ||
+						(node1->type == cybNodeComment && node2->type == cybNodeFormalComment) ||
+						(node1->type == cybNodeFormalComment && node2->type == cybNodeComment)) {
+						proximity += 5;
+						if (node1->type == node2->type) {
+							proximity += 5;
+						}
+					}
 					if (node1->id && node2->id && strcmp(node1->id, node2->id) == 0) {
 						proximity += 10;
 					}
@@ -281,9 +291,20 @@ static int calculate_sm_proximity(char** M, char** ProxyM, Vertex* v1, Vertex* v
 							proximity += 50;
 						}
 					}
+					if (v1[i].degree_in == v2[j].degree_in || v1[i].degree_out == v2[j].degree_out) {
+						proximity += 10;
+						if (v1[i].degree_in == v2[j].degree_in && v1[i].degree_out == v2[j].degree_out) {
+							proximity += 20;
+						}
+					}
+					
 					/*DEBUG("Comparing nodes %s [%s] and %s [%s] %d -> %d\n",
 					  node1->id, node1->title, node2->id, node2->title, flags, proximity);*/
-					ProxyM[i][j] = proximity;
+					if (proximity > 127) {
+						ProxyM[i][j] = 127;
+					} else {
+						ProxyM[i][j] = (char)proximity;
+					}
 					result += proximity;
 				} else {
 					result += ProxyM[i][j];
@@ -292,6 +313,123 @@ static int calculate_sm_proximity(char** M, char** ProxyM, Vertex* v1, Vertex* v
 		}
 	}
 	return result;
+}
+
+static int second_pass_sm_proximity(char** M, char** ProxyM,
+									CyberiadaSM* sm1, CyberiadaSM* sm2,
+									Vertex* v1, Vertex* v2, size_t n1, size_t n2)
+{
+	size_t i, j, k;
+	int** EP;
+
+	EP = (int**)malloc(sizeof(int*) * n1);
+	for (i = 0; i < n1; i++) {
+		EP[i] = (int*)malloc(sizeof(int) * n2);
+		memset(EP[i], 0, sizeof(int) * n2);
+	}
+	
+	for (i = 0; i < n1; i++) {
+		for (j = 0; j < n2; j++) {
+			if (M[i][j] && ProxyM[i][j] > 0) {
+				CyberiadaNode* node1 = v1[i].node;
+				CyberiadaNode* node2 = v2[j].node;
+				CyberiadaEdge *e1, *e2;
+				int edge_proxy = 0;
+				if (v1[i].degree_in == v2[j].degree_in && v1[i].degree_out == v2[j].degree_out) {
+					for (e1 = sm1->edges; e1; e1 = e1->next) {
+						for (e2 = sm2->edges; e2; e2 = e2->next) {
+							if (e1->source == node1 && e2->source == node2) {
+								size_t n = n1, m = n2;
+								for (k = 0; k < n1; k++) {
+									if (v1[k].node == e1->target) {
+										n = k;
+										break;
+									}
+								}
+								for (k = 0; k < n2; k++) {
+									if (v2[k].node == e2->target) {
+										m = k;
+										break;
+									}
+								}
+								if (n == n1 || m == n2) {
+									ERROR("Error while reconstruction edge source proximity\n");
+									for (i = 0; i < n1; i++) {
+										free(EP[i]);
+									}
+									free(EP);
+									return CYBERIADA_BAD_PARAMETER;
+								}
+								if (ProxyM[n][m] > 0) {
+									edge_proxy += 1;
+									if (ProxyM[n][m] >= ProxyM[i][j]) {
+										edge_proxy += 2;
+									}
+								}
+								break;
+							}
+							if (e1->target == node1 && e2->target == node2) {
+								size_t n = n1, m = n2;
+								for (k = 0; k < n1; k++) {
+									if (v1[k].node == e1->source) {
+										n = k;
+										break;
+									}
+								}
+								for (k = 0; k < n2; k++) {
+									if (v2[k].node == e2->source) {
+										m = k;
+										break;
+									}
+								}
+								if (n == n1 || m == n2) {
+									ERROR("Error while reconstruction edge target proximity\n");
+									for (i = 0; i < n1; i++) {
+										free(EP[i]);
+									}
+									free(EP);
+									return CYBERIADA_BAD_PARAMETER;
+								}
+								if (ProxyM[n][m] > 0) {
+									edge_proxy += 1;
+									if (ProxyM[n][m] >= ProxyM[i][j]) {
+										edge_proxy += 2;
+									}
+								}
+								break;
+							}
+						}
+					}
+					if (edge_proxy > 0) {
+						EP[i][j] += edge_proxy;
+					}
+				}
+			}
+		}
+	}
+
+	for (i = 0; i < n1; i++) {
+		for (j = 0; j < n2; j++) {
+			if (EP[i][j]) {
+				if (ProxyM[i][j] + EP[i][j] > 127) {
+					ProxyM[i][j] = 127;
+				} else {
+					ProxyM[i][j] += (char)EP[i][j];
+				}
+			}
+		}
+	}
+	
+	for (i = 0; i < n1; i++) {
+		free(EP[i]);
+	}
+	free(EP);
+	
+	return CYBERIADA_NO_ERROR;
+}
+
+int compare_char(const void* a, const void* b) {
+    return (*(char*)b - *(char*)a); /* reverse compare */
 }
 
 static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM* sm2,
@@ -326,9 +464,9 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	for (i = 0; i < n_v1; i++) {
 		P[i] = malloc(sizeof(char) * n_v2);
 	}
-	Proxy = (char**)malloc(sizeof(int*) * n_v1);
+	Proxy = (char**)malloc(sizeof(char*) * n_v1);
 	for (i = 0; i < n_v1; i++) {
-		Proxy[i] = (char*)malloc(sizeof(int) * n_v2);
+		Proxy[i] = (char*)malloc(sizeof(char) * n_v2);
 		for (j = 0; j < n_v2; j++) {
 			Proxy[i][j] = -1;
 		}
@@ -400,11 +538,54 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		/* there are different permutations */
 		size_t p_max = 0;
 		int proximity_max = -1;
+		char single_proximity_max = -1;
 		char** P_max = (char**)malloc(sizeof(char*) * n_v1);
+		char* proximity_levels;
+		size_t proximity_levels_size = 0;
 		for (i = 0; i < n_v1; i++) {
 			P_max[i] = (char*)malloc(sizeof(char) * n_v2);
 			memset(P_max[i], 0, sizeof(char) * n_v2);
 			memset(P[i], 0, sizeof(char) * n_v2);
+		}
+		calculate_sm_proximity(M, Proxy, v1, v2, n_v1, n_v2);
+		second_pass_sm_proximity(M, Proxy, sm1, sm2, v1, v2, n_v1, n_v2);
+		for (i = 0; i < n_v1; i++) {
+			for (j = 0; j < n_v2; j++) {
+				if (Proxy[i][j] > single_proximity_max) {
+					single_proximity_max = Proxy[i][j];
+				}
+			}
+		}
+		if (single_proximity_max > 0) {
+			proximity_levels = (char*)malloc(single_proximity_max);
+			memset(proximity_levels, 0, single_proximity_max);
+			proximity_levels[0] = single_proximity_max;
+			proximity_levels_size = 1;
+			for (i = 0; i < n_v1; i++) {
+				for (j = 0; j < n_v2; j++) {
+					char p = Proxy[i][j];
+					int found = 0;
+					if (p < 0) {
+						continue;
+					}
+					for (k = 0; k < proximity_levels_size; k++) {
+						if (p == proximity_levels[k]) {
+							found = 1;
+							break;
+						}
+					}
+					if (!found) {
+						proximity_levels[proximity_levels_size] = p;
+						proximity_levels_size++;
+					}
+				}
+			}
+			qsort(proximity_levels, proximity_levels_size, sizeof(char), compare_char);
+			/*DEBUG("\nProximity levels: ");
+			for (i = 0; i < proximity_levels_size; i++) {
+				DEBUG("%d ", proximity_levels[i]);
+			}
+			DEBUG("\n");*/
 		}
 
 		for (i = 0; i < n_v1 /*&& row_num[i] && p_max < n_v1*/; i++) {
@@ -415,29 +596,40 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 					}
 					P[i][j] = 1;
 					size_t p_total = 1;
-					for (x = 0; x < n_v1; x++) {
-						for (y = 0; y < n_v2; y++) {
-							if (x == i && y == j) continue;
-							if (M[x][y]) {
-								found = 0;
-								for (k = 0; k < n_v1; k++) {
-									if (P[k][y]) {
-										found = 1;
-										break;
+					size_t c_proximity = 0;
+					while (p_total < n_v1 && p_total < n_v2 && c_proximity < proximity_levels_size) {
+						int p_found = 0;
+						char current_proximity = proximity_levels[c_proximity];
+						for (x = 0; x < n_v1; x++) {
+							for (y = 0; y < n_v2; y++) {
+								if (x == i && y == j) continue;
+								if (Proxy[x][y] == current_proximity) {
+									found = 0;
+									for (k = 0; k < n_v1; k++) {
+										if (P[k][y]) {
+											found = 1;
+											break;
+										}
 									}
-								}
-								if (found) continue;
-								for (k = 0; k < n_v2; k++) {
-									if (P[x][k]) {
-										found = 1;
+									if (found) continue;
+									for (k = 0; k < n_v2; k++) {
+										if (P[x][k]) {
+											found = 1;
 										break;
+										}
 									}
-								}
-								if (!found) {
-									P[x][y] = 1;
-									p_total++;
+									if (!found) {
+										P[x][y] = 1;
+										p_total++;
+										p_found = 1;
+										c_proximity = 0;
+										continue;
+									}
 								}
 							}
+						}
+						if (!p_found) {
+							c_proximity++;
 						}
 					}
 					if (p_total > p_max) {
@@ -469,6 +661,10 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 			free(P_max[i]);
 		}
 		free(P_max);
+
+		if (proximity_levels) {
+			free(proximity_levels);	
+		}
 	}
 
 	/*debug_matrix("Proxy", Proxy, n_v1, n_v2);*/
