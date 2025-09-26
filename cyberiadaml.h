@@ -503,6 +503,9 @@ typedef enum {
 	
     /* Free metainformation struct */
 	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
+
+	/* Free the list of actions */
+	int cyberiada_destroy_action(CyberiadaAction* action);
 	
 	/* Find node by id, return NULL if not found */
 	CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id);
