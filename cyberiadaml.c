@@ -590,7 +590,7 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 								GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
 		buffer[0] = 0;
 	}
-	/* DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer); */
+	/*DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer);*/
 	if (cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 0) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
 	}
@@ -1659,6 +1659,7 @@ static ProcessorTransition yed_processor_state_table[] = {
 	{gpsNode,         GRAPHML_YED_GROUPNODE,    &handle_group_node},
 	{gpsRegion,       GRAPHML_YED_GROUPNODE,    &handle_group_node},
 	{gpsRegion,       GRAPHML_NODE_ELEMENT,     &handle_new_node},
+	{gpsRegion,       GRAPHML_EDGE_ELEMENT,     &handle_new_edge},
 	{gpsNodeGeometry, GRAPHML_YED_GEOMETRYNODE, &handle_node_geometry},
 	{gpsNodeStart,    GRAPHML_YED_PROPNODE,     &handle_property},
 	{gpsNodeStart,    GRAPHML_NODE_ELEMENT,     &handle_new_node},
@@ -1706,20 +1707,12 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 								  CyberiadaRegexps* regexps)
 {
 	xmlNode *cur_xml_node = NULL;
-	/* NodeStack* s = *stack; */
-	/* DEBUG("\nStack:"); */
-	/* while (s) { */
-	/* 	DEBUG(" (%s %p)", */
-	/* 		  s->xml_element ? s->xml_element : "null", */
-	/* 		  s->node); */
-	/* 	s = s->next; */
-	/* } */
-	/* DEBUG("\n"); */
 	for (cur_xml_node = xml_root; cur_xml_node; cur_xml_node = cur_xml_node->next) {
-		/* DEBUG("xml node %s sm root %s gps %s\n",
+/*		CyberiadaNode* current = node_stack_current_node(stack);
+		DEBUG("xml node %s current %s gps %s\n",
 			  cur_xml_node->name,
-			  sm->nodes ? sm->nodes->id : "none",
-			  debug_state_names[*gps]); */
+			  current ? current->id : "null",
+			  debug_state_names[*gps]);*/
 		node_stack_push(stack);
 		dispatch_processor(cur_xml_node, doc, stack, gps,
 						   processor_state_table, processor_state_table_size,
