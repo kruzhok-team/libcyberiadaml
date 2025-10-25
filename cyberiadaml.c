@@ -118,6 +118,7 @@
 #define GRAPHML_YED_PROPNODE				     "Property"
 #define GRAPHML_YED_PROP_VALUE_ATTRIBUTE	     "value"
 #define GRAPHML_YED_PROP_VALUE_START		     "EVENT_CHARACTERISTIC_START"
+#define GRAPHML_YED_PROP_VALUE_END               "EVENT_CHARACTERISTIC_END"
 #define GRAPHML_YED_EDGELABEL				     "EdgeLabel"
 #define GRAPHML_YED_POLYLINEEDGE                 "PolyLineEdge"
 
@@ -878,6 +879,15 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 		return gpsInvalid;
 	}
 	if (strcmp(buffer, GRAPHML_YED_PROP_VALUE_START) == 0) {
+		return gpsGraph;
+	}
+	if (strcmp(buffer, GRAPHML_YED_PROP_VALUE_END) == 0) {
+		CyberiadaNode* current = node_stack_current_node(stack);
+		if (current == NULL) {
+			ERROR("current node invalid\n");
+			return gpsInvalid;
+		}
+		current->type = cybNodeFinal;
 		return gpsGraph;
 	}
 	return gpsNodeStart;
