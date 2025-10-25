@@ -239,7 +239,7 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 			block = start;
 			next = start + strlen(block);
 		}
-		if (regexec(&(regexps->spaces_regexp), start, 0, NULL, 0) == 0) {
+		if (cyberiada_action_regexps_spaces(regexps, start)) {
 			continue;
 		}
 

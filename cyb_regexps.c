@@ -20,8 +20,10 @@
  *
  * ----------------------------------------------------------------------------- */
 
-#include "cyb_regexps.h"
+#include <stdlib.h>
+#include <regex.h>
 
+#include "cyb_regexps.h"
 #include "cyb_error.h"
 
 #define CYBERIADA_ACTION_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[([^]]+)\\])?\\s*(propagate|block)?\\s*(/\\s*(.*))?\\s*$"
@@ -31,6 +33,16 @@
 #define CYBERIADA_ACTION_LEGACY_EDGE_REGEXP    "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*/?\\s*(\\[([^]]+)\\])?(\\s*(.*))?\\s*$"
 /*#define CYBERIADA_ACTION_NEWLINE_REGEXP        "^([^\n]*(\n[ \t\r]*[^\\s])?)*\n\\s*\n(.*)?$"*/
 
+typedef struct _CyberiadaRegexpsMisc {
+	/* basic regexps */
+	regex_t edge_action_regexp;
+	regex_t node_action_regexp;
+	regex_t node_legacy_action_regexp;
+	regex_t edge_legacy_action_regexp;
+	/*regex_t newline_regexp;*/
+	regex_t spaces_regexp;
+} CyberiadaRegexpsMics;
+
 int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 {
 	if (!regexps) {
@@ -38,19 +50,20 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	}
 	regexps->flattened_regexps = flattened;
 	regexps->berloga_legacy = 0;
-	if (regcomp(&(regexps->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
+	regexps->r = (CyberiadaRegexpsMics*)malloc(sizeof(CyberiadaRegexpsMics));
+	if (regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&(regexps->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->r->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile node action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&(regexps->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->r->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile legacy node action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
-	if (regcomp(&(regexps->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->r->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile legacy edge action regexp\n");
 		return CYBERIADA_ASSERT;
 	}
@@ -58,7 +71,7 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	ERROR("cannot compile new line regexp\n");
 	return CYBERIADA_ASSERT;
 	}*/
-	if (regcomp(&(regexps->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
+	if (regcomp(&(regexps->r->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile new line regexp\n");
 		return CYBERIADA_ASSERT;
 	}
@@ -67,14 +80,23 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 
 int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
 {
-	if (!regexps) {
+	if (!regexps || !regexps->r) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	regfree(&(regexps->edge_action_regexp));
-	regfree(&(regexps->node_action_regexp));
-	regfree(&(regexps->node_legacy_action_regexp));
-	regfree(&(regexps->edge_legacy_action_regexp));
+	regfree(&(regexps->r->edge_action_regexp));
+	regfree(&(regexps->r->node_action_regexp));
+	regfree(&(regexps->r->node_legacy_action_regexp));
+	regfree(&(regexps->r->edge_legacy_action_regexp));
 /*	regfree(&cyberiada_newline_regexp);*/
-	regfree(&(regexps->spaces_regexp));
+	regfree(&(regexps->r->spaces_regexp));
+	free(regexps->r);
 	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_action_regexps_spaces(CyberiadaRegexps* regexps, const char* s)
+{
+	if (!regexps || !regexps->r) {
+		return 0;
+	}
+	return regexec(&(regexps->r->spaces_regexp), s, 0, NULL, 0) == 0;
 }

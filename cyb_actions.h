@@ -30,10 +30,6 @@
 extern "C" {
 #endif
 
-	int cyberiaga_matchres_action_regexps(const char* text,
-										  const regmatch_t* pmatch, size_t pmatch_size,
-										  char** trigger, char** guard, char** behavior,
-										  size_t match_trigger, size_t match_guard, size_t match_action);
 	int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps);
 	int cyberiada_add_action(const char* trigger, const char* guard, const char* behavior,
 							 CyberiadaAction** action);

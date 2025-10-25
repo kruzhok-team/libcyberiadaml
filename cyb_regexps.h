@@ -23,27 +23,23 @@
 #ifndef __CYBERIADA_REGEXPS_H
 #define __CYBERIADA_REGEXPS_H
 
-#include <regex.h>
-
 #include "cyberiadaml.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-	typedef struct {
-		int     berloga_legacy;
-		int     flattened_regexps;
-		/* basic regexps */
-		regex_t edge_action_regexp;
-		regex_t node_action_regexp;
-		regex_t node_legacy_action_regexp;
-		regex_t edge_legacy_action_regexp;
-		/*regex_t newline_regexp;*/
-		regex_t spaces_regexp;
-	} CyberiadaRegexps;
+	struct _CyberiadaRegexpsMisc;
+	typedef struct _CyberiadaRegexpsMisc CyberiadaRegexpsMics;
 	
+	typedef struct _CyberiadaRegexps {
+		int                   berloga_legacy;
+		int                   flattened_regexps;
+		CyberiadaRegexpsMics* r;
+	} CyberiadaRegexps;
+
 	int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened);
+	int cyberiada_action_regexps_spaces(CyberiadaRegexps* regexps, const char* s);
 	int cyberiada_free_action_regexps(CyberiadaRegexps* regexps);
 	
 #ifdef __cplusplus
