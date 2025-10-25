@@ -21,13 +21,13 @@ if(CMAKE_BUILD_TYPE STREQUAL Debug)
 endif()
 
 add_library(cyberiadaml SHARED
-			cyb_actions.c
+			$<IF:$<PLATFORM_ID:Linux>,cyb_actions.c,cyb_actions_pcre2.c>
 			cyb_error.h
 			cyb_graph.c		
 			cyb_graph_recon.c	
 			cyb_node_stack.c
 			cyb_meta.c
-			cyb_regexps.c
+			$<IF:$<PLATFORM_ID:Linux>,cyb_regexps.c,cyb_regexps_pcre2.c>
 			cyb_string.c
 			cyb_structs.c
 	 		cyb_types.c
@@ -47,7 +47,8 @@ target_link_directories(cyberiadaml PUBLIC
 				    "${HTGeom_LIBRARY}")
 target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
-				  "${HTGeom_LIBRARIES}")
+				  "${HTGeom_LIBRARIES}"
+				  $<IF:$<PLATFORM_ID:Linux>,,pcre2-posix>)
 
 add_subdirectory(parser)
 
