@@ -368,9 +368,9 @@ typedef enum {
 #define CYBERIADA_ACTION_DIFF_BEHAVIOR_ARG                0x1    /* the two nodes' behaviors have different arguments */
 #define CYBERIADA_ACTION_DIFF_BEHAVIOR_ORDER              0x2    /* the two nodes' behaviors have different order */
 #define CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION             0x4    /* the two nodes' behaviors are differ */
-#define CYBERIADA_ACTION_DIFF_TYPES                       0x100  /* the two nodes' have different action types */
-#define CYBERIADA_ACTION_DIFF_GUARDS                      0x200  /* the two nodes' have different guards */
-#define CYBERIADA_ACTION_DIFF_NUMBER                      0x400  /* the two nodes' have different action numbers */
+#define CYBERIADA_ACTION_DIFF_TYPES                       0x10   /* the two nodes' have different action types */
+#define CYBERIADA_ACTION_DIFF_GUARDS                      0x20   /* the two nodes' have different guards */
+#define CYBERIADA_ACTION_DIFF_NUMBER                      0x40   /* the two nodes' have different action numbers */
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
