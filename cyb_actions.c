@@ -414,41 +414,61 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 		while (*next) {
 			start = next;
 			while (*start && isspace(*start)) start++;
-			res = regexec(&(regexps->r->node_legacy_action_regexp), start,
-						  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
-			if (res != 0 && res != REG_NOMATCH) {
-				ERROR("newline regexp error %d\n", res);
-				res = CYBERIADA_ACTION_FORMAT_ERROR;
+			if (!*start) {
+				res = CYBERIADA_NO_ERROR;
 				break;
 			}
-			if (res == 0) {
-				/*DEBUG("add start: '%s'\n", start);*/
-				list = sections_list;
-				cyberiada_list_add(&sections_list, start, NULL);
-				if (list) {
-					block = (char*)list->key;
-					while (*block) {
-						if (block == start) {
-							*(block - 1) = 0;
-							break;
+			if (regexps->berloga_legacy > 1) {
+				res = regexec(&(regexps->r->node_legacy_action_regexp), start,
+							  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
+				if (res != 0 && res != REG_NOMATCH) {
+					ERROR("newline regexp error %d\n", res);
+					res = CYBERIADA_ACTION_FORMAT_ERROR;
+					break;
+				}
+				if (res == 0) {
+					list = sections_list;
+					cyberiada_list_add(&sections_list, start, NULL);
+					if (list) {
+						block = (char*)list->key;
+						while (*block) {
+							if (block == start) {
+								*(block - 1) = 0;
+								break;
+							}
+							block++;
 						}
-						block++;
 					}
 				}
-			}
-			block = strstr(start, CYBERIADA_SINGLE_NEWLINE);
-			if (block) {
-				next = block + 1;
+				block = strstr(start, CYBERIADA_SINGLE_NEWLINE);
+				if (block) {
+					next = block + 1;
+				} else {
+					next = start + strlen(start);
+				}
 			} else {
-				next = start + strlen(start);
+				res = regexec(&(regexps->r->node_legacy_action_regexp), start,
+							  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
+				if (res == REG_NOMATCH) {
+					ERROR("action regexp error: \"%s\"\n", start);
+					res = CYBERIADA_ACTION_FORMAT_ERROR;
+					break;
+				}
+				cyberiada_list_add(&sections_list, start, NULL);
+				
+				block = strstr(start, CYBERIADA_NEWLINE);
+				if (block) {
+					*block = 0;
+					next = block + 2;
+				} else {
+					next = start + strlen(start);
+				}
 			}
 			res = CYBERIADA_NO_ERROR;
 		}
 	}
-	/*DEBUG("text: %s\n", text);*/
 	for (list = sections_list; list; list = list->next) {
 		start = (char*)list->key;
-		/* DEBUG("section: '%s'\n", start);*/
 		if ((res = cyberiada_decode_state_block_action(start, actions, regexps)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
 			break;

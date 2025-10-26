@@ -127,6 +127,7 @@
 #define CYBERIADA_FORMAT_CYBERIADAML             "Cyberiada-GraphML-1.0"
 #define CYBERIADA_FORMAT_BERLOGA                 "yEd Berloga"
 #define CYBERIADA_FORMAT_OSTRANNA                "yEd Ostranna"
+#define CYBERIADA_FORMAT_BERLOGA_16              "yEd Berloga-1.6"
 
 /* CybediadaML metadata constants */
 
@@ -673,6 +674,7 @@ static GraphProcessorState handle_new_yed_node(xmlNode* xml_node,
 		node->type = cybNodeFormalComment;
 		cyberiada_copy_string(&(node->title),
 							  &(node->title_len), CYBERIADA_META_NODE_TITLE);
+		regexps->berloga_legacy = 16;
 		return gpsMeta;
 	} else {
 		return gpsNode;
@@ -1781,6 +1783,10 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, Cyber
 
 	if (berloga_format) {
 		sm_name = buffer;
+		if (regexps->berloga_legacy > 1) {
+			free(doc->format);
+			cyberiada_copy_string(&(doc->format), &(doc->format_len), CYBERIADA_FORMAT_BERLOGA_16);
+		}
 	} else {
 		if (doc->state_machines->nodes) {
 			node = cyberiada_graph_find_node_by_type(doc->state_machines->nodes, cybNodeCompositeState);
