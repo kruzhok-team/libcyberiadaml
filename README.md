@@ -11,6 +11,7 @@ the GNU Free Documentation License (version 1.3).
 * build-essential
 * libxml2-dev
 * cmake (version 3.12+)
+* libprce2-dev (on Windows and macOS)
 
 ## Installation
 
