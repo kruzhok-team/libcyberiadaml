@@ -649,6 +649,7 @@ int cyberiada_print_sm_document(CyberiadaDocument* doc)
 	CyberiadaSM* sm;
 
 	printf("\nDocument:\n");
+	printf("  Format: %s\n", doc->format);
 	cyberiada_print_meta(doc->meta_info);
 
 	for (sm = doc->state_machines; sm; sm = sm->next) {
