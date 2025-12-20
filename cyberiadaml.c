@@ -124,10 +124,11 @@
 
 /* HSM format / standard constants */
 
-#define CYBERIADA_FORMAT_CYBERIADAML             "Cyberiada-GraphML-1.0"
-#define CYBERIADA_FORMAT_BERLOGA                 "yEd Berloga"
-#define CYBERIADA_FORMAT_OSTRANNA                "yEd Ostranna"
-#define CYBERIADA_FORMAT_BERLOGA_16              "yEd Berloga-1.6"
+#define CYBERIADA_FORMAT_CYBERIADAML             "Cyberiada-GraphML-1.0"       /* standard 1.0 compatible         */
+#define CYBERIADA_FORMAT_BERLOGA                 "yEd Berloga"                 /* hacked version of AD ver. <1.6  */
+#define CYBERIADA_FORMAT_OSTRANNA                "yEd Ostranna"                /* default yEd-based versions      */
+#define CYBERIADA_FORMAT_BERLOGA_16              "yEd Berloga-1.6"             /* hacked version of AD ver. >=1.6 */
+#define CYBERIADA_FORMAT_ARENA                   "Cyberiada-GraphML-Arena"     /* broken version of AD: Arena     */ 
 
 /* CybediadaML metadata constants */
 
@@ -197,6 +198,7 @@ typedef struct {
 	const char* attr_name;
 	const char* attr_type;
 	char* extra;
+	char  standard;
 } GraphMLKey;
 
 #define GRAPHML_CYB_KEY_FORMAT                  "gFormat"
@@ -217,6 +219,8 @@ typedef struct {
 #define GRAPHML_CYB_KEY_MARKUP                  "dMarkup"
 #define GRAPHML_CYB_KEY_COLLAPSED			    "dCollapsed"
 #define GRAPHML_CYB_KEY_COLOR			        "dColor"
+/* Compatibility (because of some lazy programmers */
+#define GRAPHML_CYB_KEY_ARENA_REFERENCE_ID      "referenceGraphID"
 
 #define GRAPHML_CYB_KEY_FORMAT_NAME				"format"
 #define GRAPHML_CYB_KEY_NAME_NAME				"name"
@@ -236,34 +240,36 @@ typedef struct {
 #define GRAPHML_CYB_KEY_MARKUP_NAME             "markup"
 #define GRAPHML_CYB_KEY_COLLAPSED_NAME          "collapsed"
 #define GRAPHML_CYB_KEY_COLOR_NAME			    "color"
+#define GRAPHML_CYB_KEY_ARENA_REFERENCE_ID_NAME "referenceGraphID"
 
 static GraphMLKey cyberiada_graphml_keys[] = {
-	{ GRAPHML_CYB_KEY_FORMAT,            GRAPHML_GRAPHML_ELEMENT, GRAPHML_CYB_KEY_FORMAT_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL },	
-	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL },
-	{ GRAPHML_CYB_KEY_STATE_MACHINE,     GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_STATE_MACHINE_NAME,     "string", NULL },
-	{ GRAPHML_CYB_KEY_REGION,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_REGION_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_SUBMACHINE,        GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_SUBMACHINE_NAME,        "string", NULL },
-	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
-    { GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
-	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL },
-	{ GRAPHML_CYB_KEY_SOURCE_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_SOURCE_POINT_NAME,      NULL,     NULL },
-	{ GRAPHML_CYB_KEY_TARGET_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_TARGET_POINT_NAME,      NULL,     NULL },
-	{ GRAPHML_CYB_KEY_LABEL_GEOMETRY,    GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME,    NULL,     NULL },
-	{ GRAPHML_CYB_KEY_COMMENT,           GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_NAME,           "string", NULL },
-	{ GRAPHML_CYB_KEY_VERTEX,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_VERTEX_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL },
-	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL },
-	{ GRAPHML_CYB_KEY_COMMENT_SUBJECT,   GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_SUBJECT_NAME,   "string", NULL },
-	{ GRAPHML_CYB_KEY_COMMENT_CHUNK,     GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_CHUNK_NAME,     "string", NULL },
-	{ GRAPHML_CYB_KEY_COLLAPSED,         GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLLAPSED_NAME,         "string", NULL },
-	{ GRAPHML_CYB_KEY_MARKUP,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_MARKUP_NAME,            "string", NULL },
-	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL },	  
-	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL },
-	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL },	
-	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL }
+	{ GRAPHML_CYB_KEY_FORMAT,            GRAPHML_GRAPHML_ELEMENT, GRAPHML_CYB_KEY_FORMAT_NAME,            "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL, 1 },	
+	{ GRAPHML_CYB_KEY_NAME,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_NAME_NAME,              "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_STATE_MACHINE,     GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_STATE_MACHINE_NAME,     "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_REGION,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_REGION_NAME,            "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_SUBMACHINE,        GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_SUBMACHINE_NAME,        "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL, 1 },
+    { GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL, 1 },
+	{ GRAPHML_CYB_KEY_GEOMETRY,          GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_GEOMETRY_NAME,          NULL,     NULL, 1 },
+	{ GRAPHML_CYB_KEY_SOURCE_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_SOURCE_POINT_NAME,      NULL,     NULL, 1 },
+	{ GRAPHML_CYB_KEY_TARGET_POINT,      GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_TARGET_POINT_NAME,      NULL,     NULL, 1 },
+	{ GRAPHML_CYB_KEY_LABEL_GEOMETRY,    GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME,    NULL,     NULL, 1 },
+	{ GRAPHML_CYB_KEY_COMMENT,           GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_NAME,           "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_VERTEX,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_VERTEX_NAME,            "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_DATA,              GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_DATA_NAME,              "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_COMMENT_SUBJECT,   GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_SUBJECT_NAME,   "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_COMMENT_CHUNK,     GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COMMENT_CHUNK_NAME,     "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_COLLAPSED,         GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLLAPSED_NAME,         "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_MARKUP,            GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_MARKUP_NAME,            "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL, 1 },	  
+	{ GRAPHML_CYB_KEY_COLOR,             GRAPHML_EDGE_ELEMENT,    GRAPHML_CYB_KEY_COLOR_NAME,             "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL, 1 },	
+	{ GRAPHML_CYB_KEY_FORMAL_NAME,       GRAPHML_NODE_ELEMENT,    GRAPHML_CYB_KEY_FORMAL_NAME_NAME,       "string", NULL, 1 },
+	{ GRAPHML_CYB_KEY_ARENA_REFERENCE_ID,GRAPHML_GRAPH_ELEMENT,   GRAPHML_CYB_KEY_ARENA_REFERENCE_ID_NAME,"string", NULL, 0 }
 };
-static const size_t cyberiada_graphml_keys_count = sizeof(cyberiada_graphml_keys) / sizeof(GraphMLKey); 
+static const size_t cyberiada_graphml_keys_count = sizeof(cyberiada_graphml_keys) / sizeof(GraphMLKey);
 
 #define GRAPHML_YED_KEY_GRAPH_DESCR     "d0"
 #define GRAPHML_YED_KEY_PORT_GRAPHICS   "d1"
@@ -278,17 +284,17 @@ static const size_t cyberiada_graphml_keys_count = sizeof(cyberiada_graphml_keys
 #define GRAPHML_YED_KEY_EDGE_GRAPHICS   "d10"
 
 static GraphMLKey yed_graphml_keys[] = {
-	{ GRAPHML_YED_KEY_GRAPH_DESCR,    GRAPHML_GRAPH_ELEMENT,   "description", "string", NULL           },
-	{ GRAPHML_YED_KEY_PORT_GRAPHICS,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgraphics" },
-	{ GRAPHML_YED_KEY_PORT_GEOMETRY,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgeometry" },
-	{ GRAPHML_YED_KEY_PORT_USER_DATA, GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portuserdata" },
-	{ GRAPHML_YED_KEY_NODE_URL,       GRAPHML_NODE_ELEMENT,    "url",         "string", NULL           },
-	{ GRAPHML_YED_KEY_NODE_DESCR,     GRAPHML_NODE_ELEMENT,    "description", "string", NULL           },
-	{ GRAPHML_YED_KEY_NODE_GRAPHICS,  GRAPHML_NODE_ELEMENT,    NULL,          NULL,     "nodegraphics" },
-	{ GRAPHML_YED_KEY_GRAPHML_RES,    GRAPHML_GRAPHML_ELEMENT, NULL,          NULL,     "resources"    },
-	{ GRAPHML_YED_KEY_EDGE_URL,       GRAPHML_EDGE_ELEMENT,    "url",         "string", NULL           },
-	{ GRAPHML_YED_KEY_EDGE_DESCR,     GRAPHML_EDGE_ELEMENT,    "description", "string", NULL           },
-	{ GRAPHML_YED_KEY_EDGE_GRAPHICS,  GRAPHML_EDGE_ELEMENT,    NULL,          NULL,     "edgegraphics" }
+	{ GRAPHML_YED_KEY_GRAPH_DESCR,    GRAPHML_GRAPH_ELEMENT,   "description", "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_PORT_GRAPHICS,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgraphics", 1 },
+	{ GRAPHML_YED_KEY_PORT_GEOMETRY,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgeometry", 1 },
+	{ GRAPHML_YED_KEY_PORT_USER_DATA, GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portuserdata", 1 },
+	{ GRAPHML_YED_KEY_NODE_URL,       GRAPHML_NODE_ELEMENT,    "url",         "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_NODE_DESCR,     GRAPHML_NODE_ELEMENT,    "description", "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_NODE_GRAPHICS,  GRAPHML_NODE_ELEMENT,    NULL,          NULL,     "nodegraphics", 1 },
+	{ GRAPHML_YED_KEY_GRAPHML_RES,    GRAPHML_GRAPHML_ELEMENT, NULL,          NULL,     "resources",    1 },
+	{ GRAPHML_YED_KEY_EDGE_URL,       GRAPHML_EDGE_ELEMENT,    "url",         "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_EDGE_DESCR,     GRAPHML_EDGE_ELEMENT,    "description", "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_EDGE_GRAPHICS,  GRAPHML_EDGE_ELEMENT,    NULL,          NULL,     "edgegraphics", 1 }
 };
 static const size_t yed_graphml_keys_count = sizeof(yed_graphml_keys) / sizeof(GraphMLKey); 
 
@@ -1354,6 +1360,9 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 		current->link = cyberiada_new_link(buffer);
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_GEOMETRY_NAME) == 0) {
 		return gpsNodeGeometry;
+	} else if (strcmp(key_name, GRAPHML_CYB_KEY_ARENA_REFERENCE_ID_NAME) == 0) {
+		/* ugly Arena-specific Cyberiada GraphML found */
+		regexps->arena_legacy = 1;
 	} else {
 		ERROR("Bad data key attribute '%s'\n", key_name);
 		return gpsInvalid;
@@ -2182,6 +2191,15 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
+		if (cyberiada_regexps.arena_legacy) {
+			if (cyb_doc->format) {
+				free(cyb_doc->format);
+			}
+			cyberiada_copy_string(&(cyb_doc->format),
+								  &(cyb_doc->format_len),
+								  CYBERIADA_FORMAT_ARENA);
+		}
+
 		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
 			if ((res = cyberiada_graphs_reconstruct_node_identifiers(sm->nodes, &nl)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: cannot reconstruct graph nodes' indentifiers\n");
@@ -2859,6 +2877,9 @@ static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlText
 	/* write graphml keys */
 	for (i = 0; i < cyberiada_graphml_keys_count; i++) {
 		key = cyberiada_graphml_keys + i;
+		if (!key->standard) {
+			continue;
+		}
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_KEY_ELEMENT, 1);
 		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, key->attr_id);
 		XML_WRITE_ATTR(writer, GRAPHML_FOR_ATTRIBUTE, key->attr_for);

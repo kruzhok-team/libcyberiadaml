@@ -50,6 +50,7 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	}
 	regexps->flattened_regexps = flattened;
 	regexps->berloga_legacy = 0;
+	regexps->arena_legacy = 0;
 	regexps->r = (CyberiadaRegexpsMics*)malloc(sizeof(CyberiadaRegexpsMics));
 	if (regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
 		ERROR("cannot compile edge action regexp\n");

@@ -35,6 +35,7 @@ extern "C" {
 	typedef struct _CyberiadaRegexps {
 		int                   berloga_legacy;
 		int                   flattened_regexps;
+		int                   arena_legacy;
 		CyberiadaRegexpsMics* r;
 	} CyberiadaRegexps;
 
