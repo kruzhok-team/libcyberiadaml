@@ -598,6 +598,18 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 								GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
 		buffer[0] = 0;
 	}
+	if (regexps->arena_legacy) {
+		/* check if the edge with the same name found */
+		unsigned int n = 2;
+		if (cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL) {
+			char buffer2[MAX_STR_LEN - 64];
+			strncpy(buffer2, buffer, MAX_STR_LEN - 64);
+			do {
+				snprintf(buffer, MAX_STR_LEN - 20, "%s-%u", buffer2, n);
+				n++;
+			} while (cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL);
+		}
+	}
 	/*DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer);*/
 	if (cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 0) != CYBERIADA_NO_ERROR) {
 		return gpsInvalid;
