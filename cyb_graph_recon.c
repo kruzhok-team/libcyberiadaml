@@ -55,13 +55,19 @@ static const char* cyberiada_find_name_in_list(NamesList** nl, const char* name)
 
 void cyberiada_free_name_list(NamesList** nl)
 {
-	cyberiada_list_free(nl);
+	if (nl) {
+		NamesList* list = *nl;
+		while(list) {
+			if (list->key) free(list->key);
+			if (list->data) free(list->data);			
+			list = list->next;
+		}
+		cyberiada_list_free(nl);
+	}
 }
 
-int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl)
+int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl, int rename)
 {
-	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
 	CyberiadaNode *node;
 	unsigned int num = 0;
 	
@@ -71,30 +77,44 @@ int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList
 			ERROR("Found null node id\n");
 			return CYBERIADA_FORMAT_ERROR;
 		}
-		if (!*(node->id)) {
+		if (rename || !*(node->id)) {
+			char buffer[MAX_STR_LEN];
+			size_t buffer_len = sizeof(buffer) - 1;
+			char *key, *data;
+
 			do {
 				if (node->parent && node->parent->parent) {
 					snprintf(buffer, buffer_len, "%s::n%u",
 							 node->parent->id, num);
 				} else {
-					snprintf(buffer, buffer_len, "n%u", num);
+					if (!node->parent) {
+						snprintf(buffer, buffer_len, "g%u", num);
+					} else {
+						snprintf(buffer, buffer_len, "n%u", num);
+					}
 				}
 				num++;
 			} while (cyberiada_graph_find_node_by_id(root, buffer));
+
+			cyberiada_copy_string(&key, NULL, node->id);
+			cyberiada_copy_string(&data, NULL, buffer);
+			cyberiada_add_name_to_list(nl, key, data);
+
+			/*DEBUG("rename %s -> %s\n", key, data);*/
+
 			free(node->id);
 			node->id = NULL;
 			cyberiada_copy_string(&(node->id), &(node->id_len), buffer);
-			cyberiada_add_name_to_list(nl, "", node->id);
 		}
 		if (node->children) {
-			cyberiada_graphs_reconstruct_node_identifiers(node->children, nl);
+			cyberiada_graphs_reconstruct_node_identifiers(node->children, nl, rename);
 		}
 		node = node->next;
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl)
+int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl, int rename)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer) - 1;
@@ -107,7 +127,7 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 
 		edge = sm->edges;
 		while (edge) {
-			if (!*(edge->source_id)) {
+			if (rename || !*(edge->source_id)) {
 				new_id = cyberiada_find_name_in_list(nl, edge->source_id);
 				if (!new_id) {
 					ERROR("Cannot find replacement for source id %s\n", edge->source_id);
@@ -117,7 +137,7 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 				edge->source_id = NULL;
 				cyberiada_copy_string(&(edge->source_id), &(edge->source_id_len), new_id);
 			}
-			if (!*(edge->target_id)) {
+			if (rename || !*(edge->target_id)) {
 				new_id = cyberiada_find_name_in_list(nl, edge->target_id);
 				if (!new_id) {
 					ERROR("Cannot find replacement for target id %s\n", edge->target_id);
@@ -138,14 +158,14 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 				ERROR("cannot find source/target node for edge %s %s\n", edge->source_id, edge->target_id);
 				return CYBERIADA_FORMAT_ERROR;
 			}
-			if (!edge->id || !*(edge->id)) {
+			if (rename || !edge->id || !*(edge->id)) {
 				snprintf(buffer, buffer_len, "%s-%s", edge->source_id, edge->target_id);
 				while (cyberiada_graph_find_edge_by_id(sm->edges, buffer)) {
 					snprintf(buffer, buffer_len, "%s-%s#%u",
 							 edge->source_id, edge->target_id, num);
 					num++;
 				}
-				free(edge->id);
+				if (edge->id) free(edge->id);
 				edge->id = NULL;
 				cyberiada_copy_string(&(edge->id), &(edge->id_len), buffer);
 			}

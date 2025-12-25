@@ -32,8 +32,8 @@ extern "C" {
 	
 	typedef CyberiadaList NamesList;
 	void cyberiada_free_name_list(NamesList** nl);
-	int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl);
-	int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl);
+	int cyberiada_graphs_reconstruct_node_identifiers(CyberiadaNode* root, NamesList** nl, int rename);
+	int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesList** nl, int rename);
 	
 #ifdef __cplusplus
 }

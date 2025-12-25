@@ -2211,15 +2211,19 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 								  &(cyb_doc->format_len),
 								  CYBERIADA_FORMAT_ARENA);
 		}
-
+		
 		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
-			if ((res = cyberiada_graphs_reconstruct_node_identifiers(sm->nodes, &nl)) != CYBERIADA_NO_ERROR) {
+			if ((res = cyberiada_graphs_reconstruct_node_identifiers(sm->nodes,
+																	 &nl,
+																	 flags & CYBERIADA_FLAG_SIMPLIFY_IDS)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: cannot reconstruct graph nodes' indentifiers\n");
 				break;
 			}
 		}
 		
-		if ((res = cyberiada_graphs_reconstruct_edge_identifiers(cyb_doc, &nl)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_graphs_reconstruct_edge_identifiers(cyb_doc,
+																 &nl,
+																 flags & CYBERIADA_FLAG_SIMPLIFY_IDS)) != CYBERIADA_NO_ERROR) {
 			ERROR("error: cannot reconstruct graph edges' identifier\n");
 			break;
 		}
