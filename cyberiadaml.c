@@ -2093,6 +2093,51 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 	return res;
 }
 
+static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
+{
+	CyberiadaNode *sm_node, *first_node, *meta_node;
+	if (!doc->state_machines) {
+		/* empty doc */
+		ERROR("At least one SM required\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	sm_node = doc->state_machines->nodes;
+	if (sm_node->type != cybNodeSM ||
+		sm_node->next != NULL) {
+		ERROR("Inconsistem SM node\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	first_node = sm_node->children; 
+	if (first_node &&
+		first_node->type == cybNodeFormalComment &&
+		first_node->title &&
+		strcmp(first_node->title, CYBERIADA_META_NODE_TITLE) == 0) {
+		if (first_node->comment_data) {
+			if (first_node->comment_data->body) {
+				free(first_node->comment_data->body);
+				first_node->comment_data->body = NULL;
+				first_node->comment_data->body_len = 0;
+			}
+		} else {
+			first_node->comment_data = cyberiada_new_comment_data();
+		}
+		meta_node = first_node;
+	} else {
+		meta_node = cyberiada_new_node(CYBERIADA_META_NODE_DEFAULT_ID);
+		meta_node->type = cybNodeFormalComment;
+		meta_node->comment_data = cyberiada_new_comment_data();
+		cyberiada_copy_string(&(meta_node->title),
+							  &(meta_node->title_len),
+							  CYBERIADA_META_NODE_TITLE);
+		sm_node->children = meta_node;
+		meta_node->next = first_node;
+	}
+	cyberiada_encode_meta(doc->meta_info,
+						  &(meta_node->comment_data->body),
+						  &(meta_node->comment_data->body_len));
+	return CYBERIADA_NO_ERROR;
+}
+
 /* -----------------------------------------------------------------------------
  * GraphML reader interface
  * ----------------------------------------------------------------------------- */
@@ -2252,7 +2297,10 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		}
 
 		if (flags & CYBERIADA_FLAG_SKIP_META) {
+			/* skip metainformation */
 			cyberiada_skip_meta(cyb_doc);
+			cyberiada_update_metainfo_comment(cyb_doc);
+			/* restore default format name */
 			if (strcmp(cyb_doc->format, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
 				free(cyb_doc->format);
 				cyberiada_copy_string(&(cyb_doc->format),
@@ -2828,51 +2876,6 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 
 	XML_WRITE_CLOSE_E_I(writer, 1);
 	
-	return CYBERIADA_NO_ERROR;
-}
-
-static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
-{
-	CyberiadaNode *sm_node, *first_node, *meta_node;
-	if (!doc->state_machines) {
-		/* empty doc */
-		ERROR("At least one SM required\n");
-		return CYBERIADA_BAD_PARAMETER;
-	}
-	sm_node = doc->state_machines->nodes;
-	if (sm_node->type != cybNodeSM ||
-		sm_node->next != NULL) {
-		ERROR("Inconsistem SM node\n");
-		return CYBERIADA_BAD_PARAMETER;
-	}
-	first_node = sm_node->children; 
-	if (first_node &&
-		first_node->type == cybNodeFormalComment &&
-		first_node->title &&
-		strcmp(first_node->title, CYBERIADA_META_NODE_TITLE) == 0) {
-		if (first_node->comment_data) {
-			if (first_node->comment_data->body) {
-				free(first_node->comment_data->body);
-				first_node->comment_data->body = NULL;
-				first_node->comment_data->body_len = 0;
-			}
-		} else {
-			first_node->comment_data = cyberiada_new_comment_data();
-		}
-		meta_node = first_node;
-	} else {
-		meta_node = cyberiada_new_node(CYBERIADA_META_NODE_DEFAULT_ID);
-		meta_node->type = cybNodeFormalComment;
-		meta_node->comment_data = cyberiada_new_comment_data();
-		cyberiada_copy_string(&(meta_node->title),
-							  &(meta_node->title_len),
-							  CYBERIADA_META_NODE_TITLE);
-		sm_node->children = meta_node;
-		meta_node->next = first_node;
-	}
-	cyberiada_encode_meta(doc->meta_info,
-						  &(meta_node->comment_data->body),
-						  &(meta_node->comment_data->body_len));
 	return CYBERIADA_NO_ERROR;
 }
 
