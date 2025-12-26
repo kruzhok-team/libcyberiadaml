@@ -347,3 +347,20 @@ int cyberiada_print_meta(CyberiadaMetainformation* meta)
 	}
 	return CYBERIADA_NO_ERROR;
 }
+
+int cyberiada_skip_meta(CyberiadaDocument* doc)
+{
+	if (!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (doc->meta_info) {
+		cyberiada_destroy_meta(doc->meta_info);
+	}
+	doc->meta_info = NULL;
+	
+	cyberiada_add_default_meta(doc, EMPTY_LINE);
+
+	return CYBERIADA_NO_ERROR;
+}
+

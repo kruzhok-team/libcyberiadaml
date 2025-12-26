@@ -140,7 +140,7 @@
 
 #define PSEUDO_NODE_SIZE					     20
 #define DEFAULT_NODE_SIZE                        100
-#define EMPTY_TITLE                              ""
+#define EMPTY_TITLE                              EMPTY_LINE
 
 /* Types & macros for XML/GraphML processing */
 
@@ -1866,7 +1866,6 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc,
 		return CYBERIADA_FORMAT_ERROR;
 	}
 
-	
 	/*meta_node = cyberiada_graph_find_node_by_id(sm->nodes, "");
 
 	if (meta_node == NULL) {
@@ -2106,7 +2105,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	NamesList* nl = NULL;
 	int geom_flags;
 	CyberiadaRegexps cyberiada_regexps;
-
+	
 	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
 		ERROR("Round geometry flag is not supported on import\n");
 		return CYBERIADA_BAD_PARAMETER;
@@ -2251,6 +2250,17 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 				cyb_doc->geometry_format = cybgeomNone;	
 			}
 		}
+
+		if (flags & CYBERIADA_FLAG_SKIP_META) {
+			cyberiada_skip_meta(cyb_doc);
+			if (strcmp(cyb_doc->format, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
+				free(cyb_doc->format);
+				cyberiada_copy_string(&(cyb_doc->format),
+									  &(cyb_doc->format_len),
+									  CYBERIADA_FORMAT_CYBERIADAML);
+			}
+		}
+		
 	} while(0);
 
 	cyberiada_free_name_list(&nl);

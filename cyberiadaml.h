@@ -333,11 +333,13 @@ typedef enum {
 #define CYBERIADA_FLAG_STRICT_ACTION_ENTRIES              0x80000 /* check unique entry/exit action entries  */
 #define CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR                0x100000 /* skip empty behaviour in actions  */
 #define CYBERIADA_FLAG_SIMPLIFY_IDS                       0x200000 /* simplify node/edge identifiers  */
+#define CYBERIADA_FLAG_SKIP_META                          0x400000 /* skip meta-information and format from graphml */
 #define CYBERIADA_FLAG_NON_GEOMETRY                       (CYBERIADA_FLAG_FLATTENED | \
 														   CYBERIADA_FLAG_CHECK_INITIAL | \
 														   CYBERIADA_FLAG_STRICT_ACTION_ENTRIES | \
 														   CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR | \
-														   CYBERIADA_FLAG_SIMPLIFY_IDS)
+														   CYBERIADA_FLAG_SIMPLIFY_IDS | \
+														   CYBERIADA_FLAG_SKIP_META)
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada isomorphism check codes

@@ -38,6 +38,7 @@ extern "C" {
 	int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps);
 	int cyberiada_print_meta(CyberiadaMetainformation* meta);
 	const char* cyberiada_find_meta_string(CyberiadaMetainformation* meta, const char* name);
+	int cyberiada_skip_meta(CyberiadaDocument* doc);
 
 #ifdef __cplusplus
 }

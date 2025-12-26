@@ -39,6 +39,7 @@
 #define CMD_PARAM_INDEX_RECONSTR    7
 #define CMD_PARAM_INDEX_RECONSTR_SM 8
 #define CMD_PARAM_INDEX_SIMPLIFY_ID 9
+#define CMD_PARAM_INDEX_SKIP_META   10
 
 #define CMD_PARAMETER_FROM_TYPE     1
 #define CMD_PARAMETER_TO_TYPE       2
@@ -50,6 +51,7 @@
 #define CMD_PARAMETER_RECONSTR      128
 #define CMD_PARAMETER_RECONSTR_SM   256
 #define CMD_PARAMETER_SIMPLIFY_ID   512
+#define CMD_PARAMETER_SKIP_META     1024
 
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
@@ -91,6 +93,7 @@ CyberiadaCommandParameters parameters[] = {
 	{CMD_PARAMETER_RECONSTR,    "-r",  "--reconstruct",         argNone,   "reconstruct geometry of the loaded graph (w/o SM)", 0, NULL, -1},
 	{CMD_PARAMETER_RECONSTR_SM, "-R",  "--reconstruct-sm",      argNone,   "reconstruct geometry of the loaded graph (with SM)", 0, NULL, -1},
 	{CMD_PARAMETER_SIMPLIFY_ID, "-i",  "--simplify-ids",        argNone,   "simplify graph identifiers", 0, NULL, -1},
+	{CMD_PARAMETER_SKIP_META,   "-m",  "--skip-meta",           argNone,   "skip meta from the loaded graph", 0, NULL, -1},
 };
 
 size_t parameters_count = sizeof(parameters) / sizeof(CyberiadaCommandParameters);
@@ -107,15 +110,15 @@ typedef struct {
 CyberiadaCommand commands[] = {
 	{CMD_PRINT,   "print", CMD_PARAMETER_GRAPH, CMD_PARAMETER_GRAPH,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM | CMD_PARAMETER_SKIP_GEOM |
-	 CMD_PARAMETER_SKIP_EMPTY | CMD_PARAMETER_SIMPLIFY_ID,
+	 CMD_PARAMETER_SKIP_EMPTY | CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
 	 "read the HSM diagram and print its content to stdout; use -f key to set the graph format (default - unknown)"},
 	{CMD_CONVERT, "convert", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM |
-	 CMD_PARAMETER_SIMPLIFY_ID,
+	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
 	 "convert HSM from -f <from-format> to -t <output-format> into the file named -o <output-graph>"},
 	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY |
-	 CMD_PARAMETER_SIMPLIFY_ID,
+	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
 	 "compare HSMs from <graph> and <output-graph> and print the difference"}
 };
 
@@ -212,7 +215,8 @@ int main(int argc, char** argv)
 	int command = 0;
 	int flags = CYBERIADA_FLAG_NO;
     const char *source_filename, *dest_filename;
-	int silent = 0, require_initial = 0, ignore_comments = 1, reconstruct = 0, reconstruct_sm = 0, skip = 0, skip_empty = 0, simplify = 0;
+	int silent = 0, require_initial = 0, ignore_comments = 1, reconstruct = 0, reconstruct_sm = 0, skip = 0,
+		skip_empty = 0, simplify = 0, skip_meta = 0;
 	CyberiadaXMLFormat source_format, dest_format;
 	CyberiadaDocument doc;
 	size_t i;
@@ -239,6 +243,7 @@ int main(int argc, char** argv)
 	reconstruct_sm = parameters[CMD_PARAM_INDEX_RECONSTR_SM].present;
 	reconstruct = parameters[CMD_PARAM_INDEX_RECONSTR].present | reconstruct_sm;
 	simplify = parameters[CMD_PARAM_INDEX_SIMPLIFY_ID].present;
+	skip_meta = parameters[CMD_PARAM_INDEX_SKIP_META].present;
 	require_initial = 0;
 	ignore_comments = 1;
 
@@ -259,6 +264,9 @@ int main(int argc, char** argv)
 	}
 	if (simplify) {
 		flags |= CYBERIADA_FLAG_SIMPLIFY_IDS;
+	}
+	if (skip_meta) {
+		flags |= CYBERIADA_FLAG_SKIP_META;
 	}
 	
 	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format, flags)) != CYBERIADA_NO_ERROR) {
@@ -287,13 +295,6 @@ int main(int argc, char** argv)
 		CyberiadaEdge **sm2_new_edges = NULL, **sm1_missing_edges = NULL;
 		size_t *sm_diff_nodes_flags = NULL, *sm_diff_edges_flags = NULL;
 		flags = CYBERIADA_FLAG_NO;
-
-		if (skip) {
-			flags |= CYBERIADA_FLAG_SKIP_GEOMETRY;
-		}
-		if (skip_empty) {
-			flags |= CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR;
-		}
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
