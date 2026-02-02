@@ -3,7 +3,7 @@
  *
  * The string utilities
  *
- * Copyright (C) 2024 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -41,6 +41,9 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 		strsize = MAX_STR_LEN - 1;
 	}
 	target_str = (char*)malloc(strsize + 1);
+	if (!target_str) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	strncpy(target_str, source, strsize);
 	target_str[strsize] = 0;
 	*target = target_str;
@@ -104,6 +107,9 @@ int cyberiada_append_string(char** target, size_t* size, const char* source, con
 		new_target_size = MAX_STR_LEN - 1;
 	}
 	new_target_str = (char*)malloc(new_target_size + 1);
+	if (!new_target_str) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	strncpy(new_target_str, target_str, new_target_size);
 	if (separator) {
 		strncpy(new_target_str + target_size, separator, new_target_size - target_size);

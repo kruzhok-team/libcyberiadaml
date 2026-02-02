@@ -3,7 +3,7 @@
  *
  * The basic data structures
  *
- * Copyright (C) 2024 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -31,6 +31,7 @@
 CyberiadaCommentData* cyberiada_new_comment_data(void)
 {
 	CyberiadaCommentData* cd = (CyberiadaCommentData*)malloc(sizeof(CyberiadaCommentData));
+	if (!cd) return NULL;
 	memset(cd, 0, sizeof(CyberiadaCommentData));
 	return cd;
 }
@@ -42,6 +43,7 @@ static CyberiadaCommentData* cyberiada_copy_comment_data(CyberiadaCommentData* s
 		return NULL;
 	}
 	cd = cyberiada_new_comment_data();
+	if (!cd) return NULL;
 	if (src->body) {
 		cyberiada_copy_string(&(cd->body), &(cd->body_len), src->body);
 	}
@@ -54,6 +56,7 @@ static CyberiadaCommentData* cyberiada_copy_comment_data(CyberiadaCommentData* s
 CyberiadaLink* cyberiada_new_link(const char* ref)
 {
 	CyberiadaLink* link = (CyberiadaLink*)malloc(sizeof(CyberiadaLink));
+	if (!link) return NULL;
 	memset(link, 0, sizeof(CyberiadaLink));
 	cyberiada_copy_string(&(link->ref), &(link->ref_len), ref);
 	return link;
@@ -73,6 +76,7 @@ CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 									  const char* behavior)
 {
 	CyberiadaAction* action = (CyberiadaAction*)malloc(sizeof(CyberiadaAction));
+	if (!action) return NULL;
 	memset(action, 0, sizeof(CyberiadaAction));
 	action->type = type;
 	cyberiada_copy_string(&(action->trigger), &(action->trigger_len), trigger);
@@ -92,6 +96,7 @@ static CyberiadaAction* cyberiada_copy_action(CyberiadaAction* src)
 CyberiadaNode* cyberiada_new_node(const char* id)
 {
 	CyberiadaNode* new_node = (CyberiadaNode*)malloc(sizeof(CyberiadaNode));
+	if (!new_node) return NULL;
 	memset(new_node, 0, sizeof(CyberiadaNode));
 	cyberiada_copy_string(&(new_node->id), &(new_node->id_len), id);
 	new_node->type = cybNodeSimpleState;
@@ -106,6 +111,9 @@ static CyberiadaNode* cyberiada_copy_node(CyberiadaNode* src)
 		return NULL;
 	}
 	dst = cyberiada_new_node(src->id);
+	if (!dst) {
+		return NULL;
+	}
 	dst->type = src->type;
 	if (src->title) {
 		cyberiada_copy_string(&(dst->title), &(dst->title_len), src->title);
@@ -228,6 +236,7 @@ int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent)
 CyberiadaCommentSubject* cyberiada_new_comment_subject(CyberiadaCommentSubjectType type)
 {
 	CyberiadaCommentSubject* cs = (CyberiadaCommentSubject*)malloc(sizeof(CyberiadaCommentSubject));
+	if (!cs) return NULL;
 	memset(cs, 0, sizeof(CyberiadaCommentSubject));
 	cs->type = type;
 	return cs;
@@ -240,6 +249,7 @@ static CyberiadaCommentSubject* cyberiada_copy_comment_subject(CyberiadaCommentS
 		return NULL;
 	}
 	dst = cyberiada_new_comment_subject(src->type);
+	if (!dst) return NULL;
 	if (src->fragment) {
 		cyberiada_copy_string(&(dst->fragment), &(dst->fragment_len), src->fragment);
 	}
@@ -253,6 +263,7 @@ CyberiadaEdge* cyberiada_new_edge(const char* id, const char* source, const char
 		return NULL;
 	}
 	new_edge = (CyberiadaEdge*)malloc(sizeof(CyberiadaEdge));
+	if (!new_edge) return NULL;
 	memset(new_edge, 0, sizeof(CyberiadaEdge));
 	if (external) {
 		new_edge->type = cybEdgeExternalTransition;
@@ -272,6 +283,7 @@ static CyberiadaEdge* cyberiada_copy_edge(CyberiadaEdge* src)
 		return NULL;
 	}
 	dst = cyberiada_new_edge(src->id, src->source_id, src->target_id, 1);
+	if (!dst) return NULL;
 	dst->type = src->type;
 	if (src->action) {
 		dst->action = cyberiada_copy_action(src->action);
@@ -328,6 +340,7 @@ static int cyberiada_destroy_edge(CyberiadaEdge* e)
 CyberiadaSM* cyberiada_new_sm(void)
 {
 	CyberiadaSM* sm = (CyberiadaSM*)malloc(sizeof(CyberiadaSM));
+	if (!sm) return NULL;
 	memset(sm, 0, sizeof(CyberiadaSM));
 	return sm;
 }
@@ -362,6 +375,7 @@ static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
 		return NULL;
 	}
 	dst = cyberiada_new_sm();
+	if (!dst) return NULL;
 	if (src->nodes) {
 		node = src->nodes;
 		while (node) {
@@ -407,6 +421,7 @@ static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
 CyberiadaDocument* cyberiada_new_sm_document(void)
 {
 	CyberiadaDocument* doc = (CyberiadaDocument*)malloc(sizeof(CyberiadaDocument));
+	if (!doc) return NULL;
 	cyberiada_init_sm_document(doc);
 	return doc;
 }
@@ -419,6 +434,7 @@ CyberiadaDocument* cyberiada_copy_sm_document(CyberiadaDocument* src)
 		return NULL;
 	}
 	dst = cyberiada_new_sm_document();
+	if (!dst) return NULL;
 	cyberiada_copy_string(&(dst->format), &(dst->format_len), src->format);
 	if (src->meta_info) {
 		dst->meta_info = cyberiada_copy_meta(src->meta_info);

@@ -3,7 +3,7 @@
  *
  * The Cyberiada GraphML regexps
  *
- * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -51,6 +51,9 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	regexps->flattened_regexps = flattened;
 	regexps->berloga_legacy = 0;
 	regexps->r = (CyberiadaRegexpsMics*)malloc(sizeof(CyberiadaRegexpsMics));
+	if(!regexps->r) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	if (pcre2_regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile edge action regexp\n");
 		return CYBERIADA_ASSERT;

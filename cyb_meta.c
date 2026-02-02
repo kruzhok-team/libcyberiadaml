@@ -3,7 +3,7 @@
  *
  * The graph metainformation
  *
- * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -36,6 +36,9 @@
 CyberiadaMetaStringList* cyberiada_new_meta_string(const char* _name, const char* _value)
 {
 	CyberiadaMetaStringList* metastr = (CyberiadaMetaStringList*)malloc(sizeof(CyberiadaMetaStringList));
+	if (!metastr) {
+		return NULL;
+	}
 	memset(metastr, 0, sizeof(CyberiadaMetaStringList));
 	cyberiada_copy_string(&(metastr->name), &(metastr->name_len), _name);
 	cyberiada_copy_string(&(metastr->value), &(metastr->value_len), _value);
@@ -56,6 +59,9 @@ static int cyberiada_destroy_meta_string(CyberiadaMetaStringList* sl)
 CyberiadaMetainformation* cyberiada_new_meta(void)
 {
 	CyberiadaMetainformation* meta = (CyberiadaMetainformation*)malloc(sizeof(CyberiadaMetainformation));
+	if (!meta) {
+		return NULL;
+	}
 	memset(meta, 0, sizeof(CyberiadaMetainformation));
 
 	cyberiada_copy_string(&(meta->standard_version),
@@ -74,6 +80,9 @@ CyberiadaMetainformation* cyberiada_copy_meta(CyberiadaMetainformation* src)
 		return NULL;
 	}
 	dst = cyberiada_new_meta();
+	if (!dst) {
+		return NULL;
+	}
 	free(dst->standard_version);
 	cyberiada_copy_string(&(dst->standard_version), &(dst->standard_version_len), src->standard_version);
 	dst->transition_order_flag = src->transition_order_flag;
@@ -133,6 +142,9 @@ int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name)
 	}
 	
 	meta = cyberiada_new_meta();
+	if (!meta) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 
 	if (*sm_name) {
 		meta->strings = cyberiada_new_meta_string(CYBERIADA_META_NAME, sm_name);
@@ -172,6 +184,9 @@ int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size
 	if (meta_body) {
 		/* write data to buffer */
 		buffer = (char*)malloc(buffer_len);
+		if (!buffer) {
+			return CYBERIADA_MEMORY_ERROR;
+		}
 		*meta_body = buffer;
 		written = snprintf(buffer, buffer_len, "%s/ %s\n\n",
 						   CYBERIADA_META_STANDARD_VERSION,
@@ -221,6 +236,9 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 	}
 	
 	meta = (CyberiadaMetainformation*)malloc(sizeof(CyberiadaMetainformation));
+	if (!meta) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	memset(meta, 0, sizeof(CyberiadaMetainformation));
 
 	next = metadata;	

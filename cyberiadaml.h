@@ -3,7 +3,7 @@
  *
  * The C library header
  *
- * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -381,14 +381,15 @@ typedef enum {
  * ----------------------------------------------------------------------------- */
 
 #define CYBERIADA_NO_ERROR                0
-#define CYBERIADA_XML_ERROR               1
-#define CYBERIADA_FORMAT_ERROR            2
-#define CYBERIADA_ACTION_FORMAT_ERROR     3
-#define CYBERIADA_METADATA_FORMAT_ERROR   4
-#define CYBERIADA_NOT_FOUND               5
-#define CYBERIADA_BAD_PARAMETER           6
-#define CYBERIADA_ASSERT                  7
-#define CYBERIADA_NOT_IMPLEMENTED         8
+#define CYBERIADA_XML_ERROR               -1
+#define CYBERIADA_FORMAT_ERROR            -2
+#define CYBERIADA_ACTION_FORMAT_ERROR     -3
+#define CYBERIADA_METADATA_FORMAT_ERROR   -4
+#define CYBERIADA_NOT_FOUND               -5
+#define CYBERIADA_BAD_PARAMETER           -6
+#define CYBERIADA_ASSERT                  -7
+#define CYBERIADA_NOT_IMPLEMENTED         -8
+#define CYBERIADA_MEMORY_ERROR            -9
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library functions

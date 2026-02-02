@@ -3,7 +3,7 @@
  *
  * The basic data structures
  *
- * Copyright (C) 2024 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -27,6 +27,7 @@
 int   cyberiada_stack_push(CyberiadaStack** stack)
 {
 	CyberiadaStack* new_item = (CyberiadaStack*)malloc(sizeof(CyberiadaStack));
+	if (!new_item) return -1;
 	memset(new_item, 0, sizeof(CyberiadaStack));
 	new_item->next = (*stack);
 	*stack = new_item;
@@ -98,6 +99,7 @@ int   cyberiada_list_add(CyberiadaList** list, const char* key, void* data)
 		return -1;
 	}
 	new_item = (CyberiadaList*)malloc(sizeof(CyberiadaList));
+	if (!new_item) return -1;
 	new_item->key = (void*)key;
 	new_item->data = data;
 	new_item->next = NULL;
@@ -234,6 +236,7 @@ int   cyberiada_list_free(CyberiadaList** list)
 int   cyberiada_queue_add(CyberiadaQueue** queue, void* key, void* data)
 {
 	CyberiadaQueue* new_item = (CyberiadaQueue*)malloc(sizeof(CyberiadaQueue));
+	if (!new_item) return -1;
 	memset(new_item, 0, sizeof(CyberiadaQueue));
 	new_item->key = key;
 	new_item->data = data;

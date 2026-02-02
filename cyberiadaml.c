@@ -3,7 +3,7 @@
  *
  * The C library implementation
  *
- * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -395,7 +395,8 @@ static int cyberiada_get_attr_value(char* buffer, size_t buffer_len,
 	while(attribute) {
 		if (strcmp((const char*)attribute->name, attrname) == 0) {
 			xmlChar* value = xmlNodeListGetString(node->doc, attribute->children, 1);
-			strncpy(buffer, (char*)value, buffer_len);
+			strncpy(buffer, (char*)value, buffer_len - 1);
+			buffer[buffer_len - 1] = 0;
 			xmlFree(value);
 			return CYBERIADA_NO_ERROR;
 		}
@@ -411,7 +412,8 @@ static int cyberiada_get_element_text(char* buffer, size_t buffer_len,
 										  node->xmlChildrenNode,
 										  1);
 	if (value) {
-		strncpy(buffer, (char*)value, buffer_len);
+		strncpy(buffer, (char*)value, buffer_len - 1);
+		buffer[buffer_len - 1] = 0;		
 		xmlFree(value);
 	} else {
 		buffer[0] = 0;
@@ -424,7 +426,7 @@ static int cyberiada_xml_read_coord(xmlNode* xml_node,
 									double* result)
 {
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 attr_name) != CYBERIADA_NO_ERROR) {
@@ -492,7 +494,7 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaSM* sm = doc->state_machines;
 	CyberiadaNode* parent = node_stack_current_node(stack);
 	/* process the top graph element only */
@@ -544,7 +546,7 @@ static GraphProcessorState handle_new_node(xmlNode* xml_node,
 	CyberiadaNode* node;	
 	CyberiadaNode* parent;	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -576,11 +578,11 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	char source_buffer[MAX_STR_LEN];
-	size_t source_buffer_len = sizeof(source_buffer) - 1;
+	size_t source_buffer_len = sizeof(source_buffer);
 	char target_buffer[MAX_STR_LEN];
-	size_t target_buffer_len = sizeof(target_buffer) - 1;
+	size_t target_buffer_len = sizeof(target_buffer);
 	CyberiadaSM* sm = doc->state_machines;
 	while (sm->next) sm = sm->next;
 	if(cyberiada_get_attr_value(source_buffer, source_buffer_len,
@@ -667,7 +669,7 @@ static GraphProcessorState handle_new_yed_node(xmlNode* xml_node,
 	CyberiadaNode* node;	
 	CyberiadaNode* parent;	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_ID_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -706,7 +708,7 @@ static GraphProcessorState handle_meta_data(xmlNode* xml_node,
 {
 	char buffer[MAX_STR_LEN];
 	char metabuffer[MAX_STR_LEN + 32];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("no current node\n");
@@ -741,7 +743,7 @@ static GraphProcessorState handle_meta_data(xmlNode* xml_node,
 			 CYBERIADA_META_STANDARD_VERSION,
 			 CYBERIADA_STANDARD_VERSION_CYBERIADAML,
 			 buffer);
-	
+	metabuffer[sizeof(metabuffer) - 1] = 0;
 	cyberiada_copy_string(&(current->comment_data->body),
 						  &(current->comment_data->body_len), metabuffer);
 	if (cyberiada_decode_meta(doc, metabuffer, regexps) != CYBERIADA_NO_ERROR) {
@@ -816,7 +818,7 @@ static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("current node invalid\n");
@@ -892,7 +894,7 @@ static GraphProcessorState handle_property(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
 								 GRAPHML_YED_PROP_VALUE_ATTRIBUTE) != CYBERIADA_NO_ERROR) {
@@ -922,7 +924,7 @@ static GraphProcessorState handle_node_title(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */		
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("current node invalid\n");
@@ -948,7 +950,7 @@ static GraphProcessorState handle_node_action(xmlNode* xml_node,
 	(void)doc; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaNode* current = node_stack_current_node(stack);
 	if (current == NULL) {
 		ERROR("current node invalid\n");
@@ -1028,7 +1030,7 @@ static GraphProcessorState handle_edge_label(xmlNode* xml_node,
 	(void)stack; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	double x = 0.0, y = 0.0;
 	CyberiadaEdge *current;
 	CyberiadaSM* sm = doc->state_machines;
@@ -1141,7 +1143,7 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	const char* format_name; 
 	if (cyberiada_get_attr_value(buffer, buffer_len,
 								 xml_node,
@@ -1176,7 +1178,7 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 	(void)regexps; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	char *attr_id = NULL, *attr_for = NULL, *attr_name = NULL;
 	const char *table_id;
 	size_t index;
@@ -1222,7 +1224,7 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 											CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaNode* current = node_stack_current_node(stack);
 	const char* key_name;
 	size_t i;
@@ -1449,7 +1451,7 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 	(void)stack; /* unused parameter */	
 	
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	CyberiadaEdge *current;
 	const char* key_name;
 	CyberiadaSM* sm = doc->state_machines;
@@ -1769,7 +1771,7 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, CyberiadaRegexps* regexps)
 {
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	GraphProcessorState gps = gpsInit;
 	CyberiadaNode* node = NULL;
 	NodeStack* stack = NULL;
@@ -2440,16 +2442,17 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 {
 	int res;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
+	buffer[buffer_len - 1] = 0;
 	
 	while (action) {
 
 		if (action->type != cybActionTransition || *(action->trigger) || *(action->behavior) || *(action->guard)) { 
 			if (action->type != cybActionTransition) {
 				if (action->type == cybActionEntry) {
-					snprintf(buffer, buffer_len, "entry/");
+					snprintf(buffer, buffer_len - 1, "entry/");
 				} else if (action->type == cybActionExit) {
-					snprintf(buffer, buffer_len, "exit/");
+					snprintf(buffer, buffer_len - 1, "exit/");
 				} else {
 					ERROR("Bad action type %d", action->type);
 					return CYBERIADA_ASSERT;
@@ -2457,12 +2460,12 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 			} else {
 				if (*(action->guard)) {
 					if (*(action->trigger)) {
-						snprintf(buffer, buffer_len, "%s [%s]/", action->trigger, action->guard);
+						snprintf(buffer, buffer_len - 1, "%s [%s]/", action->trigger, action->guard);
 					} else {
-						snprintf(buffer, buffer_len, "[%s]/", action->guard);
+						snprintf(buffer, buffer_len - 1, "[%s]/", action->guard);
 					}
 				} else {
-					snprintf(buffer, buffer_len, "%s/", action->trigger);
+					snprintf(buffer, buffer_len - 1, "%s/", action->trigger);
 				}
 			}
 			XML_WRITE_TEXT(writer, buffer);
@@ -2490,16 +2493,17 @@ static int cyberiada_write_geometry_rect_cyberiada(xmlTextWriterPtr writer, Cybe
 {
 	int res;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
+	buffer[buffer_len - 1] = 0;
 
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_RECT_ELEMENT, indent);
-	snprintf(buffer, buffer_len, "%lf", rect->x);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->x);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_X_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->y);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->y);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_Y_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->width);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->width);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_WIDTH_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->height);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->height);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_HEIGHT_ATTRIBUTE, buffer);
 	XML_WRITE_CLOSE_E(writer);
 
@@ -2510,12 +2514,13 @@ static int cyberiada_write_geometry_point_cyberiada(xmlTextWriterPtr writer, Cyb
 {
 	int res;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
+	buffer[buffer_len - 1] = 0;
 
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_POINT_ELEMENT, indent);
-	snprintf(buffer, buffer_len, "%lf", point->x);
+	snprintf(buffer, buffer_len - 1, "%lf", point->x);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_X_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", point->y);
+	snprintf(buffer, buffer_len - 1, "%lf", point->y);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_Y_ATTRIBUTE, buffer);
 	XML_WRITE_CLOSE_E(writer);
 
@@ -2527,13 +2532,14 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	int res, found;
 	CyberiadaNode* cur_node;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 	size_t i;
 
 	if (node->type == cybNodeRegion) {
 		/* the root graph element */
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent);
-		snprintf(buffer, buffer_len, "%s", node->id);
+		snprintf(buffer, buffer_len - 1, "%s", node->id);
+		buffer[buffer_len - 1] = 0;
 		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
 		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
 
@@ -3077,16 +3083,17 @@ static int cyberiada_write_geometry_yed(xmlTextWriterPtr writer, CyberiadaRect* 
 {
 	int res;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
+	buffer[buffer_len - 1] = 0;
 
 	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GEOMETRYNODE, GRAPHML_YED_NS, indent);
-	snprintf(buffer, buffer_len, "%lf", rect->x);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->x);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_X_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->y);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->y);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_Y_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->width);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->width);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_WIDTH_ATTRIBUTE, buffer);
-	snprintf(buffer, buffer_len, "%lf", rect->height);
+	snprintf(buffer, buffer_len - 1, "%lf", rect->height);
 	XML_WRITE_ATTR(writer, GRAPHML_GEOM_HEIGHT_ATTRIBUTE, buffer);
 	XML_WRITE_CLOSE_E(writer);
 
@@ -3099,7 +3106,7 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 	CyberiadaNode* cur_node;
 	const char* text;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
 
 	if (node->type == cybNodeSM) {
 		
@@ -3231,7 +3238,8 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 
 			/* the root graph element */
 			XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
-			snprintf(buffer, buffer_len, "%s", node->children->id);
+			snprintf(buffer, buffer_len - 1, "%s", node->children->id);
+			buffer[buffer_len - 1] = 0;
 			XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
 			XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
 
@@ -3256,7 +3264,8 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 {
 	int res;
 	char buffer[MAX_STR_LEN];
-	size_t buffer_len = sizeof(buffer) - 1;
+	size_t buffer_len = sizeof(buffer);
+	buffer[buffer_len - 1] = 0;	
 	
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_EDGE_ELEMENT, indent);
 	XML_WRITE_ATTR(writer, GRAPHML_SOURCE_ATTRIBUTE, edge->source_id);
@@ -3269,13 +3278,13 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_YED_PATHNODE, indent + 3);
 	if (edge->geometry_source_point && edge->geometry_target_point) {	
-		snprintf(buffer, buffer_len, "%lf", edge->geometry_source_point->x);
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_source_point->x);
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_SOURCE_X_ATTRIBUTE, buffer);
-		snprintf(buffer, buffer_len, "%lf", edge->geometry_source_point->y);
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_source_point->y);
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_SOURCE_Y_ATTRIBUTE, buffer);
-		snprintf(buffer, buffer_len, "%lf", edge->geometry_target_point->x);
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_target_point->x);
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_TARGET_X_ATTRIBUTE, buffer);
-		snprintf(buffer, buffer_len, "%lf", edge->geometry_target_point->y);
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_target_point->y);
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_TARGET_Y_ATTRIBUTE, buffer);
 	} else {
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_SOURCE_X_ATTRIBUTE, "0");
@@ -3533,9 +3542,13 @@ int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* 
 	if (res == CYBERIADA_NO_ERROR) {
 		size_t size = xml_buffer->use;
 		*buffer = (char*)malloc(size + 1);
-		memcpy(*buffer, xml_buffer->content, size);
-		(*buffer)[size] = 0;
-		*buffer_size = size;
+		if (*buffer) {
+			memcpy(*buffer, xml_buffer->content, size);
+			(*buffer)[size] = 0;
+			*buffer_size = size;
+		} else {
+			res = CYBERIADA_MEMORY_ERROR;
+		}
 	} else {
 		*buffer = NULL;
 		*buffer_size = 0;

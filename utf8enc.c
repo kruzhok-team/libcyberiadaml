@@ -89,6 +89,7 @@ char* utf8_encode(const char *data, size_t input_len, size_t *output_len)
 	}
 	
 	encoded_data = (char*)malloc(output + 1);
+	if (!encoded_data) return NULL;
 	memset(encoded_data, 0, output + 1);
 	
 	i = o = 0;
@@ -134,6 +135,7 @@ char* utf8_decode(const char *data, size_t input_len, size_t *output_len)
 	}
 
 	decoded_data = (char*)malloc(output + 1);
+	if (!decoded_data) return NULL;
 	memset(decoded_data, 0, output + 1);
 
 	i = o = 0;

@@ -3,7 +3,7 @@
  *
  * The Cyberiada GraphML actions handling
  *
- * Copyright (C) 2024-2025 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -88,6 +88,9 @@ static int cyberiaga_matchres_action_regexps(const char* text,
 		end = pmatch[i].rm_eo;
 		if (end > start && text[start] != 0) {
 			part = (char*)malloc((size_t)(end - start + 1));
+			if (!part) {
+				return CYBERIADA_MEMORY_ERROR;
+			}
 			strncpy(part, &text[start], (size_t)(end - start));
 			part[(size_t)(end - start)] = 0;
 		} else {
@@ -380,6 +383,9 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 	}
 	if (regexps->flattened_regexps) {
 		buffer2 = (char*)malloc(buffer_len * 2);
+		if (!buffer2) {
+			return CYBERIADA_MEMORY_ERROR;
+		}
 		memset(buffer2, 0, buffer_len * 2);
 		char* start2 = buffer2;
 		block = buffer2;
@@ -625,16 +631,24 @@ static int cyberiada_compare_action_behaviors(const char* behavior1, const char*
 	char *buffer1 = NULL, *buffer2 = NULL;
 	char **commands1 = NULL, **commands2 = NULL;
 	size_t i, j, commands1_size = 0, commands2_size = 0;
+	int res;
 	char* c;
 	
-	cyberiada_copy_string(&buffer1, NULL, behavior1);
+	res = cyberiada_copy_string(&buffer1, NULL, behavior1);
+	if (res == CYBERIADA_MEMORY_ERROR) {
+		return CYBERIADA_MEMORY_ERROR;
+	}	
 	commands1_size = 1;
 	c = buffer1;
 	while (*c) {
 		if (*c == CYBERIADA_ACTION_STRINGS_CHR) commands1_size++; 
 		c++;
 	}
-	cyberiada_copy_string(&buffer2, NULL, behavior2);
+	res = cyberiada_copy_string(&buffer2, NULL, behavior2);
+	if (res == CYBERIADA_MEMORY_ERROR) {
+		if (buffer1) free(buffer1);
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	commands2_size = 1;
 	c = buffer2;
 	while (*c) {
@@ -647,6 +661,11 @@ static int cyberiada_compare_action_behaviors(const char* behavior1, const char*
 	}
 	
 	commands1 = (char**)malloc(sizeof(char*) * commands1_size);
+	if (!commands1) {
+		if (buffer1) free(buffer1);
+		if (buffer2) free(buffer2);
+		return CYBERIADA_MEMORY_ERROR;
+	}	
 	commands1[0] = buffer1;
 	for (i = 1, c = buffer1; *c && i < commands1_size; c++) { 
 		if (*c == CYBERIADA_ACTION_STRINGS_CHR) {
@@ -656,6 +675,12 @@ static int cyberiada_compare_action_behaviors(const char* behavior1, const char*
 	}
 
 	commands2 = (char**)malloc(sizeof(char*) * commands2_size);
+	if (!commands2) {
+		if (buffer1) free(buffer1);
+		if (buffer2) free(buffer2);
+		if (commands1) free(commands1);
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	commands2[0] = buffer2;
 	for (i = 1, c = buffer2; *c && i < commands2_size; c++) { 
 		if (*c == CYBERIADA_ACTION_STRINGS_CHR) {
