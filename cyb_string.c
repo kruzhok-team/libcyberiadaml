@@ -38,7 +38,7 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 	}
 	strsize = strlen(source);  
 	if (strsize > MAX_STR_LEN - 1) {
-		strsize = MAX_STR_LEN - 1;
+		return CYBERIADA_MEMORY_ERROR;
 	}
 	target_str = (char*)malloc(strsize + 1);
 	if (!target_str) {
