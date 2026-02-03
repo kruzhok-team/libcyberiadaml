@@ -1807,7 +1807,9 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, Cyber
 	if (berloga_format) {
 		sm_name = buffer;
 		if (regexps->berloga_legacy > 1) {
-			free(doc->format);
+			if (doc->format) {
+				free(doc->format);
+			}
 			cyberiada_copy_string(&(doc->format), &(doc->format_len), CYBERIADA_FORMAT_BERLOGA_16);
 		}
 	} else {
@@ -2302,9 +2304,12 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			/* skip metainformation */
 			cyberiada_skip_meta(cyb_doc);
 			cyberiada_update_metainfo_comment(cyb_doc);
+
 			/* restore default format name */
-			if (strcmp(cyb_doc->format, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
-				free(cyb_doc->format);
+			if (!cyb_doc->format || strcmp(cyb_doc->format, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
+				if (cyb_doc->format) {
+					free(cyb_doc->format);
+				}
 				cyberiada_copy_string(&(cyb_doc->format),
 									  &(cyb_doc->format_len),
 									  CYBERIADA_FORMAT_CYBERIADAML);

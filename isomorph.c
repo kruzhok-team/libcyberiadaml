@@ -32,6 +32,8 @@
 /*#define EXTRA_DEBUG 1 */
 #endif
 
+#define MAX_PROXIMITY 127
+
 /*-----------------------------------------------------------------------------
  Recursively calculate number of nodes in a node tree 
  ------------------------------------------------------------------------------*/
@@ -357,8 +359,8 @@ static int calculate_sm_proximity_matrix_nodes(char** M, char** ProxiM, Vertex* 
 					DEBUG("Comparing nodes %s [%s] and %s [%s] %d -> %d\n",
 					  node1->id, node1->title, node2->id, node2->title, flags, proximity);
 #endif
-					if (proximity > 127) {
-						ProxiM[i][j] = 127;
+					if (proximity > MAX_PROXIMITY) {
+						ProxiM[i][j] = MAX_PROXIMITY;
 					} else {
 						ProxiM[i][j] = (char)proximity;
 					}
@@ -474,8 +476,8 @@ static int calculate_sm_proximity_matrix_edges(char** M, char** ProxiM,
 	for (i = 0; i < n1; i++) {
 		for (j = 0; j < n2; j++) {
 			if (EP[i][j]) {
-				if (ProxiM[i][j] + EP[i][j] > 127) {
-					ProxiM[i][j] = 127;
+				if (ProxiM[i][j] + EP[i][j] > MAX_PROXIMITY) {
+					ProxiM[i][j] = MAX_PROXIMITY;
 				} else {
 					ProxiM[i][j] += (char)EP[i][j];
 				}
@@ -515,7 +517,9 @@ static int calculate_sm_proximity(char** P, char** ProxiM, size_t n1, size_t n2)
  ------------------------------------------------------------------------------*/
 
 static int compare_char(const void* a, const void* b) {
-    return (*(char*)b - *(char*)a); /* reverse compare */
+	char ca = *(char*)a;
+	char cb = *(char*)b;
+    return (cb > ca) - (cb < ca); /* reverse compare */
 }
 
 /*-----------------------------------------------------------------------------
@@ -892,7 +896,7 @@ static int cyberiada_compare_actions(CyberiadaAction* action1, CyberiadaAction* 
  ------------------------------------------------------------------------------*/
 
 static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
-									   size_t n1_degree_in, size_t n1_degree_out, size_t n2_degree_in, size_t n2_degree_out,
+									   int n1_degree_in, int n1_degree_out, int n2_degree_in, int n2_degree_out,
 									   int* result_flags)
 {
 	CyberiadaNode* n;

@@ -14,11 +14,10 @@ endif()
 
 set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
 
-if(CMAKE_BUILD_TYPE STREQUAL Debug)
-  add_compile_options(-Wall)
-  add_compile_options(-Wextra) 
-  add_compile_options(-Wpedantic)
-endif()
+add_compile_options(-Wall)
+add_compile_options(-Wextra) 
+add_compile_options(-Wpedantic)
+add_compile_options(-Wformat-security)
 
 add_library(cyberiadaml SHARED
 			$<IF:$<PLATFORM_ID:Linux>,cyb_actions.c,cyb_actions_pcre2.c>
