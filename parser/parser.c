@@ -53,6 +53,36 @@
 #define CMD_PARAMETER_SIMPLIFY_ID   512
 #define CMD_PARAMETER_SKIP_META     1024
 
+typedef struct {
+	int         code;
+	const char* str;
+} CyberiadaError;
+	
+CyberiadaError cyberiada_errors[] = {
+	{ CYBERIADA_NO_ERROR,              "No Error" },
+	{ CYBERIADA_XML_ERROR,             "XML Error" },
+	{ CYBERIADA_FORMAT_ERROR,          "Cyberiada Format Error" },
+	{ CYBERIADA_ACTION_FORMAT_ERROR,   "Cyberiada Actions Format Error" },
+	{ CYBERIADA_METADATA_FORMAT_ERROR, "Cyberiada Metadata Format Error" },
+	{ CYBERIADA_NOT_FOUND,             "Not Found" },
+	{ CYBERIADA_BAD_PARAMETER,         "Bad Parameters" },
+	{ CYBERIADA_ASSERT,                "Assertion Fault" },
+	{ CYBERIADA_NOT_IMPLEMENTED,       "Not Implemented" },
+	{ CYBERIADA_MEMORY_ERROR,          "Insufficient Memory" },
+};
+size_t cyberiada_errors_count = sizeof(cyberiada_errors) / sizeof(CyberiadaError);
+#define UNKNOWN_ERROR_STR              "Unknown error code"
+
+const char* error_code_to_str(int res)
+{
+	for (size_t i = 0; i < cyberiada_errors_count; i++) {
+		if (res == cyberiada_errors[i].code) {
+			return cyberiada_errors[i].str;
+		}
+	}
+	return UNKNOWN_ERROR_STR;
+}
+
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
 	"yed"           /* cybxmlYED */
@@ -270,8 +300,8 @@ int main(int argc, char** argv)
 	}
 	
 	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format, flags)) != CYBERIADA_NO_ERROR) {
-		fprintf(stderr, "Error while reading %s file: %d\n",
-				source_filename, res);
+		fprintf(stderr, "Error while reading %s file: %s (%d)\n",
+				source_filename, error_code_to_str(res), res);
 		cyberiada_cleanup_sm_document(&doc);
 		return 2;
 	}
@@ -280,8 +310,8 @@ int main(int argc, char** argv)
 		cyberiada_print_sm_document(&doc);
 	} else if (command == CMD_CONVERT) {
 		if ((res = cyberiada_write_sm_document(&doc, dest_filename, dest_format, CYBERIADA_FLAG_NO)) != CYBERIADA_NO_ERROR) {
-			fprintf(stderr, "Error while writing %s file: %d\n",
-					dest_filename, res);
+			fprintf(stderr, "Error while writing %s file: %s (%d)\n",
+					dest_filename, error_code_to_str(res), res);
 			return 3;
 		}
 	} else if (command == CMD_DIFF) {
@@ -311,8 +341,8 @@ int main(int argc, char** argv)
 		}
 		
 		if ((res = cyberiada_read_sm_document(&doc2, dest_filename, dest_format, flags)) != CYBERIADA_NO_ERROR) {
-			fprintf(stderr, "Error while reading %s file: %d\n",
-					dest_filename, res);
+			fprintf(stderr, "Error while reading %s file: %s (%d)\n",
+					dest_filename, error_code_to_str(res), res);
 
 			cyberiada_cleanup_sm_document(&doc);
 			cyberiada_cleanup_sm_document(&doc2);
@@ -457,7 +487,7 @@ int main(int argc, char** argv)
 				}
 			}
 		} else {
-			fprintf(stderr, "Error while comparing graphs: %d\n", res);			
+			fprintf(stderr, "Error while comparing graphs: %s (%d)\n", error_code_to_str(res), res);			
 		}
 
 		if (sm_diff_nodes) free(sm_diff_nodes);
