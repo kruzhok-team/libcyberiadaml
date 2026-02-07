@@ -124,6 +124,7 @@ const char* cyberiada_find_meta_string(CyberiadaMetainformation* meta, const cha
 	if (!meta || !meta->strings) {
 		return NULL;
 	}
+	sl = meta->strings;
 	while (sl) {
 		if (sl->name && strcmp(sl->name, name) == 0) {
 			return sl->value;

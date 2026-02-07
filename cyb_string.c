@@ -110,7 +110,7 @@ int cyberiada_append_string(char** target, size_t* size, const char* source, con
 	if (!new_target_str) {
 		return CYBERIADA_MEMORY_ERROR;
 	}
-	strncpy(new_target_str, target_str, new_target_size);
+	strncpy(new_target_str, target_str, target_size);
 	if (separator) {
 		strncpy(new_target_str + target_size, separator, new_target_size - target_size);
 	}
