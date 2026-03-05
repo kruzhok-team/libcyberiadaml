@@ -62,3 +62,11 @@ configure_file(
 
 install(FILES ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake
 	DESTINATION lib/cmake)
+
+configure_file ("${PROJECT_SOURCE_DIR}/CyberiadaMLPackOptions.cmake.in"
+                "${PROJECT_BINARY_DIR}/CyberiadaMLPackOptions.cmake"
+                @ONLY)
+set (CPACK_PROJECT_CONFIG_FILE
+     "${PROJECT_BINARY_DIR}/CyberiadaMLPackOptions.cmake")
+
+include(CPack)
