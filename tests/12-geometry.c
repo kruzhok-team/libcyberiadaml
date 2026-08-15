@@ -50,6 +50,11 @@ int main(void)
 	/* cleaning removes the geometry */
 	TEST_ASSERT(cyberiada_clean_document_geometry(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 0);
+
+	/* reconstruction works on a cleaned document */
+	TEST_ASSERT(cyberiada_reconstruct_document_geometry(doc, 1) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the skip-geometry flag drops the geometry on import */

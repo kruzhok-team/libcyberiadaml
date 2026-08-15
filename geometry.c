@@ -727,11 +727,24 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 	}
 
 	/* the geometry clean resets the format fields - keep the caller's
-	   formats so the reconstructed geometry comes back converted */
+	   formats so the reconstructed geometry comes back converted;
+	   fall back to the default formats if the document was cleaned before */
 	node_format = doc->node_coord_format;
 	edge_format = doc->edge_coord_format;
 	edge_pl_format = doc->edge_pl_coord_format;
 	edge_geom_format = doc->edge_geom_format;
+	if (node_format == coordNone) {
+		node_format = coordLocalCenter;
+	}
+	if (edge_format == coordNone) {
+		edge_format = coordLocalCenter;
+	}
+	if (edge_pl_format == coordNone) {
+		edge_pl_format = coordLocalCenter;
+	}
+	if (edge_geom_format == edgeNone) {
+		edge_geom_format = edgeBorder;
+	}
 
 	cyberiada_clean_document_geometry(doc);
 
