@@ -37,6 +37,7 @@ int cyberiada_document_no_geometry(CyberiadaDocument* doc)
 	doc->geometry_format = cybgeomNone;
 	doc->node_coord_format = coordNone;
 	doc->edge_coord_format = coordNone;
+	doc->edge_pl_coord_format = coordNone;
 	doc->edge_geom_format = edgeNone;
 
 	return CYBERIADA_NO_ERROR;	
@@ -473,6 +474,7 @@ static int cyberiada_update_geometry(CyberiadaDocument* cyb_doc, HTDocument* htg
 
 	cyb_doc->node_coord_format = htg_doc->node_coord_format;
 	cyb_doc->edge_coord_format = htg_doc->edge_coord_format;
+	cyb_doc->edge_pl_coord_format = htg_doc->edge_pl_coord_format;
 	cyb_doc->edge_geom_format = htg_doc->edge_format;
 
 	if (cyb_doc->bounding_rect && htg_doc->bounding_rect) {
@@ -717,8 +719,26 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 {
 	int res;
 	HTDocument* htreegeom;
+	CyberiadaGeometryCoordFormat node_format, edge_format, edge_pl_format;
+	CyberiadaGeometryEdgeFormat edge_geom_format;
+
+	if (!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	/* the geometry clean resets the format fields - keep the caller's
+	   formats so the reconstructed geometry comes back converted */
+	node_format = doc->node_coord_format;
+	edge_format = doc->edge_coord_format;
+	edge_pl_format = doc->edge_pl_coord_format;
+	edge_geom_format = doc->edge_geom_format;
 
 	cyberiada_clean_document_geometry(doc);
+
+	doc->node_coord_format = node_format;
+	doc->edge_coord_format = edge_format;
+	doc->edge_pl_coord_format = edge_pl_format;
+	doc->edge_geom_format = edge_geom_format;
 	
 	htreegeom = cyberiada_to_htree_geometry(doc);
 	if (!htreegeom) {
