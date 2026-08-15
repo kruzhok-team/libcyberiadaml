@@ -518,6 +518,9 @@ typedef enum {
 	/* Find first node by type, return NULL if not found */
 	CyberiadaNode* cyberiada_graph_find_node_by_type(CyberiadaNode* root, CyberiadaNodeTypeMask mask);
 
+	/* Get the string description of the library error code */
+	const char* cyberiada_error_str(int error_code);
+
 #ifdef __cplusplus
 }
 #endif

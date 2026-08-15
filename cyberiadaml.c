@@ -3568,3 +3568,20 @@ int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* 
 
 	return res;
 }
+
+const char* cyberiada_error_str(int error_code)
+{
+	switch (error_code) {
+	case CYBERIADA_NO_ERROR:              return "No Error";
+	case CYBERIADA_XML_ERROR:             return "XML Error";
+	case CYBERIADA_FORMAT_ERROR:          return "Cyberiada Format Error";
+	case CYBERIADA_ACTION_FORMAT_ERROR:   return "Cyberiada Actions Format Error";
+	case CYBERIADA_METADATA_FORMAT_ERROR: return "Cyberiada Metadata Format Error";
+	case CYBERIADA_NOT_FOUND:             return "Not Found";
+	case CYBERIADA_BAD_PARAMETER:         return "Bad Parameters";
+	case CYBERIADA_ASSERT:                return "Assertion Fault";
+	case CYBERIADA_NOT_IMPLEMENTED:       return "Not Implemented";
+	case CYBERIADA_MEMORY_ERROR:          return "Insufficient Memory";
+	default:                              return "Unknown error code";
+	}
+}

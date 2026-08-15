@@ -262,11 +262,14 @@ int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body,
 int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
 int cyberiada_destroy_action(CyberiadaAction* action);
 int cyberiada_destroy_sm(CyberiadaSM* sm);
+const char* cyberiada_error_str(int error_code);
 ```
 
 `cyberiada_copy_string` (re)initializes a string field and its length; it is
 the required way to set strings in the Cyberiada structures. `encode_meta`
 serializes metainformation into the comment-body format used in GraphML.
+`cyberiada_error_str` returns a static human-readable description of a
+library error code.
 
 ---
 
