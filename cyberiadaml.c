@@ -347,8 +347,9 @@ typedef enum {
 	gpsNodeAction,
 	gpsNodeStart,
 	gpsMeta,
-	/* The invalid state */
-	gpsInvalid
+	/* The invalid states */
+	gpsInvalid,
+	gpsInvalidMeta
 } GraphProcessorState;
 
 const char* debug_state_names[] = {
@@ -370,6 +371,7 @@ const char* debug_state_names[] = {
 	"Meta",
 
 	"Invalid",
+	"InvalidMeta",
 };
 
 /* -----------------------------------------------------------------------------
@@ -747,8 +749,8 @@ static GraphProcessorState handle_meta_data(xmlNode* xml_node,
 	cyberiada_copy_string(&(current->comment_data->body),
 						  &(current->comment_data->body_len), metabuffer);
 	if (cyberiada_decode_meta(doc, metabuffer, regexps) != CYBERIADA_NO_ERROR) {
-		ERROR("Error while decoging metainfo comment\n");
-		return gpsInvalid;
+		ERROR("Error while decoding metainfo comment\n");
+		return gpsInvalidMeta;
 	}
 	return gpsGraph;
 }
@@ -1293,8 +1295,8 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 			if (current->type == cybNodeFormalComment &&
 				current->title && strcmp(current->title, CYBERIADA_META_NODE_TITLE) == 0) {
 				if (cyberiada_decode_meta(doc, buffer, regexps) != CYBERIADA_NO_ERROR) {
-					ERROR("Error while decoging metainfo comment\n");
-					return gpsInvalid;
+					ERROR("Error while decoding metainfo comment\n");
+					return gpsInvalidMeta;
 				}
 			}
 		} else {
@@ -1754,6 +1756,9 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 						   regexps);
 		if (*gps == gpsInvalid) {
 			return CYBERIADA_FORMAT_ERROR;
+		}
+		if (*gps == gpsInvalidMeta) {
+			return CYBERIADA_METADATA_FORMAT_ERROR;
 		}
 		if (cur_xml_node->children) {
 			int res = cyberiada_build_graphs(cur_xml_node->children, doc, stack, gps,

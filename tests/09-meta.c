@@ -66,7 +66,7 @@ int main(void)
 	TEST_ASSERT(doc);
 	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/bad-version.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
-				CYBERIADA_FORMAT_ERROR);
+				CYBERIADA_METADATA_FORMAT_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the metainformation node is ignored with the skip-meta flag */
