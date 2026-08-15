@@ -50,25 +50,26 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	}
 	regexps->flattened_regexps = flattened;
 	regexps->berloga_legacy = 0;
+	regexps->arena_legacy = 0;
 	regexps->r = (CyberiadaRegexpsMics*)malloc(sizeof(CyberiadaRegexpsMics));
 	if(!regexps->r) {
 		return CYBERIADA_MEMORY_ERROR;
 	}
 	if (pcre2_regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile edge action regexp\n");
-		return CYBERIADA_ASSERT;
+		goto error_edge;
 	}
 	if (pcre2_regcomp(&(regexps->r->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile node action regexp\n");
-		return CYBERIADA_ASSERT;
+		goto error_node;
 	}
 	if (pcre2_regcomp(&(regexps->r->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile legacy node action regexp\n");
-		return CYBERIADA_ASSERT;
+		goto error_node_legacy;
 	}
 	if (pcre2_regcomp(&(regexps->r->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile legacy edge action regexp\n");
-		return CYBERIADA_ASSERT;
+		goto error_edge_legacy;
 	}
 /*	if (pcre2_regcomp(&(regexps->newline_regexp), CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
 	ERROR("cannot compile new line regexp\n");
@@ -76,9 +77,22 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	}*/
 	if (pcre2_regcomp(&(regexps->r->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP, REG_DOTALL)) {
 		ERROR("cannot compile new line regexp\n");
-		return CYBERIADA_ASSERT;
+		goto error_spaces;
 	}
 	return CYBERIADA_NO_ERROR;
+
+error_spaces:
+	pcre2_regfree(&(regexps->r->edge_legacy_action_regexp));
+error_edge_legacy:
+	pcre2_regfree(&(regexps->r->node_legacy_action_regexp));
+error_node_legacy:
+	pcre2_regfree(&(regexps->r->node_action_regexp));
+error_node:
+	pcre2_regfree(&(regexps->r->edge_action_regexp));
+error_edge:
+	free(regexps->r);
+	regexps->r = NULL;
+	return CYBERIADA_ASSERT;
 }
 
 int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
