@@ -51,6 +51,12 @@ target_link_libraries(cyberiadaml PUBLIC
 
 add_subdirectory(parser)
 
+set(MEMORYCHECK_COMMAND_OPTIONS "--tool=memcheck --leak-check=full --error-exitcode=1")
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()
+
 install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml)
 install(FILES cyberiadaml.h ${CMAKE_CURRENT_SOURCE_DIR}/cyberiadaml.h
         DESTINATION include/cyberiada)

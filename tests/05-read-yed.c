@@ -1,9 +1,9 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The UTF-8 encoder testing program
+ * The legacy yEd document reading test
  *
- * Copyright (C) 2024 Alexey Fedoseev <aleksey@fedoseev.net>
+ * Copyright (C) 2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,36 +19,26 @@
  * along with this program. If not, see https://www.gnu.org/licenses/
  * ----------------------------------------------------------------------------- */
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include "utf8enc.h"
+#include <cyberiadaml.h>
+#include "testutils.h"
 
 int main(void)
 {
-	const char* a = "Hello! Съешь еще этих мягких французских булок и выпей чаю";
-	char *b, *c;
-	size_t b_l, c_l;
-	printf("String len %ld\n", strlen(a));
-	b = utf8_encode(a, strlen(a), &b_l);
-	if (!b) {
-		printf("String encoding error\n");
-		return 1;
-	}
-	printf("Encoded len %ld %ld\n", strlen(b), b_l);
-	c = utf8_decode(b, strlen(b), &c_l);
-	if (!c) {
-		printf("String decoding error\n");
-		free(b);
-		return 1;
-	}
-	printf("Decoded len %ld %ld\n", strlen(c), c_l);
-	printf("Orig: %s\n", a);
-	printf("Enc:  %s\n", b);
-	printf("Dec:  %s\n", c);
-	if (strcmp(a, c) != 0) {
-		printf("Strings don't match\n");
-	}
-	free(b);
-	free(c);
+	CyberiadaDocument* doc;
+
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "samples/yed-geometry.graphml",
+										   cybxmlYED, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(doc->format);
+	TEST_ASSERT(doc->state_machines);
+
+	test_capture_stdout("05-read-yed.out");
+	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(test_check_golden("05-read-yed.out",
+								  "golden/05-read-yed.txt") == 0);
+
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+	return 0;
 }
