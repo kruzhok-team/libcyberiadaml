@@ -4,7 +4,7 @@ Document:
 Meta information:
  standardVersion: 1.0
  name: Степлер
- trantision order flag: 1
+ transition order flag: 1
  event propagation flag: 1
 State Machine
 Nodes: 6 (6 w/o comments)
@@ -27,7 +27,7 @@ Children:
     Guard: ""
     Behavior: ""
  Children:
-  Node {id: n0:, title: "(null)", type: 4}
+  Node {id: n0:, title: "", type: 4}
    Actions:
   Children:
    Node {id: n0::n1, title: "Сближение", type: 1}

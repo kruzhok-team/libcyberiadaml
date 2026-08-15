@@ -4,7 +4,7 @@ Document:
 Meta information:
  standardVersion: 1.0
  name: node 0
- trantision order flag: 1
+ transition order flag: 1
  event propagation flag: 1
 State Machine
 Nodes: 8 (8 w/o comments)
@@ -15,14 +15,14 @@ Children:
  Geometry: (495.000000, 220.000000, 1000.000000, 450.000000)
   Actions:
  Children:
-  Node {id: n0:, title: "(null)", type: 4}
+  Node {id: n0:, title: "", type: 4}
    Actions:
   Children:
    Node {id: n0::n0, title: "node 0-0", type: 2}
    Geometry: (-145.000000, -20.000000, 600.000000, 300.000000)
     Actions:
    Children:
-    Node {id: n0::n0:, title: "(null)", type: 4}
+    Node {id: n0::n0:, title: "", type: 4}
      Actions:
     Children:
      Node {id: n0::n0::n0, title: "", type: 64}

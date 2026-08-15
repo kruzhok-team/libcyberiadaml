@@ -4,7 +4,7 @@ Document:
 Meta information:
  standardVersion: 1.0
  name: minimal
- trantision order flag: 1
+ transition order flag: 1
  event propagation flag: 1
 State Machine
 Nodes: 4 (3 w/o comments)

@@ -4,7 +4,7 @@ Document:
 Meta information:
  standardVersion: 1.0
  name: orientation
- trantision order flag: 1
+ transition order flag: 1
  event propagation flag: 1
 State Machine
 Nodes: 20 (19 w/o comments)
@@ -19,7 +19,7 @@ Children:
     Guard: ""
     Behavior: ""
  Children:
-  Node {id: n0:, title: "(null)", type: 4}
+  Node {id: n0:, title: "", type: 4}
    Actions:
   Children:
    Node {id: n0::n0, title: "turn", type: 2}
@@ -34,7 +34,7 @@ Children:
       Guard: ""
       Behavior: "orientation.stop_motor(AXIS_Z)"
    Children:
-    Node {id: n0::n0:, title: "(null)", type: 4}
+    Node {id: n0::n0:, title: "", type: 4}
      Actions:
     Children:
      Node {id: n0::n0::n0, title: "slow_down", type: 1}
@@ -81,7 +81,7 @@ Children:
       Guard: ""
       Behavior: ""
    Children:
-    Node {id: n0::n2:, title: "(null)", type: 4}
+    Node {id: n0::n2:, title: "", type: 4}
      Actions:
     Children:
      Node {id: n0::n2::n0, title: "maintain", type: 2}
@@ -96,7 +96,7 @@ Children:
         Guard: ""
         Behavior: "orientation.stop_motor(AXIS_Z)"
      Children:
-      Node {id: n0::n2::n0:, title: "(null)", type: 4}
+      Node {id: n0::n2::n0:, title: "", type: 4}
        Actions:
       Children:
        Node {id: n0::n2::n0::n0, title: "correct_cw", type: 1}
@@ -135,7 +135,7 @@ Children:
  Geometry: (-38.857841, -400.690990)
   Actions:
  Children:
- Node {id: n2, title: "(null)", type: 16}
+ Node {id: n2, title: "", type: 16}
  Comment data [markup: ]:
  Init scripts:
 

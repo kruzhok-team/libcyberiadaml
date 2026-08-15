@@ -358,7 +358,7 @@ int cyberiada_print_meta(CyberiadaMetainformation* meta)
 		}
 	
 		if (meta->transition_order_flag) {
-			printf(" trantision order flag: %d\n", meta->transition_order_flag);
+			printf(" transition order flag: %d\n", meta->transition_order_flag);
 		}
 		if (meta->event_propagation_flag) {
 			printf(" event propagation flag: %d\n", meta->event_propagation_flag);

@@ -520,7 +520,8 @@ int cyberiada_print_node(CyberiadaNode* node, int level)
 	}
 
 	printf("%sNode {id: %s, title: \"%s\", type: %d",
-		   levelspace, node->id, node->title, (int)node->type);
+		   levelspace, node->id ? node->id : "",
+		   node->title ? node->title : "", (int)node->type);
 	if (node->formal_title) {
 		printf(", formal title: \"%s\"", node->formal_title);
 	}
