@@ -388,8 +388,18 @@ static int calculate_sm_proximity_matrix_edges(char** M, char** ProxiM,
 	int** EP;
 
 	EP = (int**)malloc(sizeof(int*) * n1);
+	if (!EP) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
 	for (i = 0; i < n1; i++) {
 		EP[i] = (int*)malloc(sizeof(int) * n2);
+		if (!EP[i]) {
+			while (i > 0) {
+				free(EP[--i]);
+			}
+			free(EP);
+			return CYBERIADA_MEMORY_ERROR;
+		}
 		memset(EP[i], 0, sizeof(int) * n2);
 	}
 	
@@ -552,28 +562,28 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	/* the potential matrix */
-	M = (char**)malloc(sizeof(char*) * n_v1);
-	for (i = 0; i < n_v1; i++) {
-		M[i] = malloc(sizeof(char) * n_v2);
-	}
-	/* the permutation matrix */
-	P = (char**)malloc(sizeof(char*) * n_v1);
-	for (i = 0; i < n_v1; i++) {
-		P[i] = malloc(sizeof(char) * n_v2);
-	}
-	/* the proximity matrix */	
-	Proxi = (char**)malloc(sizeof(char*) * n_v1);
-	for (i = 0; i < n_v1; i++) {
-		Proxi[i] = (char*)malloc(sizeof(char) * n_v2);
-		for (j = 0; j < n_v2; j++) {
-			Proxi[i][j] = -1; /* initializing with -1 which means unset proximity */
-		}
-	}
+	/* the potential (M), permutation (P) and proximity matrices */
+	M = (char**)calloc(n_v1, sizeof(char*));
+	P = (char**)calloc(n_v1, sizeof(char*));
+	Proxi = (char**)calloc(n_v1, sizeof(char*));
 	v1 = (Vertex*)malloc(sizeof(Vertex) * n_v1);
 	v2 = (Vertex*)malloc(sizeof(Vertex) * n_v2);
 	row_num = (size_t*)malloc(sizeof(size_t) * n_v1);
 	col_num = (size_t*)malloc(sizeof(size_t) * n_v2);
+	if (!M || !P || !Proxi || !v1 || !v2 || !row_num || !col_num) {
+		goto memory_error;
+	}
+	for (i = 0; i < n_v1; i++) {
+		M[i] = (char*)malloc(sizeof(char) * n_v2);
+		P[i] = (char*)malloc(sizeof(char) * n_v2);
+		Proxi[i] = (char*)malloc(sizeof(char) * n_v2);
+		if (!M[i] || !P[i] || !Proxi[i]) {
+			goto memory_error;
+		}
+		for (j = 0; j < n_v2; j++) {
+			Proxi[i][j] = -1; /* initializing with -1 which means unset proximity */
+		}
+	}
 	memset(row_num, 0, sizeof(size_t) * n_v1);
 	memset(col_num, 0, sizeof(size_t) * n_v2);
 
@@ -644,13 +654,24 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		/* the different permutations of the potential matrix are possible */
 		size_t p_max = 0; /* the maximum size of permutation matrices */
 		int proximity_max = -1; /* the maximum total proximity found */
-		char** P_max = (char**)malloc(sizeof(char*) * n_v1); /* the maximum permutation matrix found */
+		char** P_max; /* the maximum permutation matrix found */
 		char single_proximity_max = -1; /* the maximum single value of the proximity matrix */
-		char* proximity_levels; /* the ordered array of unique values of the proximity matrix */
-		size_t proximity_levels_size = 0; /* the number of unique values of the proximity matrix */ 
+		char* proximity_levels = NULL; /* the ordered array of unique values of the proximity matrix */
+		size_t proximity_levels_size = 0; /* the number of unique values of the proximity matrix */
 
+		P_max = (char**)calloc(n_v1, sizeof(char*));
+		if (!P_max) {
+			goto memory_error;
+		}
 		for (i = 0; i < n_v1; i++) {
 			P_max[i] = (char*)malloc(sizeof(char) * n_v2);
+			if (!P_max[i]) {
+				for (k = 0; k < i; k++) {
+					free(P_max[k]);
+				}
+				free(P_max);
+				goto memory_error;
+			}
 			memset(P_max[i], 0, sizeof(char) * n_v2);
 			memset(P[i], 0, sizeof(char) * n_v2);
 		}
@@ -671,6 +692,13 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		/* calculate the proximity levels array */
 		if (single_proximity_max > 0) {
 			proximity_levels = (char*)malloc(single_proximity_max);
+			if (!proximity_levels) {
+				for (i = 0; i < n_v1; i++) {
+					free(P_max[i]);
+				}
+				free(P_max);
+				goto memory_error;
+			}
 			memset(proximity_levels, 0, single_proximity_max);
 			proximity_levels[0] = single_proximity_max;
 			proximity_levels_size = 1;
@@ -839,6 +867,21 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	if (n_edges2) *n_edges2 = n_e2;
 
 	return CYBERIADA_NO_ERROR;
+
+memory_error:
+	for (i = 0; i < n_v1; i++) {
+		if (M && M[i]) free(M[i]);
+		if (P && P[i]) free(P[i]);
+		if (Proxi && Proxi[i]) free(Proxi[i]);
+	}
+	free(M);
+	free(P);
+	free(Proxi);
+	free(v1);
+	free(v2);
+	free(row_num);
+	free(col_num);
+	return CYBERIADA_MEMORY_ERROR;
 }
 
 /*-----------------------------------------------------------------------------
@@ -999,48 +1042,64 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 #endif
 	
 	/* allocate memory for results */
+	if (sm_diff_nodes) *sm_diff_nodes = NULL;
+	if (sm_diff_nodes_flags) *sm_diff_nodes_flags = NULL;
+	if (sm2_new_nodes) *sm2_new_nodes = NULL;
+	if (sm1_missing_nodes) *sm1_missing_nodes = NULL;
+	if (sm_diff_edges) *sm_diff_edges = NULL;
+	if (sm_diff_edges_flags) *sm_diff_edges_flags = NULL;
+	if (sm2_new_edges) *sm2_new_edges = NULL;
+	if (sm1_missing_edges) *sm1_missing_edges = NULL;
 	if (sm_diff_nodes_size) {
 		*sm_diff_nodes_size = 0;
 		if (sm_diff_nodes) {
 			*sm_diff_nodes = (CyberiadaNodePair*)malloc(sizeof(CyberiadaNodePair) * sm1_vertexes);
+			if (!*sm_diff_nodes) goto results_memory_error;
 		}
 		if (sm_diff_nodes_flags) {
 			*sm_diff_nodes_flags = (size_t*)malloc(sizeof(size_t) * sm1_vertexes);
+			if (!*sm_diff_nodes_flags) goto results_memory_error;
 		}
 	}
 	if (sm2_new_nodes_size) {
 		*sm2_new_nodes_size = 0;
 		if (sm2_new_nodes) {
 			*sm2_new_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm2_vertexes);
+			if (!*sm2_new_nodes) goto results_memory_error;
 		}
 	}
 	if (sm1_missing_nodes_size) {
 		*sm1_missing_nodes_size = 0;
 		if (sm1_missing_nodes) {
 			*sm1_missing_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm1_vertexes);
+			if (!*sm1_missing_nodes) goto results_memory_error;
 		}
 	}
 	if (sm_diff_edges_size) {
 		*sm_diff_edges_size = 0;
 		if (sm_diff_edges) {
 			*sm_diff_edges = (CyberiadaEdgePair*)malloc(sizeof(CyberiadaEdgePair) * sm1_edges);
+			if (!*sm_diff_edges) goto results_memory_error;
 		}
 		if (sm_diff_edges_flags) {
 			*sm_diff_edges_flags = (size_t*)malloc(sizeof(size_t) * sm1_edges);
+			if (!*sm_diff_edges_flags) goto results_memory_error;
 		}
 	}
 	if (sm2_new_edges_size) {
 		*sm2_new_edges_size = 0;
 		if (sm2_new_edges) {
 			*sm2_new_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm2_edges);
+			if (!*sm2_new_edges) goto results_memory_error;
 		}
 	}
 	if (sm1_missing_edges_size) {
 		*sm1_missing_edges_size = 0;
 		if (sm1_missing_edges) {
 			*sm1_missing_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm1_edges);
+			if (!*sm1_missing_edges) goto results_memory_error;
 		}
-	}	
+	}
 
 	if (sm1_vertexes == sm2_vertexes && sm1_edges == sm2_edges) {
 		/* the SM graphs have the equal size, potentially identical */
@@ -1229,7 +1288,48 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 		free(vertexes1);
 		free(vertexes2);
 	}
-	
-	return CYBERIADA_NO_ERROR;	
+
+	return CYBERIADA_NO_ERROR;
+
+results_memory_error:
+	if (sm_diff_nodes && *sm_diff_nodes) {
+		free(*sm_diff_nodes);
+		*sm_diff_nodes = NULL;
+	}
+	if (sm_diff_nodes_flags && *sm_diff_nodes_flags) {
+		free(*sm_diff_nodes_flags);
+		*sm_diff_nodes_flags = NULL;
+	}
+	if (sm2_new_nodes && *sm2_new_nodes) {
+		free(*sm2_new_nodes);
+		*sm2_new_nodes = NULL;
+	}
+	if (sm1_missing_nodes && *sm1_missing_nodes) {
+		free(*sm1_missing_nodes);
+		*sm1_missing_nodes = NULL;
+	}
+	if (sm_diff_edges && *sm_diff_edges) {
+		free(*sm_diff_edges);
+		*sm_diff_edges = NULL;
+	}
+	if (sm_diff_edges_flags && *sm_diff_edges_flags) {
+		free(*sm_diff_edges_flags);
+		*sm_diff_edges_flags = NULL;
+	}
+	if (sm2_new_edges && *sm2_new_edges) {
+		free(*sm2_new_edges);
+		*sm2_new_edges = NULL;
+	}
+	if (sm1_missing_edges && *sm1_missing_edges) {
+		free(*sm1_missing_edges);
+		*sm1_missing_edges = NULL;
+	}
+	for (i = 0; i < sm1_vertexes; i++) {
+		free(perm_matrix[i]);
+	}
+	free(perm_matrix);
+	free(vertexes1);
+	free(vertexes2);
+	return CYBERIADA_MEMORY_ERROR;
 }
 
