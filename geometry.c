@@ -821,7 +821,7 @@ int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 				ERROR("Rect (node %s) has point geometry\n", n->id);
 				return CYBERIADA_ACTION_FORMAT_ERROR;
 			}
-			if (n->geometry_rect && (n->geometry_rect->width == 0.0 && n->geometry_rect->height)) {
+			if (n->geometry_rect && n->geometry_rect->width == 0.0 && n->geometry_rect->height == 0.0) {
 				ERROR("Rect (node %s) has zero width & height\n", n->id);
 				return CYBERIADA_ACTION_FORMAT_ERROR;				
 			}
