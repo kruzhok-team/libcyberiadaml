@@ -71,5 +71,34 @@ int main(void)
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(reread) == CYBERIADA_NO_ERROR);
+
+	/* entry, do and exit actions survive the round trip */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/actions.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_write_sm_document(doc, "10-out2.graphml",
+											cybxmlCyberiada10,
+											CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	reread = cyberiada_new_sm_document();
+	TEST_ASSERT(reread);
+	TEST_ASSERT(cyberiada_read_sm_document(reread, "10-out2.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	{
+		CyberiadaNode* node =
+			cyberiada_graph_find_node_by_id(reread->state_machines->nodes, "n0");
+		TEST_ASSERT(node);
+		TEST_ASSERT(node->actions);
+		TEST_ASSERT(node->actions->type == cybActionEntry);
+		TEST_ASSERT(node->actions->next);
+		TEST_ASSERT(node->actions->next->type == cybActionDo);
+		TEST_ASSERT(node->actions->next->next);
+		TEST_ASSERT(node->actions->next->next->type == cybActionExit);
+	}
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(reread) == CYBERIADA_NO_ERROR);
 	return 0;
 }

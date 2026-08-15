@@ -2463,6 +2463,8 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 					snprintf(buffer, buffer_len - 1, "entry/");
 				} else if (action->type == cybActionExit) {
 					snprintf(buffer, buffer_len - 1, "exit/");
+				} else if (action->type == cybActionDo) {
+					snprintf(buffer, buffer_len - 1, "do/");
 				} else {
 					ERROR("Bad action type %d", action->type);
 					return CYBERIADA_ASSERT;
@@ -2664,8 +2666,10 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	if (node->actions) {
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
 		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_DATA);
-		cyberiada_write_action_text(writer, node->actions);
-		XML_WRITE_CLOSE_E(writer);		
+		if ((res = cyberiada_write_action_text(writer, node->actions)) != CYBERIADA_NO_ERROR) {
+			return res;
+		}
+		XML_WRITE_CLOSE_E(writer);
 	}
 
 	if (node->geometry_rect) {
@@ -2737,8 +2741,10 @@ static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge
 	if (edge->action) {
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
 		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_DATA);
-		cyberiada_write_action_text(writer, edge->action);
-		XML_WRITE_CLOSE_E(writer);		
+		if ((res = cyberiada_write_action_text(writer, edge->action)) != CYBERIADA_NO_ERROR) {
+			return res;
+		}
+		XML_WRITE_CLOSE_E(writer);
 	}
 
 	if (edge->type == cybEdgeComment && edge->comment_subject) {
