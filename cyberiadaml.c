@@ -1795,6 +1795,7 @@ static int cyberiada_decode_yed_xml(xmlNode* root, CyberiadaDocument* doc, Cyber
 									  yed_processor_state_table,
 									  yed_processor_state_table_size,
 									  regexps)) != CYBERIADA_NO_ERROR) {
+		node_stack_free(&stack);
 		return res;
 	}
 	
@@ -1845,6 +1846,7 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc,
 									  cyb_processor_state_table,
 									  cyb_processor_state_table_size,
 									  regexps)) != CYBERIADA_NO_ERROR) {
+		node_stack_free(&stack);
 		cyberiada_init_table_free_extensitions();
 		return res;
 	}

@@ -55,6 +55,7 @@ int main(void)
 	/* a changed title is reported in the node diff */
 	node = cyberiada_graph_find_node_by_id(doc2->state_machines->nodes, "n1");
 	TEST_ASSERT(node);
+	free(node->title);
 	TEST_ASSERT(cyberiada_copy_string(&node->title, &node->title_len,
 									  "Changed") == CYBERIADA_NO_ERROR);
 	result_flags = 0;
@@ -91,6 +92,7 @@ int main(void)
 	TEST_ASSERT(cyberiada_compare_node_actions(a1, a2, &compare_flags) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(compare_flags == 0);
+	free(a2->guard);
 	TEST_ASSERT(cyberiada_copy_string(&a2->guard, &a2->guard_len, "other") ==
 				CYBERIADA_NO_ERROR);
 	compare_flags = 0;
