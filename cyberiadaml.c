@@ -2221,7 +2221,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 		/* get the root element node */
 		root = xmlDocGetRootElement(doc);
 
-		if (strcmp((const char*)root->name, GRAPHML_GRAPHML_ELEMENT) != 0) {
+		if (!root || strcmp((const char*)root->name, GRAPHML_GRAPHML_ELEMENT) != 0) {
 			ERROR("error: could not find GraphML root node\n");
 			res = CYBERIADA_XML_ERROR;
 			break;
