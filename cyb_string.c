@@ -31,9 +31,14 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 {
 	char* target_str;
 	size_t strsize;
+	if (!target) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
 	if (!source) {
 		*target = NULL;
-		*size = 0;
+		if (size) {
+			*size = 0;
+		}
 		return CYBERIADA_NO_ERROR;
 	}
 	strsize = strlen(source);  
