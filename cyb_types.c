@@ -368,8 +368,8 @@ int cyberiada_destroy_sm(CyberiadaSM* sm)
 static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
 {
 	CyberiadaSM* dst;
-	CyberiadaNode* node, *new_node, *prev_node;
-	CyberiadaEdge *edge, *new_edge, *prev_edge;
+	CyberiadaNode* node, *new_node, *prev_node = NULL;
+	CyberiadaEdge *edge, *new_edge, *prev_edge = NULL;
 
 	if (!src) {
 		return NULL;
@@ -429,7 +429,7 @@ CyberiadaDocument* cyberiada_new_sm_document(void)
 CyberiadaDocument* cyberiada_copy_sm_document(CyberiadaDocument* src)
 {
 	CyberiadaDocument* dst;
-	CyberiadaSM *sm, *new_sm, *prev_sm;
+	CyberiadaSM *sm, *new_sm, *prev_sm = NULL;
 	if (!src) {
 		return NULL;
 	}

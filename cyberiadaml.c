@@ -607,7 +607,8 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 		unsigned int n = 2;
 		if (cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL) {
 			char buffer2[MAX_STR_LEN - 64];
-			strncpy(buffer2, buffer, MAX_STR_LEN - 64);
+			snprintf(buffer2, sizeof(buffer2), "%.*s",
+					 (int)(sizeof(buffer2) - 1), buffer);
 			do {
 				snprintf(buffer, MAX_STR_LEN - 20, "%s-%u", buffer2, n);
 				n++;
@@ -3506,12 +3507,8 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 
 		res = CYBERIADA_NO_ERROR;
 	} while (0);
-	
-	if (res != CYBERIADA_NO_ERROR) {
-		return res;
-	} else {
-		return CYBERIADA_NO_ERROR;
-	}
+
+	return res;
 }
 
 int cyberiada_write_sm_document(CyberiadaDocument* doc, const char* filename,

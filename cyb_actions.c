@@ -229,7 +229,7 @@ int cyberiada_add_action(const char* trigger, const char* guard, const char* beh
 						 CyberiadaAction** action)
 {
 	CyberiadaAction* new_action;
-	CyberiadaActionType type;
+	CyberiadaActionType type = cybActionTransition;
 
 	if (trigger) {
 		if (strcmp(trigger, CYBERIADA_ACTION_TRIGGER_ENTRY) == 0) {
@@ -368,7 +368,7 @@ int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, 
 
 int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actions, CyberiadaRegexps* regexps)
 {
-	int res;
+	int res = CYBERIADA_NO_ERROR;
 	char *buffer, *next, *start, *block, *buffer2 = NULL;
 	size_t buffer_len;
 	CyberiadaList *sections_list = NULL, *list;

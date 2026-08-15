@@ -260,9 +260,10 @@ static int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, V
 }
 
 /*-----------------------------------------------------------------------------
- Print a matrix of small numbers  
+ Print a matrix of small numbers
  ------------------------------------------------------------------------------*/
 
+#ifdef EXTRA_DEBUG
 static void debug_matrix(const char* name, char** matrix, size_t n, size_t m)
 {
 	size_t i, j;
@@ -280,6 +281,7 @@ static void debug_matrix(const char* name, char** matrix, size_t n, size_t m)
 	}
 	DEBUG("\n");
 }
+#endif
 
 /*-----------------------------------------------------------------------------
  Calculate the matrix of node proximity of two SMs (the first pass) basing on
@@ -541,8 +543,6 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 												   Vertex** vertexes1, Vertex** vertexes2, 
 												   size_t* n_vertexes1, size_t* n_edges1, size_t* n_vertexes2, size_t* n_edges2)
 {
-	(void)&debug_matrix; /* unused */
-
 	size_t i, j, k, x, y, n_v1 = 0, n_v2 = 0, n_e1 = 0, n_e2 = 0;
 	char **M = NULL, **P = NULL, **Proxi = NULL;
 	size_t *row_num = NULL, *col_num = NULL; 

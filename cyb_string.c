@@ -49,7 +49,7 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 	if (!target_str) {
 		return CYBERIADA_MEMORY_ERROR;
 	}
-	strncpy(target_str, source, strsize);
+	memcpy(target_str, source, strsize);
 	target_str[strsize] = 0;
 	*target = target_str;
 	if (size) {
@@ -115,11 +115,11 @@ int cyberiada_append_string(char** target, size_t* size, const char* source, con
 	if (!new_target_str) {
 		return CYBERIADA_MEMORY_ERROR;
 	}
-	strncpy(new_target_str, target_str, target_size);
+	memcpy(new_target_str, target_str, target_size);
 	if (separator) {
-		strncpy(new_target_str + target_size, separator, new_target_size - target_size);
+		memcpy(new_target_str + target_size, separator, separator_size);
 	}
-	strncpy(new_target_str + target_size + separator_size, source, new_target_size - target_size - separator_size);
+	memcpy(new_target_str + target_size + separator_size, source, source_size);
 	new_target_str[new_target_size] = 0;
 	free(target_str);
 	*target = new_target_str;
