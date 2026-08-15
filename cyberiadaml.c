@@ -1124,7 +1124,7 @@ static const char* cyberiada_init_table_find_name(const char* id)
 	return NULL;	
 }
 
-static void cyberiada_init_table_free_extensitions(void)
+static void cyberiada_init_table_free_extensions(void)
 {
 	size_t i;
 	for (i = 0; i < cyberiada_graphml_keys_count; i++ ) {
@@ -1162,7 +1162,7 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 			/* DEBUG("doc format %s\n", doc->format); */
 			return gpsInit;
 		} else {
-			ERROR("Bad Cyberida-GraphML format: %s\n", buffer);
+			ERROR("Bad Cyberiada-GraphML format: %s\n", buffer);
 		}
 	} else {
 		ERROR("No standard format node\n");
@@ -1852,14 +1852,14 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc,
 									  cyb_processor_state_table_size,
 									  regexps)) != CYBERIADA_NO_ERROR) {
 		node_stack_free(&stack);
-		cyberiada_init_table_free_extensitions();
+		cyberiada_init_table_free_extensions();
 		return res;
 	}
 
 	if (!node_stack_empty(&stack)) {
 		ERROR("error with node stack\n");
 		cyberiada_stack_free(&stack);
-		cyberiada_init_table_free_extensitions();
+		cyberiada_init_table_free_extensions();
 		return CYBERIADA_FORMAT_ERROR;
 	}
 
@@ -1916,7 +1916,7 @@ static int cyberiada_decode_cyberiada_xml(xmlNode* root, CyberiadaDocument* doc,
 	}
 	cyberiada_destroy_node(meta_node);
 	*/
-	cyberiada_init_table_free_extensitions();
+	cyberiada_init_table_free_extensions();
 	return CYBERIADA_NO_ERROR;
 }
 
