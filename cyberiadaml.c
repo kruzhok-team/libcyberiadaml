@@ -2847,10 +2847,6 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 		ERROR("SM node id is required\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	if (!sm->nodes->title) {
-		ERROR("SM node title is required\n");
-		return CYBERIADA_BAD_PARAMETER;
-	}
 
 	/* the root graph element */
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, 1);
@@ -2860,11 +2856,14 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
 	XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_STATE_MACHINE);
 	XML_WRITE_CLOSE_E(writer);
-	
-	XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
-	XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_NAME);
-	XML_WRITE_TEXT(writer, sm->nodes->title);	
-	XML_WRITE_CLOSE_E(writer);
+
+	/* the SM name is optional in the standard */
+	if (sm->nodes->title) {
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_NAME);
+		XML_WRITE_TEXT(writer, sm->nodes->title);
+		XML_WRITE_CLOSE_E(writer);
+	}
 
 	if (sm->nodes->geometry_rect) {
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
