@@ -1,0 +1,98 @@
+
+Document:
+  Format: Cyberiada-GraphML-1.0
+Meta information:
+ standardVersion: 1.0
+ platform: BerlogaAcademyHoover
+ geometry: short
+ name: Стандартный пылесос
+ author: Матросов В.М.
+ contact: matrosov@mail.ru
+ description: Пример описания схемы, который может быть многострочным,
+потому что так удобнее
+ target: Hoover
+ transition order flag: 1
+ event propagation flag: 1
+State Machine
+Nodes: 7 (6 w/o comments)
+Node {id: G, title: "Робот-пылесос", type: 0}
+Geometry: (135.000000, 57.500000, 270.000000, 115.000000)
+ Actions:
+Children:
+ Node {id: nMeta, title: "CGML_META", type: 32}
+  Actions:
+ Children:
+ Node {id: init, title: "", type: 64}
+ Geometry: (-85.000000, -50.500000)
+  Actions:
+ Children:
+ Node {id: n0, title: "Уборка мусора", type: 2}
+ Geometry: (72.500000, 1.500000, 115.000000, 102.000000)
+  Actions:
+ Children:
+  Node {id: n0::, title: "", type: 4}
+   Actions:
+  Children:
+   Node {id: n0::n1, title: "Сближение", type: 1}
+   Geometry: (0.500000, -24.000000, 104.000000, 30.000000)
+    Actions:
+     Action (type 2):
+      Trigger: "entry"
+      Guard: ""
+      Behavior: "МодульДвижения.ДвигатьсяКЦели()"
+   Children:
+   Node {id: n0::n2, title: "Уборка", type: 1}
+   Geometry: (0.500000, 22.000000, 104.000000, 30.000000)
+    Actions:
+     Action (type 2):
+      Trigger: "entry"
+      Guard: ""
+      Behavior: "Пылесос.УбратьЦель()"
+   Children:
+ Node {id: n3, title: "Скан", type: 1}
+ Geometry: (-85.000000, -20.500000, 92.000000, 40.000000)
+  Actions:
+   Action (type 2):
+    Trigger: "entry"
+    Guard: ""
+    Behavior: "Сенсор.ПоискЦелиПоДистанции(мин)
+exit/
+Сенсор.ОстановкаПоиска()"
+ Children:
+
+Edges: 6 (6 w/o comments)
+ Edge init-n3 [init INIT]->[n3 Скан] [type 0]
+  Geometry:   Actions:
+ Edge n0-n3 [n0 Уборка мусора]->[n3 Скан] [type 0]
+  Geometry:   Actions:
+   Action (type 1):
+    Trigger: "АнализаторЦели.ЦельУстранена"
+    Guard: ""
+    Behavior: ""
+ Edge n0-n3-2 [n0 Уборка мусора]->[n3 Скан] [type 0]
+  Geometry:   Actions:
+   Action (type 1):
+    Trigger: "АнализаторЦели.ЦельПотеряна"
+    Guard: ""
+    Behavior: ""
+ Edge n3-n0::n1 [n3 Скан]->[n0::n1 Сближение] [type 0]
+  Geometry:   Actions:
+   Action (type 1):
+    Trigger: "Сенсор.ЦельПолучена"
+    Guard: ""
+    Behavior: ""
+ Edge n0::n1-n0::n2 [n0::n1 Сближение]->[n0::n2 Уборка] [type 0]
+  Geometry:   Actions:
+   Action (type 1):
+    Trigger: "ОружиеЦелевое.ЦельВошлаВЗонуДействия"
+    Guard: ""
+    Behavior: ""
+ Edge n0::n2-n0::n1 [n0::n2 Уборка]->[n0::n1 Сближение] [type 0]
+  Geometry:   Actions:
+   Action (type 1):
+    Trigger: "ОружиеЦелевое.ЦельВышлаИзЗоныДействия"
+    Guard: ""
+    Behavior: ""
+
+
+Bounding rect: (135.000000, 57.500000, 270.000000, 115.000000)

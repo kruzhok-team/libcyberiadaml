@@ -1,0 +1,524 @@
+
+Document:
+  Format: yEd Ostranna
+Meta information:
+ standardVersion: 1.0
+ name: active
+ transition order flag: 1
+ event propagation flag: 1
+State Machine
+Nodes: 25 (19 w/o comments)
+Node {id: G, title: "active", type: 0}
+ Actions:
+Children:
+ Node {id: n0, title: "", type: 16}
+ Comment data [markup: ]:
+ State fields (do not delete this caption):
+
+unsigned int CharHP;
+QStateHandler StartState;
+unsigned int TimerAgony;
+ Geometry: (-981.358045, -441.014796, 294.581262, 100.000000)
+  Actions:
+ Children:
+ Node {id: n1, title: "", type: 16}
+ Comment data [markup: ]:
+ Code for h-file: (do not delete this caption):
+#define HEALTHY 1
+#define AGONY 2
+#define DEAD 0
+#define GHOUL_GOOD 3
+#define GHOUL_WOUNDED 4
+#define GHOUL_HEALING 5
+#define BLESSED 6
+#define FLASH_MS 200
+#define FLASH_SEC 1010
+#define FLASH_1M 60100
+#define TIMEOUT_AGONY_S 600
+#define TIMEOUT_DEATH_S 15
+#define TIMEOUT_RADX_S 900
+#define LONG_BEEP_MS 15000
+#define MEDIUM_BEEP_MS 3000
+#define SHORT_BEEP_MS 500
+#define RED 255
+#define RED_MEDIUM 127
+#define GREEN_MEDIUM 127
+#define BLUE_MEDIUM 127
+
+#define DEFAULT_HP 27000
+#define GHOUL_HP (DEFAULT_HP/3)
+ Geometry: (-981.358045, 237.101364, 294.581262, 345.557880)
+  Actions:
+ Children:
+ Node {id: n2, title: "", type: 16}
+ Comment data [markup: ]:
+ Constructor fields (do not delete this caption):
+unsigned int HP;
+unsigned int State;
+unsigned int TimerAgony;
+
+ Geometry: (-980.896190, -157.456649, 293.657553, 100.000000)
+  Actions:
+ Children:
+ Node {id: n3, title: "", type: 16}
+ Comment data [markup: ]:
+ Constructor code: (do not delete this caption):
+me->CharHP = HP;
+me->TimerAgony = TimerAgony;
+switch (State) {
+           case HEALTHY: {
+               me->StartState =
+               (QStateHandler)&OregonPlayer_healthy;
+               break;
+           }
+           case AGONY: {
+               me->StartState =
+               (QStateHandler)& OregonPlayer_agony;
+               break;
+           }
+           case DEAD: {
+               me->StartState =
+               (QStateHandler)& OregonPlayer_dead;
+               break;
+
+           }
+           case GHOUL_GOOD: {
+                    me->StartState =
+                    (QStateHandler)& OregonPlayer_ghoul_good;
+                    break;
+                }
+           case GHOUL_WOUNDED: {
+                    me->StartState =
+                    (QStateHandler)& OregonPlayer_wounded;
+                    break;
+                }
+           case GHOUL_HEALING: {
+                    me->StartState =
+                    (QStateHandler)& OregonPlayer_ghoul_healing;
+                    break;
+                }
+           case BLESSED: {
+                    me->StartState =
+                    (QStateHandler)& OregonPlayer_blessed;
+                    break;
+                }
+           default:
+               me->StartState =(QStateHandler)& OregonPlayer_healthy;
+       }
+
+ Geometry: (839.172899, 165.004437, 516.489882, 537.925862)
+  Actions:
+ Children:
+ Node {id: n4, title: "", type: 16}
+ Comment data [markup: ]:
+ Comments:
+
+void ShowCurrentHealth (OregonPlayer* me) {
+     Flash(255 - me->CharHP*255/DEFAULT_HP, me>CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void ShowCurrentHealthGhoul (OregonPlayer* me) {
+     Flash(255 - me->CharHP*255/DEFAULT_HP, me>CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void UpdateHP(OregonPlayer* me, unsigned int NewHP) {
+    if (NewHP <= DEFAULT_HP) {
+        me->CharHP = NewHP;;
+    } else {
+        me->CharHP = DEFAULT_HP
+    SaveHP(me->CharHP);
+}
+
+void Reset(OregonPlayer* me) {
+    UpdateHP(me, DEFAULT_HP);
+    me->TimerDeath = 0;
+    UpdateTimerAgony(0);
+    return Q_TRAN(healthy);
+
+}
+
+void UpdateTimerAgony(PlayerOregon* me, unsigned int Timer) {
+    me->TimerAgony = Timer;
+    SaveTimerAgony(Timer);
+}
+ Geometry: (851.343318, -360.818392, 554.610715, 453.719796)
+  Actions:
+ Children:
+ Node {id: n5, title: "active", type: 2}
+ Geometry: (-133.351305, -101.815051, 1380.008628, 974.817297)
+  Actions:
+   Action (type 2):
+    Trigger: "entry"
+    Guard: ""
+    Behavior: ""
+ Children:
+  Node {id: n5:, title: "", type: 4}
+   Actions:
+  Children:
+   Node {id: n5::n0, title: "", type: 64}
+   Geometry: (-447.841228, -201.584165)
+    Actions:
+   Children:
+   Node {id: n5::n1, title: "alive", type: 2}
+   Geometry: (-131.459610, -140.405118, 885.836525, 621.085187)
+    Actions:
+     Action (type 2):
+      Trigger: "entry"
+      Guard: ""
+      Behavior: ""
+   Children:
+    Node {id: n5::n1:, title: "", type: 4}
+     Actions:
+    Children:
+     Node {id: n5::n1::n0, title: "agony", type: 1}
+     Geometry: (257.538380, -74.228811, 284.189453, 174.525473)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "BeepForPeriod(LONG_BEEP_MS);
+    SaveState(AGONY);
+    UpdateHP(me, 1);
+    me->TimerAgony = 0;"
+       Action (type 1):
+        Trigger: "TIME_TICK_1S"
+        Guard: "else"
+        Behavior: "me->TimerAgony++;
+    Flash(RED, 0, 0, FLASH_MS);"
+       Action (type 1):
+        Trigger: "TIME_TICK_10S"
+        Guard: ""
+        Behavior: "BeepForPeriod(SHORT_BEEP_MS);"
+     Children:
+     Node {id: n5::n1::n1, title: "healthy", type: 1}
+     Geometry: (-216.656482, -68.907927, 285.937500, 185.167241)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "SaveState(HEALTHY);
+    BeepForTime(MEDIUM_BEEP_MS);"
+       Action (type 1):
+        Trigger: "RAD_RCVD"
+        Guard: "else"
+        Behavior: "UpdateHP(me, me->CharHP-((oregonPlayerQEvt*)e)->value);
+   
+TIME_TICK_1S/
+    ShowCurrentHealth(me);"
+       Action (type 1):
+        Trigger: "HEAL"
+        Guard: ""
+        Behavior: "UpdateHP(me, me->CharHP+((oregonPlayerQEvt*)e)->value);"
+     Children:
+     Node {id: n5::n1::n2, title: "immune", type: 2}
+     Geometry: (26.646515, 165.639537, 802.543495, 251.806113)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "BeepForTime(MEDIUM_BEEP_MS);"
+       Action (type 1):
+        Trigger: "TIME_TICK_1S"
+        Guard: ""
+        Behavior: "Flash(0, GREEN_MEDIUM, 0, FLASH_SEC);"
+       Action (type 1):
+        Trigger: "HEAL"
+        Guard: ""
+        Behavior: "UpdateHP(me, me->CharHP+((oregonPlayerQEvt*)e)->value);"
+     Children:
+      Node {id: n5::n1::n2:, title: "", type: 4}
+       Actions:
+      Children:
+       Node {id: n5::n1::n2::n0, title: "temp_immune", type: 1}
+       Geometry: (-243.302997, 60.903057, 285.937500, 100.000000)
+        Actions:
+         Action (type 2):
+          Trigger: "entry"
+          Guard: ""
+          Behavior: ""
+       Children:
+       Node {id: n5::n1::n2::n1, title: "blessed", type: 1}
+       Geometry: (240.679950, 46.319984, 284.189453, 108.858905)
+        Actions:
+         Action (type 2):
+          Trigger: "entry"
+          Guard: ""
+          Behavior: "SaveState(BLESSED);"
+       Children:
+   Node {id: n5::n3, title: "ghoul", type: 2}
+   Geometry: (42.813221, 325.762210, 1234.382187, 277.741955)
+    Actions:
+     Action (type 2):
+      Trigger: "entry"
+      Guard: ""
+      Behavior: ""
+     Action (type 1):
+      Trigger: "TIME_TICK_1S"
+      Guard: ""
+      Behavior: "ShowCurrentHealthGhoul(me);"
+   Children:
+    Node {id: n5::n3:, title: "", type: 4}
+     Actions:
+    Children:
+     Node {id: n5::n3::n0, title: "ghoul_good", type: 1}
+     Geometry: (-405.929313, 8.221928, 285.937500, 116.263935)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "SaveState(GHOUL_GOOD);
+    BeepForPeriod(MEDIUM_BEEP_MS);
+    UpdateHP(me, GHOUL_HP);"
+     Children:
+     Node {id: n5::n3::n1, title: "wounded", type: 1}
+     Geometry: (448.011622, 6.007201, 220.935105, 120.693388)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "SaveState(GHOUL_WOUNDED);
+    UpdateHP(me, 1);
+    BeepForPeriod(LONG_BEEP_MS);"
+       Action (type 1):
+        Trigger: "TIME_TICK_10S"
+        Guard: ""
+        Behavior: "BeepForPeriod(SHORT_BEEP_MS);"
+     Children:
+     Node {id: n5::n3::n2, title: "ghoul_healing", type: 1}
+     Geometry: (86.619100, 5.535842, 462.242318, 121.636107)
+      Actions:
+       Action (type 2):
+        Trigger: "entry"
+        Guard: ""
+        Behavior: "SaveState(GHOUL_HEALING);"
+       Action (type 1):
+        Trigger: "RAD_RCVD"
+        Guard: "else"
+        Behavior: "UpdateHP(me, me->CharHP + ((oregonPlayerQEvt*)e)->value);"
+     Children:
+   Node {id: n5::n4, title: "dead", type: 1}
+   Geometry: (505.824843, -214.633928, 220.935105, 174.525473)
+    Actions:
+     Action (type 2):
+      Trigger: "entry"
+      Guard: ""
+      Behavior: "SaveState(DEAD);
+    BeepForTime(LONG_BEEP_MS);
+    UpdateHP(me, 0);
+    Flash(RED, 0, 0, 1000);"
+     Action (type 1):
+      Trigger: "TIME_TICK_1M"
+      Guard: ""
+      Behavior: "BeepForPeriod(SHORT_BEEP_MS);
+    Flash(255, 0, 0, FLASH_1M);"
+   Children:
+   Node {id: n5::n5, title: "", type: 1}
+   Geometry: (505.824843, -5.739976, 26.000000, 26.000000)
+    Actions:
+   Children:
+ Node {id: n6, title: "", type: 16}
+ Comment data [markup: ]:
+ Event fields (do not delete this caption):
+
+unsigned int value;
+ Geometry: (-980.553854, -15.677576, 292.972879, 100.000000)
+  Actions:
+ Children:
+ Node {id: n7, title: "test", type: 1}
+ Geometry: (-481.467398, 509.447706, 220.935105, 212.926496)
+  Actions:
+   Action (type 2):
+    Trigger: "entry"
+    Guard: ""
+    Behavior: "BeepForPeriod(SHORT_BEEP_MS);
+  Flash(127, 0, 0, FLASH_MS);"
+   Action (type 1):
+    Trigger: "RAD_RCVD"
+    Guard: ""
+    Behavior: "BeepForPeriod(SHORT_BEEP_MS);
+  Flash(127, 0, 0, FLASH_MS);"
+ Children:
+
+Edges: 19 (19 w/o comments)
+ Edge n5::n1::e0 [n5::n1::n1 healthy]->[n5::n1::n0 agony] [type 0]
+  Geometry:    Source point: (143.004963, -18.016861)
+   Target point: (-142.098102, -12.695977)
+   Label point: (-15.298388, -25.552132)
+  Actions:
+   Action (type 1):
+    Trigger: "RAD_RCVD"
+    Guard: "((oregonPlayerQEvt*)e)->value >= me->CharHP"
+    Behavior: ""
+ Edge n5::e0 [n5::n1::n0 agony]->[n5::n4 dead] [type 0]
+  Geometry:    Polyline: (0.000000, -117.358544) (135.083597, -117.358544) (379.746074, -117.358544)
+   Source point: (0.000000, -87.262737)
+   Target point: (0.000000, -87.262737)
+   Label point: (32.826589, -39.030775)
+  Actions:
+   Action (type 1):
+    Trigger: "TIME_TICK_1S"
+    Guard: "me->TimerAgony > TIMEOUT_AGONY_S"
+    Behavior: ""
+ Edge n5::n1::e1 [n5::n1::n1 healthy]->[n5::n1::n0 agony] [type 0]
+  Geometry:    Source point: (142.968750, 25.105784)
+   Target point: (-142.094727, 30.426668)
+   Label point: (111.418471, 19.613696)
+  Actions:
+   Action (type 1):
+    Trigger: "AGONY"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n1::e2 [n5::n1::n1 healthy]->[n5::n1::n2::n0 temp_immune] [type 0]
+  Geometry:    Polyline: (-82.194192, 150.918186)
+   Source point: (-82.886987, 92.583621)
+   Target point: (-82.194192, -50.000000)
+   Label point: (-110.200546, 19.709076)
+  Actions:
+   Action (type 1):
+    Trigger: "IMMUNE"
+    Guard: ""
+    Behavior: ""
+ Edge n5::e2 [n5::n1 alive]->[n5::n3::n0 ghoul_good] [type 0]
+  Geometry:    Source point: (-231.656482, 310.542594)
+   Target point: (0.000000, -58.131968)
+   Label point: (-270.347881, -50.997064)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_GHOUL"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n3::e0 [n5::n3::n0 ghoul_good]->[n5::n3::n1 wounded] [type 0]
+  Geometry:    Polyline: (84.521153, -94.718848) (908.813429, -90.774020) (908.813429, -94.718848)
+   Source point: (84.521153, -58.131968)
+   Target point: (54.872493, -60.346694)
+   Label point: (372.054268, -37.375608)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_REMOVED"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n3::e1 [n5::n3::n1 wounded]->[n5::n3::n2 ghoul_healing] [type 0]
+  Geometry:    Polyline: (-64.643095, 88.586852) (-399.300123, 88.586852) (-399.300123, 78.618754)
+   Source point: (-64.643095, 60.346694)
+   Target point: (-37.907600, 60.818054)
+   Label point: (-430.624385, 8.495272)
+  Actions:
+   Action (type 1):
+    Trigger: "RAD_RCVD"
+    Guard: ""
+    Behavior: "UpdateHP(me, me->CharHP + ((oregonPlayerQEvt*)e)->value);"
+ Edge n5::n1::e3 [n5::n1::n2::n0 temp_immune]->[n5::n1::n1 healthy] [type 0]
+  Geometry:    Source point: (0.000000, -50.000000)
+   Target point: (0.000000, 92.583621)
+   Label point: (-42.669915, -85.394651)
+  Actions:
+   Action (type 1):
+    Trigger: "NOT_IMMUNE"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n1::e4 [n5::n1::n0 agony]->[n5::n1::n2::n1 blessed] [type 0]
+  Geometry:    Source point: (9.788086, 87.262737)
+   Target point: (0.000000, -54.429453)
+   Label point: (-19.490220, 62.892851)
+  Actions:
+   Action (type 1):
+    Trigger: "BLESSED"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n1::e5 [n5::n1::n2 immune]->[n5::n1::n0 agony] [type 0]
+  Geometry:    Polyline: (-12.886632, -164.715258)
+   Source point: (-12.886632, -125.903057)
+   Target point: (-142.094727, 75.153089)
+   Label point: (10.170002, -163.498990)
+  Actions:
+   Action (type 1):
+    Trigger: "AGONY"
+    Guard: ""
+    Behavior: ""
+ Edge e0 [n5 active]->[n5::n1::n1 healthy] [type 0]
+  Geometry:    Polyline: (-1.004719, -514.095902) (-247.751036, -514.095902)
+   Source point: (0.000000, -487.408649)
+   Target point: (100.365057, -92.583621)
+   Label point: (-166.323789, -42.671355)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_RESET"
+    Guard: ""
+    Behavior: "Reset(me);"
+ Edge n5::n3::e2 [n5::n3::n2 ghoul_healing]->[n5::n3::n0 ghoul_good] [type 0]
+  Geometry:    Source point: (-231.121159, 1.260407)
+   Target point: (142.968750, 0.000000)
+   Label point: (-322.509094, 15.801642)
+  Actions:
+   Action (type 1):
+    Trigger: "RAD_RCVD"
+    Guard: "((((oregonPlayerQEvt*)e)->value+me->CharHP )>=GHOUL_HP)"
+    Behavior: ""
+ Edge e1 [n7 test]->[n5::n3::n0 ghoul_good] [type 0]
+  Geometry:    Source point: (-15.000000, -106.466773)
+   Target point: (0.000000, 58.131968)
+   Label point: (-53.691399, -171.789345)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_GHOUL"
+    Guard: ""
+    Behavior: ""
+ Edge e2 [n7 test]->[n5::n1::n1 healthy] [type 0]
+  Geometry:    Polyline: (-289.248105, 0.000000) (-289.248105, -768.001531)
+   Source point: (-110.467553, 0.000000)
+   Target point: (-142.968750, 52.574270)
+   Label point: (-332.102888, -399.969498)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_RESET"
+    Guard: ""
+    Behavior: "Reset(me);"
+ Edge e3 [n5 active]->[n7 test] [type 0]
+  Geometry:    Source point: (-292.364920, 487.408649)
+   Target point: (53.733776, -106.463248)
+   Label point: (-324.532329, 479.842166)
+  Actions:
+   Action (type 1):
+    Trigger: "PILL_TEST"
+    Guard: ""
+    Behavior: ""
+ Edge n5::n1::e6 [n5::n1::n0 agony]->[n5::n1::n1 healthy] [type 0]
+  Geometry:    Polyline: (-53.735083, -117.291700) (-336.521290, -117.291700)
+   Source point: (-53.735083, -87.262737)
+   Target point: (137.673572, -92.583621)
+   Label point: (-396.341085, -110.244366)
+  Actions:
+   Action (type 1):
+    Trigger: "HEAL"
+    Guard: ""
+    Behavior: "UpdateHP(me, me->CharHP + ((oregonPlayerQEvt*)e)->value);"
+ Edge n5::e3 [n5::n4 dead]->[n5::n5 ] [type 0]
+  Geometry:    Source point: (0.000000, 87.262737)
+   Target point: (0.000000, -13.000000)
+   Label point: (-76.791998, 45.308325)
+  Actions:
+   Action (type 1):
+    Trigger: "TEST_TRIGGER"
+    Guard: ""
+    Behavior: ""
+ Edge n5::e4 [n5::n5 ]->[n5::n3::n1 wounded] [type 0]
+  Geometry:    Source point: (0.000000, 13.000000)
+   Target point: (15.000000, -60.346694)
+   Label point: (-84.520513, 123.110537)
+  Actions:
+   Action (type 1):
+    Trigger: ""
+    Guard: "me->CharHP>0"
+    Behavior: ""
+ Edge n5::e5 [n5::n5 ]->[n5::n1::n0 agony] [type 0]
+  Geometry:    Source point: (-13.000000, -7.151151)
+   Target point: (142.094727, 78.164677)
+   Label point: (-135.815914, -73.321880)
+  Actions:
+   Action (type 1):
+    Trigger: ""
+    Guard: "else"
+    Behavior: ""
+
+
+Bounding rect: (265.130033, 218.079473, 2257.297351, 1231.821907)
