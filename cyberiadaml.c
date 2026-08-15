@@ -2214,7 +2214,10 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	}
 	
 	cyberiada_init_sm_document(cyb_doc);
-	cyberiada_init_action_regexps(&cyberiada_regexps, flags & CYBERIADA_FLAG_FLATTENED);
+	res = cyberiada_init_action_regexps(&cyberiada_regexps, flags & CYBERIADA_FLAG_FLATTENED);
+	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	}
 	
 	do {
 
