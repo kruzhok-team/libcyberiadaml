@@ -110,6 +110,11 @@ enum enumerates the processing states, and two transition tables (one for the
 Cyberiada format, one for the yEd family) map (state, XML element) to a
 handler function. The automaton is dispatched over a recursive DOM traversal.
 
+All mutable parsing state travels in a per-document parser context (the
+action regexps with their dialect flags and the key map binding non-default
+GraphML key ids to the standard attributes); the key catalog itself is
+constant, so concurrent document decoding is safe.
+
 ### Input dialects
 
 The public format enum has two values plus auto-detection; internally five

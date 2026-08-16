@@ -23,6 +23,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include <libxml/parser.h>
+
 #include "cyberiadaml.h"
 
 #define CMD_PRINT                   1
@@ -273,6 +275,7 @@ int main(int argc, char** argv)
 		fprintf(stderr, "Error while reading %s file: %s (%d)\n",
 				source_filename, cyberiada_error_str(res), res);
 		cyberiada_cleanup_sm_document(&doc);
+	xmlCleanupParser();
 		return 2;
 	}
 
