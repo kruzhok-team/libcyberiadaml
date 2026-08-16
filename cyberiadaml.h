@@ -149,11 +149,6 @@ typedef struct _CyberiadaNode {
 	/* siblings */
     struct _CyberiadaNode*      next;
 } CyberiadaNode;
-	
-typedef struct {                                        /* the pair of nodes */
-	CyberiadaNode*              n1;
-	CyberiadaNode*              n2;
-} CyberiadaNodePair;
 
 typedef enum {
 	cybCommentSubjectNode = 0,
@@ -209,11 +204,6 @@ typedef struct _CyberiadaEdge {
 	/* list of edges */
     struct _CyberiadaEdge*       next;                  /* the next edge in the SM */
 } CyberiadaEdge;
-
-typedef struct {                                        /* the pair of nodes */
-	CyberiadaEdge*               e1;
-	CyberiadaEdge*               e2;
-} CyberiadaEdgePair;
 	
 /* SM graph (state machine) */
 typedef struct _CyberiadaSM {
@@ -341,40 +331,8 @@ typedef enum {
 														   CYBERIADA_FLAG_SIMPLIFY_IDS | \
 														   CYBERIADA_FLAG_SKIP_META)
 
-/* -----------------------------------------------------------------------------
- * The Cyberiada isomorphism check codes
- * ----------------------------------------------------------------------------- */
 
-#define CYBERIADA_ISOMORPH_FLAG_IDENTICAL                 0x1    /* the two SM graphs are identical (even ids are the same) */
-#define CYBERIADA_ISOMORPH_FLAG_EQUAL                     0x2    /* the two SM graphs are equal */
-#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC                0x4    /* the two SM graphs are isomorphic (but there are differences) */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_STATES               0x8    /* the two SM graphs are not isomorhic and have different states */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL              0x10    /* the two SM graphs are not isomorhic and have different initial pseudostates */
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES                0x20   /* the two SM graphs are not isomorhic and have different edges */
-#define CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK           (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | \
-														   CYBERIADA_ISOMORPH_FLAG_EQUAL | \
-														   CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC)
-#define CYBERIADA_ISOMORPH_FLAG_DIFF_MASK                 (CYBERIADA_ISOMORPH_FLAG_DIFF_STATES | \
-														   CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL | \
-														   CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)
-	
-#define CYBERIADA_NODE_DIFF_ID                            0x1    /* the two SM nodes have different identifiers */
-#define CYBERIADA_NODE_DIFF_TYPE                          0x2    /* the two SM nodes have different types (excluding simple/comp. state) */
-#define CYBERIADA_NODE_DIFF_TITLE                         0x4    /* the two SM nodes have different titles */
-#define CYBERIADA_NODE_DIFF_ACTIONS                       0x8    /* the two SM nodes have different actions */
-#define CYBERIADA_NODE_DIFF_SM_LINK                       0x10   /* the two SM nodes have different links to a state machine */
-#define CYBERIADA_NODE_DIFF_CHILDREN                      0x20   /* the two SM nodes have different number of children */
-#define CYBERIADA_NODE_DIFF_EDGES                         0x40   /* the two SM nodes have different incoming/outgoing edges */
-
-#define CYBERIADA_EDGE_DIFF_ID                            0x80   /* the two SM edges have different identifiers */
-#define CYBERIADA_EDGE_DIFF_ACTION                        0x100  /* the two SM edges have different actions */
-
-#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ARG                0x1    /* the two nodes' behaviors have different arguments */
-#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ORDER              0x2    /* the two nodes' behaviors have different order */
-#define CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION             0x4    /* the two nodes' behaviors are differ */
-#define CYBERIADA_ACTION_DIFF_TYPES                       0x10   /* the two nodes' have different action types */
-#define CYBERIADA_ACTION_DIFF_GUARDS                      0x20   /* the two nodes' have different guards */
-#define CYBERIADA_ACTION_DIFF_NUMBER                      0x40   /* the two nodes' have different action numbers */
+#include "cyberiadaml_iso.h"
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
@@ -464,20 +422,6 @@ typedef enum {
 	/* Allocate and initialize the SM action structure in memory */
 	CyberiadaAction* cyberiada_new_action(CyberiadaActionType type, const char* trigger, const char* guard, const char* behavior);
 
-	/* Compare two SM graphs to detect isomorphism and the difference if the graphs are not isomorphic */
-	/* Note: this function ignores comment nodes and edges if the ignore_comments flag is set          */
-	int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
-									int* result_flags, CyberiadaNode** new_initial,
-									size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes, size_t** sm_diff_nodes_flags,
-									size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
-									size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-									size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges, size_t** sm_diff_edges_flags,
-									size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
-									size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
-
-	/* Compare SM nodes actions */
-	int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n2action, int* compare_flags);
-	
 	/* Check the presence of the SM document geometry, return 1 if there is any geometry object available */
 	int cyberiada_document_has_geometry(CyberiadaDocument* doc);
 	

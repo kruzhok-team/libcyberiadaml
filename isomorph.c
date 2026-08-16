@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include "cyberiadaml.h"
+#include "cyberiadaml_iso.h"
 #include "cyb_structs.h"
 #include "cyb_error.h"
 
@@ -996,17 +997,12 @@ static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
 }
 
 /*-----------------------------------------------------------------------------
- Check isomophism of two SM graphs and return the difference
+ Check isomophism of two SM graphs and fill the difference result
  ------------------------------------------------------------------------------*/
 
-int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
-								int* result_flags, CyberiadaNode** new_initial,
-								size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes, size_t** sm_diff_nodes_flags,
-								size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
-								size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-								size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges, size_t** sm_diff_edges_flags,
-								size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
-								size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges)
+int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
+								   int ignore_comments, int require_initial,
+								   CyberiadaIsomorphismResult* result)
 {
 	int res;
 	size_t i, j, sm1_vertexes = 0, sm1_edges = 0, sm2_vertexes = 0, sm2_edges = 0;
@@ -1015,10 +1011,12 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	CyberiadaNode *sm1_initial_ps = NULL, *sm2_initial_ps = NULL;
 	CyberiadaEdge *sm1_initial_edge = NULL, *sm2_initial_edge = NULL, *e1, *e2;
 	CyberiadaList* found_edges = NULL;
-	
-	if (!sm1 || !sm2 || !result_flags) {
+
+	if (!sm1 || !sm2 || !result) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
+
+	memset(result, 0, sizeof(CyberiadaIsomorphismResult));
 
 	/* check if thw both statemachines have initial nodes on the top level */
 	res = cyberiada_get_initial_pseudostate(sm1, &sm1_initial_ps, &sm1_initial_edge, require_initial);
@@ -1031,7 +1029,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 	}
 
 	/* find the permutation matrix of possible node isomorphism */
-	res = cyberiada_build_node_permutation_matrix(sm1, sm2, ignore_comments,  &perm_matrix, &vertexes1, &vertexes2, 
+	res = cyberiada_build_node_permutation_matrix(sm1, sm2, ignore_comments,  &perm_matrix, &vertexes1, &vertexes2,
 												  &sm1_vertexes, &sm1_edges, &sm2_vertexes, &sm2_edges);
 	if (res != CYBERIADA_NO_ERROR) {
 		return res;
@@ -1040,78 +1038,35 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 #ifdef EXTRA_DEBUG
 	debug_matrix("PERM", perm_matrix, sm1_vertexes, sm2_vertexes);
 #endif
-	
+
 	/* allocate memory for results */
-	if (sm_diff_nodes) *sm_diff_nodes = NULL;
-	if (sm_diff_nodes_flags) *sm_diff_nodes_flags = NULL;
-	if (sm2_new_nodes) *sm2_new_nodes = NULL;
-	if (sm1_missing_nodes) *sm1_missing_nodes = NULL;
-	if (sm_diff_edges) *sm_diff_edges = NULL;
-	if (sm_diff_edges_flags) *sm_diff_edges_flags = NULL;
-	if (sm2_new_edges) *sm2_new_edges = NULL;
-	if (sm1_missing_edges) *sm1_missing_edges = NULL;
-	if (sm_diff_nodes_size) {
-		*sm_diff_nodes_size = 0;
-		if (sm_diff_nodes) {
-			*sm_diff_nodes = (CyberiadaNodePair*)malloc(sizeof(CyberiadaNodePair) * sm1_vertexes);
-			if (!*sm_diff_nodes) goto results_memory_error;
-		}
-		if (sm_diff_nodes_flags) {
-			*sm_diff_nodes_flags = (size_t*)malloc(sizeof(size_t) * sm1_vertexes);
-			if (!*sm_diff_nodes_flags) goto results_memory_error;
-		}
-	}
-	if (sm2_new_nodes_size) {
-		*sm2_new_nodes_size = 0;
-		if (sm2_new_nodes) {
-			*sm2_new_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm2_vertexes);
-			if (!*sm2_new_nodes) goto results_memory_error;
-		}
-	}
-	if (sm1_missing_nodes_size) {
-		*sm1_missing_nodes_size = 0;
-		if (sm1_missing_nodes) {
-			*sm1_missing_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm1_vertexes);
-			if (!*sm1_missing_nodes) goto results_memory_error;
-		}
-	}
-	if (sm_diff_edges_size) {
-		*sm_diff_edges_size = 0;
-		if (sm_diff_edges) {
-			*sm_diff_edges = (CyberiadaEdgePair*)malloc(sizeof(CyberiadaEdgePair) * sm1_edges);
-			if (!*sm_diff_edges) goto results_memory_error;
-		}
-		if (sm_diff_edges_flags) {
-			*sm_diff_edges_flags = (size_t*)malloc(sizeof(size_t) * sm1_edges);
-			if (!*sm_diff_edges_flags) goto results_memory_error;
-		}
-	}
-	if (sm2_new_edges_size) {
-		*sm2_new_edges_size = 0;
-		if (sm2_new_edges) {
-			*sm2_new_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm2_edges);
-			if (!*sm2_new_edges) goto results_memory_error;
-		}
-	}
-	if (sm1_missing_edges_size) {
-		*sm1_missing_edges_size = 0;
-		if (sm1_missing_edges) {
-			*sm1_missing_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm1_edges);
-			if (!*sm1_missing_edges) goto results_memory_error;
-		}
+	result->diff_nodes = (CyberiadaNodePair*)malloc(sizeof(CyberiadaNodePair) * sm1_vertexes);
+	result->diff_nodes_flags = (size_t*)malloc(sizeof(size_t) * sm1_vertexes);
+	result->new_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm2_vertexes);
+	result->missing_nodes = (CyberiadaNode**)malloc(sizeof(CyberiadaNode*) * sm1_vertexes);
+	result->diff_edges = (CyberiadaEdgePair*)malloc(sizeof(CyberiadaEdgePair) * sm1_edges);
+	result->diff_edges_flags = (size_t*)malloc(sizeof(size_t) * sm1_edges);
+	result->new_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm2_edges);
+	result->missing_edges = (CyberiadaEdge**)malloc(sizeof(CyberiadaEdge*) * sm1_edges);
+	if (!result->diff_nodes || !result->diff_nodes_flags ||
+		!result->new_nodes || !result->missing_nodes ||
+		!result->diff_edges || !result->diff_edges_flags ||
+		!result->new_edges || !result->missing_edges) {
+		res = CYBERIADA_MEMORY_ERROR;
+		goto free_all;
 	}
 
 	if (sm1_vertexes == sm2_vertexes && sm1_edges == sm2_edges) {
 		/* the SM graphs have the equal size, potentially identical */
-		*result_flags = CYBERIADA_ISOMORPH_FLAG_IDENTICAL;		
+		result->flags = CYBERIADA_ISOMORPH_FLAG_IDENTICAL;
 	} else {
 		/* the SM graphs have the different sizes - non isomorphic */
-		*result_flags = 0;
+		result->flags = 0;
 		if (sm1_vertexes != sm2_vertexes) {
-			*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
 		}
 		if (sm1_edges != sm2_edges) {
-			*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
+			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
 		}
 	}
 
@@ -1125,53 +1080,48 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 											&node_diff);
 				if (node_diff) {
 					/* there are differences in two nodes */
-					if (sm_diff_nodes_size && sm_diff_nodes && sm_diff_nodes_flags) {
-						(*sm_diff_nodes)[*sm_diff_nodes_size].n1 = vertexes1[i].node;
-						(*sm_diff_nodes)[*sm_diff_nodes_size].n2 = vertexes2[j].node;
-						(*sm_diff_nodes_flags)[*sm_diff_nodes_size] = node_diff;	
-						(*sm_diff_nodes_size)++;
-					}
-					if (*result_flags != CYBERIADA_ISOMORPH_FLAG_DIFF_STATES) {
+					result->diff_nodes[result->diff_nodes_size].n1 = vertexes1[i].node;
+					result->diff_nodes[result->diff_nodes_size].n2 = vertexes2[j].node;
+					result->diff_nodes_flags[result->diff_nodes_size] = node_diff;
+					result->diff_nodes_size++;
+					if (result->flags != CYBERIADA_ISOMORPH_FLAG_DIFF_STATES) {
 						if (node_diff == CYBERIADA_NODE_DIFF_ID) {
 							/* if the only difference is node id - potentially equal */
-							if (*result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
-								*result_flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
+							if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
+								result->flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
 							}
 						} else if (node_diff & (CYBERIADA_NODE_DIFF_CHILDREN | CYBERIADA_NODE_DIFF_TYPE)) {
-							*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+							result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
 						} else {
 							/* the types and children are the same - potentially isomorphic */
-							if (*result_flags & (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | CYBERIADA_ISOMORPH_FLAG_EQUAL)) {
-								*result_flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
+							if (result->flags & (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | CYBERIADA_ISOMORPH_FLAG_EQUAL)) {
+								result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
 							}
 						}
 					}
 				}
 				vertexes1[i].found = 1;
 				vertexes2[j].found = 1;
-				break;				
+				break;
 			}
 		}
 		if (!vertexes1[i].found) {
 			/* missing SM1 nodes in SM2 found */
-			*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
-			if (sm1_missing_nodes && sm1_missing_nodes_size) {
-				(*sm1_missing_nodes)[(*sm1_missing_nodes_size)++] = vertexes1[i].node;
-			}
+			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			result->missing_nodes[result->missing_nodes_size++] = vertexes1[i].node;
 		}
 	}
 	for (j = 0; j < sm2_vertexes; j++) {
 		if (!vertexes2[j].found) {
 			/* new SM2 nodes found */
-			*result_flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
-			if (sm2_new_nodes && sm2_new_nodes_size) {
-				(*sm2_new_nodes)[(*sm2_new_nodes_size)++] = vertexes2[j].node;
-			}
+			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			result->new_nodes[result->new_nodes_size++] = vertexes2[j].node;
 		}
 	}
-	if (!*result_flags) {
+	if (!result->flags) {
 		ERROR("result flag is empty after the node comparison\n");
-		return CYBERIADA_ASSERT;
+		res = CYBERIADA_ASSERT;
+		goto free_all;
 	}
 
 	for (e1 = sm1->edges; e1; e1 = e1->next) {
@@ -1179,7 +1129,7 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 		int found = 0;
 
 		if (ignore_comments && (e1->type == cybEdgeComment)) continue;
-		
+
 		for (i = 0; i < sm1_vertexes; i++) {
 			if (e1->source == vertexes1[i].node) {
 				for (j = 0; j < sm2_vertexes; j++) {
@@ -1195,27 +1145,23 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 						sm2_target = vertexes2[j].node;
 						break;
 					}
-				}			
+				}
 			}
 			if (sm2_source && sm2_target) break;
 		}
 		if (!sm2_source || !sm2_target) {
 			/* the edge found not available in the second graph */
-			if (!(*result_flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
-				*result_flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
-				if (*result_flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
-					*result_flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
+			if (!(result->flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
+				result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
+				if (result->flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
+					result->flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
 				}
 			}
-			if (sm1_missing_edges && sm1_missing_edges_size) {
-				(*sm1_missing_edges)[(*sm1_missing_edges_size)++] = e1;
-			}
+			result->missing_edges[result->missing_edges_size++] = e1;
 			if (require_initial && e1 == sm1_initial_edge) {
-				*result_flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
-				if (new_initial) {
-					*new_initial = sm2_initial_edge->target;
-				}
-			}				
+				result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
+				result->new_initial = sm2_initial_edge->target;
+			}
 			continue;
 		}
 
@@ -1227,58 +1173,55 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 				found = 1;
 				if (strcmp(e1->id, e2->id) != 0) {
 					edge_diff |= CYBERIADA_EDGE_DIFF_ID;
-					if (*result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
-						*result_flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
+					if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
+						result->flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
 					}
 				}
 				if (cyberiada_compare_actions(e1->action, e2->action) != 0) {
 					edge_diff |= CYBERIADA_EDGE_DIFF_ACTION;
-					if (*result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL || *result_flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
-						*result_flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
+					if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL || result->flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
+						result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
 					}
 				}
 				/* the edges with differences are found */
-				if (edge_diff && sm_diff_edges && sm_diff_edges_flags && sm_diff_edges_size) {
-					(*sm_diff_edges)[*sm_diff_edges_size].e1 = e1;
-					(*sm_diff_edges)[*sm_diff_edges_size].e2 = e2;
-					(*sm_diff_edges_flags)[*sm_diff_edges_size] = edge_diff;	
-					(*sm_diff_edges_size)++;
+				if (edge_diff) {
+					result->diff_edges[result->diff_edges_size].e1 = e1;
+					result->diff_edges[result->diff_edges_size].e2 = e2;
+					result->diff_edges_flags[result->diff_edges_size] = edge_diff;
+					result->diff_edges_size++;
 				}
-				cyberiada_list_add(&found_edges, e2->id, (void*)e2); 				
+				cyberiada_list_add(&found_edges, e2->id, (void*)e2);
 				break;
 			}
 		}
 		if (!found) {
 			/* the edge found not available in the second graph */
-			if (sm1_missing_edges && sm1_missing_edges_size) {
-				(*sm1_missing_edges)[(*sm1_missing_edges_size)++] = e1;
-			}
+			result->missing_edges[result->missing_edges_size++] = e1;
 		}
 	}
 	if (cyberiada_list_size(&found_edges) < sm2_edges) {
 		for (e2 = sm2->edges; e2; e2 = e2->next) {
 			if (ignore_comments && e2->type == cybEdgeComment) continue;
 			if (cyberiada_list_find(&found_edges, e2->id) == NULL) {
-				if (!(*result_flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
-					*result_flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
-					if (*result_flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
-						*result_flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
+				if (!(result->flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
+					result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
+					if (result->flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
+						result->flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
 					}
 				}
 				/* the edge found not available in the first graph */
-				if (sm2_new_edges && sm2_new_edges_size) {
-					(*sm2_new_edges)[(*sm2_new_edges_size)++] = e2;
-				}
+				result->new_edges[result->new_edges_size++] = e2;
 				if (require_initial && e2 == sm2_initial_edge) {
-					*result_flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
-					if (new_initial) {
-						*new_initial = sm2_initial_edge->target;
-					}
+					result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
+					result->new_initial = sm2_initial_edge->target;
 				}
 			}
 		}
 	}
 
+	res = CYBERIADA_NO_ERROR;
+
+free_all:
 	cyberiada_list_free(&found_edges);
 	if (perm_matrix) {
 		for (i = 0; i < sm1_vertexes; i++) {
@@ -1288,48 +1231,103 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_c
 		free(vertexes1);
 		free(vertexes2);
 	}
+	if (res != CYBERIADA_NO_ERROR) {
+		cyberiada_cleanup_isomorphism_result(result);
+	}
+	return res;
+}
+
+/*-----------------------------------------------------------------------------
+ Free the content of the isomorphism check result
+ ------------------------------------------------------------------------------*/
+
+int cyberiada_cleanup_isomorphism_result(CyberiadaIsomorphismResult* result)
+{
+	if (!result) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (result->diff_nodes) free(result->diff_nodes);
+	if (result->diff_nodes_flags) free(result->diff_nodes_flags);
+	if (result->new_nodes) free(result->new_nodes);
+	if (result->missing_nodes) free(result->missing_nodes);
+	if (result->diff_edges) free(result->diff_edges);
+	if (result->diff_edges_flags) free(result->diff_edges_flags);
+	if (result->new_edges) free(result->new_edges);
+	if (result->missing_edges) free(result->missing_edges);
+	memset(result, 0, sizeof(CyberiadaIsomorphismResult));
+	return CYBERIADA_NO_ERROR;
+}
+
+/*-----------------------------------------------------------------------------
+ Check isomophism of two SM graphs (the deprecated pointer-based form)
+ ------------------------------------------------------------------------------*/
+
+int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2, int ignore_comments, int require_initial,
+								int* result_flags, CyberiadaNode** new_initial,
+								size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes, size_t** sm_diff_nodes_flags,
+								size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
+								size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
+								size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges, size_t** sm_diff_edges_flags,
+								size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
+								size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges)
+{
+	int res;
+	CyberiadaIsomorphismResult result;
+
+	if (!result_flags) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	res = cyberiada_check_sm_isomorphism(sm1, sm2, ignore_comments, require_initial, &result);
+	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	}
+
+	*result_flags = result.flags;
+	if (new_initial) {
+		*new_initial = result.new_initial;
+	}
+	/* hand over the requested arrays; the rest is freed by the cleanup below */
+	if (sm_diff_nodes_size) *sm_diff_nodes_size = result.diff_nodes_size;
+	if (sm_diff_nodes) {
+		*sm_diff_nodes = result.diff_nodes;
+		result.diff_nodes = NULL;
+	}
+	if (sm_diff_nodes_flags) {
+		*sm_diff_nodes_flags = result.diff_nodes_flags;
+		result.diff_nodes_flags = NULL;
+	}
+	if (sm2_new_nodes_size) *sm2_new_nodes_size = result.new_nodes_size;
+	if (sm2_new_nodes) {
+		*sm2_new_nodes = result.new_nodes;
+		result.new_nodes = NULL;
+	}
+	if (sm1_missing_nodes_size) *sm1_missing_nodes_size = result.missing_nodes_size;
+	if (sm1_missing_nodes) {
+		*sm1_missing_nodes = result.missing_nodes;
+		result.missing_nodes = NULL;
+	}
+	if (sm_diff_edges_size) *sm_diff_edges_size = result.diff_edges_size;
+	if (sm_diff_edges) {
+		*sm_diff_edges = result.diff_edges;
+		result.diff_edges = NULL;
+	}
+	if (sm_diff_edges_flags) {
+		*sm_diff_edges_flags = result.diff_edges_flags;
+		result.diff_edges_flags = NULL;
+	}
+	if (sm2_new_edges_size) *sm2_new_edges_size = result.new_edges_size;
+	if (sm2_new_edges) {
+		*sm2_new_edges = result.new_edges;
+		result.new_edges = NULL;
+	}
+	if (sm1_missing_edges_size) *sm1_missing_edges_size = result.missing_edges_size;
+	if (sm1_missing_edges) {
+		*sm1_missing_edges = result.missing_edges;
+		result.missing_edges = NULL;
+	}
+	cyberiada_cleanup_isomorphism_result(&result);
 
 	return CYBERIADA_NO_ERROR;
-
-results_memory_error:
-	if (sm_diff_nodes && *sm_diff_nodes) {
-		free(*sm_diff_nodes);
-		*sm_diff_nodes = NULL;
-	}
-	if (sm_diff_nodes_flags && *sm_diff_nodes_flags) {
-		free(*sm_diff_nodes_flags);
-		*sm_diff_nodes_flags = NULL;
-	}
-	if (sm2_new_nodes && *sm2_new_nodes) {
-		free(*sm2_new_nodes);
-		*sm2_new_nodes = NULL;
-	}
-	if (sm1_missing_nodes && *sm1_missing_nodes) {
-		free(*sm1_missing_nodes);
-		*sm1_missing_nodes = NULL;
-	}
-	if (sm_diff_edges && *sm_diff_edges) {
-		free(*sm_diff_edges);
-		*sm_diff_edges = NULL;
-	}
-	if (sm_diff_edges_flags && *sm_diff_edges_flags) {
-		free(*sm_diff_edges_flags);
-		*sm_diff_edges_flags = NULL;
-	}
-	if (sm2_new_edges && *sm2_new_edges) {
-		free(*sm2_new_edges);
-		*sm2_new_edges = NULL;
-	}
-	if (sm1_missing_edges && *sm1_missing_edges) {
-		free(*sm1_missing_edges);
-		*sm1_missing_edges = NULL;
-	}
-	for (i = 0; i < sm1_vertexes; i++) {
-		free(perm_matrix[i]);
-	}
-	free(perm_matrix);
-	free(vertexes1);
-	free(vertexes2);
-	return CYBERIADA_MEMORY_ERROR;
 }
 

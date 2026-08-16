@@ -35,6 +35,7 @@ add_library(cyberiadaml SHARED
 			isomorph.c
 			utf8enc.c
 			cyberiadaml.c
+			cyberiadaml_iso.h
 )
 
 target_include_directories(cyberiadaml PUBLIC
@@ -62,7 +63,7 @@ if(BUILD_TESTING)
 endif()
 
 install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml)
-install(FILES cyberiadaml.h ${CMAKE_CURRENT_SOURCE_DIR}/cyberiadaml.h
+install(FILES cyberiadaml.h cyberiadaml_iso.h
         DESTINATION include/cyberiada)
 install(EXPORT cyberiadaml DESTINATION lib/cmake)
 
