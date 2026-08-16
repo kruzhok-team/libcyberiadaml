@@ -59,8 +59,9 @@ constructed programmatically.
 | `cyb_graph.c/.h` | Graph primitives: find node by id/type, find edge, add node/edge with type-aware placement. |
 | `cyb_graph_recon.c/.h` | Node and edge identifier reconstruction and simplification (`CYBERIADA_FLAG_SIMPLIFY_IDS`), backed by a rename list. |
 | `cyb_meta.c/.h` | Metainformation lifecycle, encode/decode of the metadata comment body, `standardVersion` validation. |
-| `cyb_actions.c` / `cyb_actions_pcre2.c` | Regex-driven parsing of state/transition action text into `CyberiadaAction` lists (`trigger [guard] / behavior`); legacy yEd block splitting; action comparison for the diff. POSIX regex on Linux, PCRE2 elsewhere. |
-| `cyb_regexps.c` / `cyb_regexps_pcre2.c` | Compilation and release of the action regexps; carries per-parse dialect flags (`berloga_legacy`, `arena_legacy`, `flattened_regexps`). |
+| `cyb_actions.c` | Regex-driven parsing of state/transition action text into `CyberiadaAction` lists (`trigger [guard] / behavior`); legacy yEd block splitting; action comparison for the diff. |
+| `cyb_regexps.c` | Compilation and release of the action regexps; carries per-parse dialect flags (`berloga_legacy`, `arena_legacy`, `flattened_regexps`). |
+| `cyb_regex.h` | Platform wrapper selecting the regex backend: POSIX `<regex.h>` on Linux, `pcre2posix` elsewhere (`CYBERIADA_PCRE2_REGEXPS`). |
 | `cyb_string.c/.h` | String copy/append/trim helpers; `MAX_STR_LEN` (4096) limit. |
 | `cyb_structs.c/.h` | One generic `{key, data, next}` node reused as stack, list and queue. |
 | `cyb_node_stack.c/.h` | Typed stack tracking (current XML element, current node) during the DOM walk. |

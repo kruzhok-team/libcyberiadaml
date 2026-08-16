@@ -20,13 +20,14 @@ add_compile_options(-Wpedantic)
 add_compile_options(-Wformat-security)
 
 add_library(cyberiadaml SHARED
-			$<IF:$<PLATFORM_ID:Linux>,cyb_actions.c,cyb_actions_pcre2.c>
+			cyb_actions.c
 			cyb_error.h
+			cyb_regex.h
 			cyb_graph.c		
 			cyb_graph_recon.c	
 			cyb_node_stack.c
 			cyb_meta.c
-			$<IF:$<PLATFORM_ID:Linux>,cyb_regexps.c,cyb_regexps_pcre2.c>
+			cyb_regexps.c
 			cyb_string.c
 			cyb_structs.c
 	 		cyb_types.c
@@ -48,6 +49,9 @@ target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
 				  "${HTGeom_LIBRARIES}"
 				  $<IF:$<PLATFORM_ID:Linux>,,pcre2-posix>)
+
+target_compile_definitions(cyberiadaml PRIVATE
+					   $<$<NOT:$<PLATFORM_ID:Linux>>:CYBERIADA_PCRE2_REGEXPS>)
 
 add_subdirectory(parser)
 

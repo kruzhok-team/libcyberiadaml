@@ -21,7 +21,7 @@
  * ----------------------------------------------------------------------------- */
 
 #include <stdlib.h>
-#include <regex.h>
+#include "cyb_regex.h"
 
 #include "cyb_regexps.h"
 #include "cyb_error.h"
@@ -55,40 +55,40 @@ int cyberiada_init_action_regexps(CyberiadaRegexps* regexps, int flattened)
 	if(!regexps->r) {
 		return CYBERIADA_MEMORY_ERROR;
 	}
-	if (regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP, REG_EXTENDED)) {
+	if (cyb_regcomp(&(regexps->r->edge_action_regexp), CYBERIADA_ACTION_EDGE_REGEXP)) {
 		ERROR("cannot compile edge action regexp\n");
 		goto error_edge;
 	}
-	if (regcomp(&(regexps->r->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP, REG_EXTENDED)) {
+	if (cyb_regcomp(&(regexps->r->node_action_regexp), CYBERIADA_ACTION_NODE_REGEXP)) {
 		ERROR("cannot compile node action regexp\n");
 		goto error_node;
 	}
-	if (regcomp(&(regexps->r->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP, REG_EXTENDED)) {
+	if (cyb_regcomp(&(regexps->r->node_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_REGEXP)) {
 		ERROR("cannot compile legacy node action regexp\n");
 		goto error_node_legacy;
 	}
-	if (regcomp(&(regexps->r->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP, REG_EXTENDED)) {
+	if (cyb_regcomp(&(regexps->r->edge_legacy_action_regexp), CYBERIADA_ACTION_LEGACY_EDGE_REGEXP)) {
 		ERROR("cannot compile legacy edge action regexp\n");
 		goto error_edge_legacy;
 	}
-/*	if (regcomp(&(regexps->newline_regexp), CYBERIADA_ACTION_NEWLINE_REGEXP, REG_EXTENDED)) {
+/*	if (cyb_regcomp(&(regexps->newline_regexp), CYBERIADA_ACTION_NEWLINE_REGEXP)) {
 	ERROR("cannot compile new line regexp\n");
 	return CYBERIADA_ASSERT;
 	}*/
-	if (regcomp(&(regexps->r->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP, REG_EXTENDED)) {
+	if (cyb_regcomp(&(regexps->r->spaces_regexp), CYBERIADA_ACTION_SPACES_REGEXP)) {
 		ERROR("cannot compile new line regexp\n");
 		goto error_spaces;
 	}
 	return CYBERIADA_NO_ERROR;
 
 error_spaces:
-	regfree(&(regexps->r->edge_legacy_action_regexp));
+	cyb_regfree(&(regexps->r->edge_legacy_action_regexp));
 error_edge_legacy:
-	regfree(&(regexps->r->node_legacy_action_regexp));
+	cyb_regfree(&(regexps->r->node_legacy_action_regexp));
 error_node_legacy:
-	regfree(&(regexps->r->node_action_regexp));
+	cyb_regfree(&(regexps->r->node_action_regexp));
 error_node:
-	regfree(&(regexps->r->edge_action_regexp));
+	cyb_regfree(&(regexps->r->edge_action_regexp));
 error_edge:
 	free(regexps->r);
 	regexps->r = NULL;
@@ -100,12 +100,12 @@ int cyberiada_free_action_regexps(CyberiadaRegexps* regexps)
 	if (!regexps || !regexps->r) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	regfree(&(regexps->r->edge_action_regexp));
-	regfree(&(regexps->r->node_action_regexp));
-	regfree(&(regexps->r->node_legacy_action_regexp));
-	regfree(&(regexps->r->edge_legacy_action_regexp));
-/*	regfree(&cyberiada_newline_regexp);*/
-	regfree(&(regexps->r->spaces_regexp));
+	cyb_regfree(&(regexps->r->edge_action_regexp));
+	cyb_regfree(&(regexps->r->node_action_regexp));
+	cyb_regfree(&(regexps->r->node_legacy_action_regexp));
+	cyb_regfree(&(regexps->r->edge_legacy_action_regexp));
+/*	cyb_regfree(&cyberiada_newline_regexp);*/
+	cyb_regfree(&(regexps->r->spaces_regexp));
 	free(regexps->r);
 	return CYBERIADA_NO_ERROR;
 }
@@ -115,5 +115,5 @@ int cyberiada_action_regexps_spaces(CyberiadaRegexps* regexps, const char* s)
 	if (!regexps || !regexps->r) {
 		return 0;
 	}
-	return regexec(&(regexps->r->spaces_regexp), s, 0, NULL, 0) == 0;
+	return cyb_regexec(&(regexps->r->spaces_regexp), s, 0, NULL, 0) == 0;
 }

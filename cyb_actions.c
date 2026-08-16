@@ -23,7 +23,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#include <regex.h>
+#include "cyb_regex.h"
 
 #include "cyb_actions.h"
 #include "cyb_error.h"
@@ -161,7 +161,7 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 	}
 
 	if (regexps->berloga_legacy) {
-		if ((res = regexec(&(regexps->r->edge_legacy_action_regexp), buffer,
+		if ((res = cyb_regexec(&(regexps->r->edge_legacy_action_regexp), buffer,
 						   CYBERIADA_ACTION_LEGACY_EDGE_MATCHES, pmatch, 0)) != 0) {
 			if (res == REG_NOMATCH) {
 				ERROR("legacy edge action text didn't match the regexp\n");
@@ -180,7 +180,7 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 			return CYBERIADA_ASSERT;
 		}		
 	} else {
-		if ((res = regexec(&(regexps->r->edge_action_regexp), buffer,
+		if ((res = cyb_regexec(&(regexps->r->edge_action_regexp), buffer,
 						   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 			if (res == REG_NOMATCH) {
 				ERROR("edge action text didn't match the regexp\n");
@@ -266,7 +266,7 @@ int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** acti
 	int res;
 	char *trigger = "", *guard = "", *behavior = "";
 	regmatch_t pmatch[CYBERIADA_ACTION_REGEXP_MATCHES];
-	if ((res = regexec(&(regexps->r->node_action_regexp), text,
+	if ((res = cyb_regexec(&(regexps->r->node_action_regexp), text,
 					   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 		if (res == REG_NOMATCH) {
 			ERROR("node block action text didn't match the regexp\n");
@@ -329,7 +329,7 @@ int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, 
 			block = start;
 			next = start + strlen(block);
 		}
-/*		if ((res = regexec(&cyberiada_newline_regexp, start,
+/*		if ((res = cyb_regexec(&cyberiada_newline_regexp, start,
 						   ACTION_NL_REGEXP_MATCHES, pmatch, 0)) != 0) {
 			if (res != REG_NOMATCH) {
 				ERROR("newline regexp error %d\n", res);
@@ -351,7 +351,7 @@ int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, 
 			DEBUG("second part: '%s'\n", start);
 			}*/
 		
-		if (regexec(&(regexps->r->spaces_regexp), start, 0, NULL, 0) == 0) {
+		if (cyb_regexec(&(regexps->r->spaces_regexp), start, 0, NULL, 0) == 0) {
 			continue ;
 		}
 
@@ -425,7 +425,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 				break;
 			}
 			if (regexps->berloga_legacy > 1) {
-				res = regexec(&(regexps->r->node_legacy_action_regexp), start,
+				res = cyb_regexec(&(regexps->r->node_legacy_action_regexp), start,
 							  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
 				if (res != 0 && res != REG_NOMATCH) {
 					ERROR("newline regexp error %d\n", res);
@@ -453,7 +453,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 					next = start + strlen(start);
 				}
 			} else {
-				res = regexec(&(regexps->r->node_legacy_action_regexp), start,
+				res = cyb_regexec(&(regexps->r->node_legacy_action_regexp), start,
 							  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
 				if (res == REG_NOMATCH) {
 					ERROR("action regexp error: \"%s\"\n", start);
