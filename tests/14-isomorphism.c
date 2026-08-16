@@ -27,6 +27,7 @@ int main(void)
 	CyberiadaDocument *doc1, *doc2;
 	CyberiadaNode* node;
 	CyberiadaAction *a1, *a2;
+	CyberiadaIsomorphismResult iso;
 	int result_flags = 0, compare_flags = 0;
 	size_t diff_nodes_size = 0, i;
 	CyberiadaNodePair* diff_nodes = NULL;
@@ -42,15 +43,17 @@ int main(void)
 	/* a document copy is identical to the original */
 	doc2 = cyberiada_copy_sm_document(doc1);
 	TEST_ASSERT(doc2);
-	TEST_ASSERT(cyberiada_check_isomorphism(doc1->state_machines,
-											doc2->state_machines, 1, 0,
-											&result_flags, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL) ==
+	TEST_ASSERT(cyberiada_check_sm_isomorphism(doc1->state_machines,
+											   doc2->state_machines, 1, 0,
+											   &iso) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+	TEST_ASSERT(iso.diff_nodes_size == 0);
+	TEST_ASSERT(iso.diff_edges_size == 0);
+	TEST_ASSERT(iso.new_nodes_size == 0);
+	TEST_ASSERT(iso.missing_nodes_size == 0);
+	TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(result_flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+	TEST_ASSERT(iso.diff_nodes == NULL);
 
 	/* a changed title is reported in the node diff */
 	node = cyberiada_graph_find_node_by_id(doc2->state_machines->nodes, "n1");
@@ -58,7 +61,26 @@ int main(void)
 	free(node->title);
 	TEST_ASSERT(cyberiada_copy_string(&node->title, &node->title_len,
 									  "Changed") == CYBERIADA_NO_ERROR);
-	result_flags = 0;
+	TEST_ASSERT(cyberiada_check_sm_isomorphism(doc1->state_machines,
+											   doc2->state_machines, 1, 0,
+											   &iso) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(!(iso.flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL));
+	TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
+	TEST_ASSERT(iso.diff_nodes_size > 0);
+	TEST_ASSERT(iso.diff_nodes);
+	TEST_ASSERT(iso.diff_nodes_flags);
+	found = 0;
+	for (i = 0; i < iso.diff_nodes_size; i++) {
+		if (iso.diff_nodes_flags[i] & CYBERIADA_NODE_DIFF_TITLE) {
+			TEST_ASSERT(strcmp(iso.diff_nodes[i].n2->title, "Changed") == 0);
+			found = 1;
+		}
+	}
+	TEST_ASSERT(found);
+	TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+				CYBERIADA_NO_ERROR);
+
+	/* the deprecated pointer-based form keeps working */
 	TEST_ASSERT(cyberiada_check_isomorphism(doc1->state_machines,
 											doc2->state_machines, 1, 0,
 											&result_flags, NULL,
@@ -68,19 +90,11 @@ int main(void)
 											NULL, NULL, NULL,
 											NULL, NULL, NULL, NULL) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(!(result_flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL));
 	TEST_ASSERT(result_flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
 	TEST_ASSERT(diff_nodes_size > 0);
 	TEST_ASSERT(diff_nodes);
 	TEST_ASSERT(diff_nodes_flags);
-	found = 0;
-	for (i = 0; i < diff_nodes_size; i++) {
-		if (diff_nodes_flags[i] & CYBERIADA_NODE_DIFF_TITLE) {
-			TEST_ASSERT(strcmp(diff_nodes[i].n2->title, "Changed") == 0);
-			found = 1;
-		}
-	}
-	TEST_ASSERT(found);
+	TEST_ASSERT(diff_nodes_flags[0] & CYBERIADA_NODE_DIFF_TITLE);
 	free(diff_nodes);
 	free(diff_nodes_flags);
 

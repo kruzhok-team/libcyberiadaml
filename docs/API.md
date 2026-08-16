@@ -1,10 +1,13 @@
 # The Cyberiada GraphML Library API Reference
 
-The public API is the single installed header:
+The public API is the installed header:
 
 ```c
 #include <cyberiada/cyberiadaml.h>
 ```
+
+The isomorphism check and diff API lives in the companion installed header
+`cyberiadaml_iso.h`, included automatically by `cyberiadaml.h`.
 
 It depends on `<cyberiada/htgeom.h>` from libhtreegeom for the geometry types.
 All functions return `int` error codes (see [Error codes](#error-codes)) unless
@@ -210,30 +213,39 @@ nothing matches; the type search accepts an OR-ed mask of node types.
 
 ### Isomorphism and diff
 
+Declared in `cyberiadaml_iso.h` (auto-included).
+
 ```c
-int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
-                                int ignore_comments, int require_initial,
-                                int* result_flags, CyberiadaNode** new_initial,
-                                size_t* sm_diff_nodes_size, CyberiadaNodePair** sm_diff_nodes,
-                                size_t** sm_diff_nodes_flags,
-                                size_t* sm2_new_nodes_size, CyberiadaNode*** sm2_new_nodes,
-                                size_t* sm1_missing_nodes_size, CyberiadaNode*** sm1_missing_nodes,
-                                size_t* sm_diff_edges_size, CyberiadaEdgePair** sm_diff_edges,
-                                size_t** sm_diff_edges_flags,
-                                size_t* sm2_new_edges_size, CyberiadaEdge*** sm2_new_edges,
-                                size_t* sm1_missing_edges_size, CyberiadaEdge*** sm1_missing_edges);
+int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
+                                   int ignore_comments, int require_initial,
+                                   CyberiadaIsomorphismResult* result);
+int cyberiada_cleanup_isomorphism_result(CyberiadaIsomorphismResult* result);
 int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n2action,
                                    int* compare_flags);
 ```
 
-`result_flags` receives the `CYBERIADA_ISOMORPH_FLAG_*` verdict
-(identical / equal / isomorphic / diff-states / diff-initial / diff-edges);
-the optional output arrays receive the changed pairs with their
-`CYBERIADA_NODE_DIFF_*` / `CYBERIADA_EDGE_DIFF_*` flag words plus the
-added/missing nodes and edges. Pass `NULL` for outputs you do not need. The
-returned arrays are allocated by the library and freed by the caller; the
-elements they point to belong to the compared graphs. Action comparison
-reports `CYBERIADA_ACTION_DIFF_*` flags.
+The check fills a caller-owned `CyberiadaIsomorphismResult`: `flags` receives
+the `CYBERIADA_ISOMORPH_FLAG_*` verdict (identical / equal / isomorphic /
+diff-states / diff-initial / diff-edges); the `diff_nodes`/`diff_edges` pair
+arrays carry per-pair `CYBERIADA_NODE_DIFF_*` / `CYBERIADA_EDGE_DIFF_*` flag
+words; `new_*`/`missing_*` list the elements present in only one graph;
+`new_initial` points to the second graph's differing initial pseudostate when
+`require_initial` is set. The arrays are allocated by the check and released
+with `cyberiada_cleanup_isomorphism_result()`; the nodes and edges they point
+to belong to the compared graphs. Action comparison reports
+`CYBERIADA_ACTION_DIFF_*` flags.
+
+The previous pointer-based form is kept for compatibility and is deprecated:
+
+```c
+int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
+                                int ignore_comments, int require_initial,
+                                int* result_flags, CyberiadaNode** new_initial,
+                                /* ... sixteen optional output pointers ... */);
+```
+
+It wraps the structure form; pass `NULL` for outputs you do not need, free the
+requested arrays yourself.
 
 ### Geometry
 

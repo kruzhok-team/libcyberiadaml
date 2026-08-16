@@ -27,7 +27,7 @@ int main(void)
 	CyberiadaDocument *doc, *reread;
 	char* buffer = NULL;
 	size_t buffer_size = 0;
-	int result_flags = 0;
+	CyberiadaIsomorphismResult iso;
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
@@ -59,15 +59,13 @@ int main(void)
 	TEST_ASSERT(cyberiada_read_sm_document(reread, "10-out.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(cyberiada_check_isomorphism(doc->state_machines,
+	TEST_ASSERT(cyberiada_check_sm_isomorphism(doc->state_machines,
 											reread->state_machines, 1, 0,
-											&result_flags, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL) ==
+											&iso) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(result_flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+	TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+	TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+				CYBERIADA_NO_ERROR);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(reread) == CYBERIADA_NO_ERROR);

@@ -25,7 +25,7 @@
 int main(void)
 {
 	CyberiadaDocument *doc, *simplified;
-	int result_flags = 0;
+	CyberiadaIsomorphismResult iso;
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
@@ -47,15 +47,13 @@ int main(void)
 												 "n0"));
 
 	/* the simplified graph is still equal to the original */
-	TEST_ASSERT(cyberiada_check_isomorphism(doc->state_machines,
+	TEST_ASSERT(cyberiada_check_sm_isomorphism(doc->state_machines,
 											simplified->state_machines, 1, 0,
-											&result_flags, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL) ==
+											&iso) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(result_flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
+	TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
+	TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+				CYBERIADA_NO_ERROR);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(simplified) == CYBERIADA_NO_ERROR);

@@ -53,7 +53,8 @@ constructed programmatically.
 
 | Module | Role |
 |---|---|
-| `cyberiadaml.h` | The public header: all types, flags, error codes, prototypes. The only installed header (`include/cyberiada/cyberiadaml.h`). |
+| `cyberiadaml.h` | The public header: the core types, flags, error codes and prototypes. Installed to `include/cyberiada/`. |
+| `cyberiadaml_iso.h` | The public isomorphism check and diff header (result structure, flags, prototypes); installed next to `cyberiadaml.h` and included by it. |
 | `cyberiadaml.c` | GraphML reader and writer: key tables, dialect detection, the DOM-walk processor, both format writers, the `read`/`write`/`decode`/`encode` entry points. |
 | `cyb_types.c/.h` | Lifecycle of the core structures: `new_*`, deep `copy_*`, `destroy_*`, `print_*` for document / SM / node / edge / action / link / comment. |
 | `cyb_graph.c/.h` | Graph primitives: find node by id/type, find edge, add node/edge with type-aware placement. |
@@ -66,7 +67,7 @@ constructed programmatically.
 | `cyb_structs.c/.h` | One generic `{key, data, next}` node reused as stack, list and queue. |
 | `cyb_node_stack.c/.h` | Typed stack tracking (current XML element, current node) during the DOM walk. |
 | `geometry.c/.h` | Bridge to libhtgeom: Cyberiada graph -> `HTDocument` -> convert / reconstruct -> back. Clean, round and validation helpers. |
-| `isomorph.c` | Graph isomorphism check and structural diff (prototypes in `cyberiadaml.h`). |
+| `isomorph.c` | Graph isomorphism check and structural diff (prototypes in `cyberiadaml_iso.h`). |
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
 | `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `diff`. |
@@ -158,7 +159,7 @@ standalone `cyberiada_reconstruct_document_geometry()`.
 
 ## Isomorphism and diff
 
-`cyberiada_check_isomorphism()` compares two `CyberiadaSM` graphs:
+`cyberiada_check_sm_isomorphism()` compares two `CyberiadaSM` graphs:
 
 1. enumerate vertexes with their in/out degrees;
 2. build a candidate-match matrix and proximity matrices over nodes and edges;
@@ -167,8 +168,10 @@ standalone `cyberiada_reconstruct_document_geometry()`.
 The verdict is a flag word — `identical` / `equal` / `isomorphic` /
 different states / different initial / different edges — plus arrays of
 changed node and edge pairs (with per-pair difference flags), added elements
-and missing elements. Action-level comparison distinguishes different
-behavior, behavior order and behavior arguments.
+and missing elements — gathered in the `CyberiadaIsomorphismResult` structure
+and released with `cyberiada_cleanup_isomorphism_result()`. Action-level
+comparison distinguishes different behavior, behavior order and behavior
+arguments.
 
 ## Memory ownership
 
@@ -178,8 +181,9 @@ behavior, behavior order and behavior arguments.
   `cyberiada_copy_string()`; strings are limited by `MAX_STR_LEN` (4096).
 * `cyberiada_cleanup_sm_document()` frees the content but not the structure
   (for stack allocation); `cyberiada_destroy_sm_document()` frees both.
-* The arrays returned by `cyberiada_check_isomorphism()` are owned by the
-  caller; the nodes/edges they point to belong to the compared documents.
+* The isomorphism result arrays are allocated by the check and released with
+  `cyberiada_cleanup_isomorphism_result()`; the nodes/edges they point to
+  belong to the compared documents.
 
 ---
 

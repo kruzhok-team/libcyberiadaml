@@ -26,7 +26,7 @@ int main(void)
 {
 	CyberiadaDocument *doc, *converted;
 	size_t vertexes1 = 0, edges1 = 0, vertexes2 = 0, edges2 = 0;
-	int result_flags = 0;
+	CyberiadaIsomorphismResult iso;
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
@@ -54,15 +54,13 @@ int main(void)
 	TEST_ASSERT(vertexes1 == vertexes2);
 	TEST_ASSERT(edges1 == edges2);
 
-	TEST_ASSERT(cyberiada_check_isomorphism(doc->state_machines,
+	TEST_ASSERT(cyberiada_check_sm_isomorphism(doc->state_machines,
 											converted->state_machines, 1, 0,
-											&result_flags, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL,
-											NULL, NULL, NULL,
-											NULL, NULL, NULL, NULL) ==
+											&iso) ==
 				CYBERIADA_NO_ERROR);
-	TEST_ASSERT(result_flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
+	TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK);
+	TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+				CYBERIADA_NO_ERROR);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(converted) == CYBERIADA_NO_ERROR);
