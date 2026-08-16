@@ -43,8 +43,8 @@ int main(void)
 
 	test_capture_stdout("03-read-minimal.out");
 	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(test_check_golden("03-read-minimal.out",
-								  "golden/03-read-minimal.txt") == 0);
+	TEST_ASSERT(test_check_good("03-read-minimal.out",
+								  "good/03-read-minimal.txt") == 0);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	return 0;

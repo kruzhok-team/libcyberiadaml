@@ -35,13 +35,13 @@ int main(void)
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 
-	/* the written document matches the golden file */
+	/* the written document matches the good file */
 	TEST_ASSERT(cyberiada_write_sm_document(doc, "10-out.graphml",
 											cybxmlCyberiada10,
 											CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(test_compare_files("10-out.graphml",
-								   "golden/10-write.graphml") == 0);
+								   "good/10-write.graphml") == 0);
 
 	/* the encoded buffer matches the written file */
 	TEST_ASSERT(cyberiada_encode_sm_document(doc, &buffer, &buffer_size,

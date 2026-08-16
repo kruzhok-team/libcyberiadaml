@@ -36,8 +36,8 @@ int main(void)
 
 	test_capture_stdout("06-read-orbita.out");
 	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(test_check_golden("06-read-orbita.out",
-								  "golden/06-read-orbita.txt") == 0);
+	TEST_ASSERT(test_check_good("06-read-orbita.out",
+								  "good/06-read-orbita.txt") == 0);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	return 0;

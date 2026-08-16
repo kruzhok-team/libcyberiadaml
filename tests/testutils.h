@@ -73,13 +73,13 @@ static inline int test_compare_files(const char* path1, const char* path2)
 	return result;
 }
 
-/* finish the stdout capture and compare it with the golden file */
-static inline int test_check_golden(const char* out_path, const char* golden_path)
+/* finish the stdout capture and compare it with the good file */
+static inline int test_check_good(const char* out_path, const char* good_path)
 {
 	fflush(stdout);
-	if (test_compare_files(out_path, golden_path)) {
-		fprintf(stderr, "output %s differs from golden %s\n",
-				out_path, golden_path);
+	if (test_compare_files(out_path, good_path)) {
+		fprintf(stderr, "output %s differs from good %s\n",
+				out_path, good_path);
 		return 1;
 	}
 	return 0;

@@ -37,8 +37,8 @@ int main(void)
 
 	test_capture_stdout("16-read-ostranna.out");
 	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(test_check_golden("16-read-ostranna.out",
-								  "golden/16-read-ostranna.txt") == 0);
+	TEST_ASSERT(test_check_good("16-read-ostranna.out",
+								  "good/16-read-ostranna.txt") == 0);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	return 0;

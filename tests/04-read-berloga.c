@@ -37,8 +37,8 @@ int main(void)
 
 	test_capture_stdout("04-read-berloga.out");
 	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(test_check_golden("04-read-berloga.out",
-								  "golden/04-read-berloga.txt") == 0);
+	TEST_ASSERT(test_check_good("04-read-berloga.out",
+								  "good/04-read-berloga.txt") == 0);
 
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	return 0;

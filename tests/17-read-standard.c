@@ -79,7 +79,7 @@ int main(void)
 	check_roundtrip("samples/standard-arduino.graphml", "17-arduino-out.graphml");
 	check_roundtrip("samples/standard-geometry.graphml", "17-geometry-out.graphml");
 
-	/* the golden print of the robot-vacuum example */
+	/* the good print of the robot-vacuum example */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
 	TEST_ASSERT(cyberiada_read_sm_document(doc, "samples/standard-hoover.graphml",
@@ -87,8 +87,8 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	test_capture_stdout("17-read-standard.out");
 	TEST_ASSERT(cyberiada_print_sm_document(doc) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(test_check_golden("17-read-standard.out",
-								  "golden/17-read-standard.txt") == 0);
+	TEST_ASSERT(test_check_good("17-read-standard.out",
+								  "good/17-read-standard.txt") == 0);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	return 0;
