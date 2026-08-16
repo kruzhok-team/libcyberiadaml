@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <data key="gFormat">Cyberiada-GraphML-1.0</data>
+  <key id="gFormat" for="graphml" attr.name="format" attr.type="string"/>
+  <key id="k1" for="graph" attr.name="name" attr.type="string"/>
+  <key id="k1" for="node" attr.name="name" attr.type="string"/>
+  <key id="k2" for="graph" attr.name="stateMachine" attr.type="string"/>
+  <key id="k3" for="node" attr.name="vertex" attr.type="string"/>
+  <key id="k4" for="node" attr.name="data" attr.type="string"/>
+  <key id="k4" for="edge" attr.name="data" attr.type="string"/>
+  <key id="k5" for="node" attr.name="note" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <data key="k2"/>
+    <data key="k1">Remapped SM</data>
+    <node id="nMeta">
+      <data key="k5">formal</data>
+      <data key="k1">CGML_META</data>
+      <data key="k4">standardVersion/ 1.0</data>
+    </node>
+    <node id="init">
+      <data key="k3">initial</data>
+      <data key="k1"></data>
+    </node>
+    <node id="n0">
+      <data key="k1">Off</data>
+      <data key="k4">entry/
+off();
+</data>
+    </node>
+    <node id="n1">
+      <data key="k1">On</data>
+    </node>
+    <edge id="init-n0" source="init" target="n0"/>
+    <edge id="n0-n1" source="n0" target="n1">
+      <data key="k4">TURN_ON/
+start();
+</data>
+    </edge>
+  </graph>
+</graphml>

@@ -8,6 +8,9 @@ foreach(test_source ${TEST_SOURCES})
            WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endforeach()
 
+find_package(Threads REQUIRED)
+target_link_libraries(18-key-remap Threads::Threads)
+
 file(GLOB TEST_DIAGRAMS ${CMAKE_CURRENT_SOURCE_DIR}/diagrams/*.graphml)
 file(COPY ${TEST_DIAGRAMS} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/diagrams)
 
