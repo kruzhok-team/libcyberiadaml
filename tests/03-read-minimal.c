@@ -29,7 +29,7 @@ int main(void)
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(doc->format);

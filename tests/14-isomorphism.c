@@ -35,7 +35,7 @@ int main(void)
 
 	doc1 = cyberiada_new_sm_document();
 	TEST_ASSERT(doc1);
-	TEST_ASSERT(cyberiada_read_sm_document(doc1, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc1, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 

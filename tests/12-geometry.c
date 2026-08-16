@@ -29,7 +29,7 @@ int main(void)
 	/* the geometry is imported by default */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
@@ -60,7 +60,7 @@ int main(void)
 	/* the skip-geometry flag drops the geometry on import */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown,
 										   CYBERIADA_FLAG_SKIP_GEOMETRY) ==
 				CYBERIADA_NO_ERROR);
@@ -70,7 +70,7 @@ int main(void)
 	/* the reconstruction flag builds geometry for a document without one */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/actions.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/actions.graphml",
 										   cybxmlUnknown,
 										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY |
 										   CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY) ==

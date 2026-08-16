@@ -29,7 +29,7 @@ int main(void)
 	/* a missing file */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/does-not-exist.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/does-not-exist.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) !=
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
@@ -37,7 +37,7 @@ int main(void)
 	/* malformed XML */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/bad.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/bad.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_XML_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
@@ -45,7 +45,7 @@ int main(void)
 	/* the write format must be concrete */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_write_sm_document(doc, "15-out.graphml", cybxmlUnknown,
@@ -62,7 +62,7 @@ int main(void)
 	/* the check-initial flag rejects a document without an initial pseudostate */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/no-initial.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/no-initial.graphml",
 										   cybxmlUnknown,
 										   CYBERIADA_FLAG_CHECK_INITIAL) !=
 				CYBERIADA_NO_ERROR);
@@ -71,7 +71,7 @@ int main(void)
 	/* the same document is accepted without the flag */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/no-initial.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/no-initial.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);

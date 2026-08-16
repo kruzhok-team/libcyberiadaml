@@ -33,7 +33,7 @@ int main(void)
 	/* the metainformation of the minimal document */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(doc->meta_info);
@@ -64,7 +64,7 @@ int main(void)
 	/* the wrong standard version is rejected */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/bad-version.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/bad-version.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_METADATA_FORMAT_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
@@ -72,7 +72,7 @@ int main(void)
 	/* the metainformation node is ignored with the skip-meta flag */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown,
 										   CYBERIADA_FLAG_SKIP_META) ==
 				CYBERIADA_NO_ERROR);

@@ -31,7 +31,7 @@ int main(void)
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/minimal.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 
@@ -75,7 +75,7 @@ int main(void)
 	/* entry, do and exit actions survive the round trip */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "fixtures/actions.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/actions.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_write_sm_document(doc, "10-out2.graphml",
