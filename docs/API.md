@@ -274,6 +274,6 @@ library error code.
 
 ---
 
-Copyright (C) 2024-2026 Alexey Fedoseev <aleksey@fedoseev.net>.
+Copyright (C) 2026 Alexey Fedoseev <aleksey@fedoseev.net>.
 This document is distributed under the GNU Free Documentation License
 (version 1.3).
