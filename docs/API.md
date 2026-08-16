@@ -283,6 +283,9 @@ free the previous value - release it first when replacing a string. `encode_meta
 serializes metainformation into the comment-body format used in GraphML.
 `cyberiada_error_str` returns a static human-readable description of a
 library error code.
+`cyberiada_cleanup_library` releases the global state of the underlying XML
+library; it is optional and, when used, must be called once at process exit
+after all threads have finished using the library — never between documents.
 
 ---
 

@@ -3588,6 +3588,12 @@ int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* 
 	return res;
 }
 
+int cyberiada_cleanup_library(void)
+{
+	xmlCleanupParser();
+	return CYBERIADA_NO_ERROR;
+}
+
 const char* cyberiada_error_str(int error_code)
 {
 	switch (error_code) {

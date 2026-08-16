@@ -465,6 +465,10 @@ typedef enum {
 	/* Get the string description of the library error code */
 	const char* cyberiada_error_str(int error_code);
 
+	/* Cleanup the global library state */
+	/* Optional; call once at the process exit, after all threads finished using the library */
+	int cyberiada_cleanup_library(void);
+
 #ifdef __cplusplus
 }
 #endif

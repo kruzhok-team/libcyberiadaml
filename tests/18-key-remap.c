@@ -110,5 +110,7 @@ int main(void)
 		TEST_ASSERT(thread_res == NULL);
 	}
 
+	TEST_ASSERT(cyberiada_cleanup_library() == CYBERIADA_NO_ERROR);
+
 	return 0;
 }
