@@ -98,6 +98,67 @@ int main(void)
 	free(diff_nodes);
 	free(diff_nodes_flags);
 
+	/* empty state machines compare as identical */
+	{
+		CyberiadaDocument *e1, *e2;
+		e1 = cyberiada_new_sm_document();
+		TEST_ASSERT(e1);
+		TEST_ASSERT(cyberiada_read_sm_document(e1, "samples/standard-minimal.graphml",
+											   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+					CYBERIADA_NO_ERROR);
+		e2 = cyberiada_copy_sm_document(e1);
+		TEST_ASSERT(e2);
+		TEST_ASSERT(cyberiada_check_sm_isomorphism(e1->state_machines,
+												   e2->state_machines, 1, 0,
+												   &iso) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(iso.flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+		TEST_ASSERT(iso.diff_nodes_size == 0);
+		TEST_ASSERT(iso.new_nodes_size == 0);
+		TEST_ASSERT(iso.missing_nodes_size == 0);
+		TEST_ASSERT(iso.new_edges_size == 0);
+		TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+					CYBERIADA_NO_ERROR);
+
+		/* the empty vs non-empty difference is reported in the arrays */
+		TEST_ASSERT(cyberiada_check_sm_isomorphism(e1->state_machines,
+												   doc1->state_machines, 1, 0,
+												   &iso) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
+		TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES);
+		TEST_ASSERT(iso.new_nodes_size == 3);
+		TEST_ASSERT(iso.new_edges_size == 3);
+		TEST_ASSERT(iso.missing_nodes_size == 0);
+		TEST_ASSERT(iso.diff_nodes_size == 0);
+		TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+					CYBERIADA_NO_ERROR);
+
+		/* the swapped order fills the missing side */
+		TEST_ASSERT(cyberiada_check_sm_isomorphism(doc1->state_machines,
+												   e1->state_machines, 1, 0,
+												   &iso) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(iso.flags & CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
+		TEST_ASSERT(iso.missing_nodes_size == 3);
+		TEST_ASSERT(iso.missing_edges_size == 3);
+		TEST_ASSERT(iso.new_nodes_size == 0);
+		TEST_ASSERT(cyberiada_cleanup_isomorphism_result(&iso) ==
+					CYBERIADA_NO_ERROR);
+
+		/* the deprecated form accepts the empty graphs too */
+		result_flags = 0;
+		TEST_ASSERT(cyberiada_check_isomorphism(e1->state_machines,
+												e2->state_machines, 1, 0,
+												&result_flags, NULL,
+												NULL, NULL, NULL,
+												NULL, NULL, NULL, NULL,
+												NULL, NULL, NULL,
+												NULL, NULL, NULL, NULL) ==
+					CYBERIADA_NO_ERROR);
+		TEST_ASSERT(result_flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL);
+
+		TEST_ASSERT(cyberiada_destroy_sm_document(e1) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(cyberiada_destroy_sm_document(e2) == CYBERIADA_NO_ERROR);
+	}
+
 	/* action comparison */
 	a1 = cyberiada_new_action(cybActionTransition, "EVENT", "guard", "act();");
 	TEST_ASSERT(a1);

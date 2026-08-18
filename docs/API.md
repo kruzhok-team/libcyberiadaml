@@ -230,7 +230,11 @@ diff-states / diff-initial / diff-edges); the `diff_nodes`/`diff_edges` pair
 arrays carry per-pair `CYBERIADA_NODE_DIFF_*` / `CYBERIADA_EDGE_DIFF_*` flag
 words; `new_*`/`missing_*` list the elements present in only one graph;
 `new_initial` points to the second graph's differing initial pseudostate when
-`require_initial` is set. The arrays are allocated by the check and released
+`require_initial` is set. Empty graphs are comparable: two empty state
+machines are identical, and an empty against a non-empty one yields the
+diff-states verdict with the non-empty side listed in the `new_*`/`missing_*`
+arrays (`require_initial` still rejects empty graphs — they have no initial
+pseudostate). The arrays are allocated by the check and released
 with `cyberiada_cleanup_isomorphism_result()`; the nodes and edges they point
 to belong to the compared graphs. Action comparison reports
 `CYBERIADA_ACTION_DIFF_*` flags.
