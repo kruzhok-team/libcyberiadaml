@@ -153,11 +153,13 @@ static const struct {
 	{ "block",     cybEventPropagationBlock },
 	{ "defer",     cybEventPropagationDefer }
 };
+static const size_t cyberiada_propagation_keywords_count =
+	sizeof(cyberiada_propagation_keywords) / sizeof(cyberiada_propagation_keywords[0]);
 
 const char* cyberiada_propagation_str(CyberiadaEventPropagation propagation)
 {
 	size_t i;
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < cyberiada_propagation_keywords_count; i++) {
 		if (cyberiada_propagation_keywords[i].value == propagation) {
 			return cyberiada_propagation_keywords[i].keyword;
 		}
@@ -173,7 +175,7 @@ static CyberiadaEventPropagation cyberiada_match_propagation(const char* text, c
 	if (len <= 0) {
 		return cybEventPropagationNone;
 	}
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < cyberiada_propagation_keywords_count; i++) {
 		klen = strlen(cyberiada_propagation_keywords[i].keyword);
 		if ((int)klen == len &&
 			strncmp(text + m->rm_so, cyberiada_propagation_keywords[i].keyword, klen) == 0) {
@@ -191,7 +193,7 @@ static CyberiadaEventPropagation cyberiada_extract_propagation(char* trigger)
 		return cybEventPropagationNone;
 	}
 	len = strlen(trigger);
-	for (i = 0; i < 3; i++) {
+	for (i = 0; i < cyberiada_propagation_keywords_count; i++) {
 		klen = strlen(cyberiada_propagation_keywords[i].keyword);
 		if (len == klen && strcmp(trigger, cyberiada_propagation_keywords[i].keyword) == 0) {
 			trigger[0] = 0;
