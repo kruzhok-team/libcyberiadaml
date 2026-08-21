@@ -3585,10 +3585,10 @@ int cyberiada_encode_sm_document(CyberiadaDocument* doc, char** buffer, size_t* 
  	res = cyberiada_process_encode_sm_document(doc, writer, format, flags);
 
 	if (res == CYBERIADA_NO_ERROR) {
-		size_t size = xml_buffer->use;
+		size_t size = xmlBufferLength(xml_buffer);
 		*buffer = (char*)malloc(size + 1);
 		if (*buffer) {
-			memcpy(*buffer, xml_buffer->content, size);
+			memcpy(*buffer, xmlBufferContent(xml_buffer), size);
 			(*buffer)[size] = 0;
 			*buffer_size = size;
 		} else {
