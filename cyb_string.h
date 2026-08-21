@@ -31,6 +31,8 @@ extern "C" {
  * The Cyberiada GraphML string utilities
  * ----------------------------------------------------------------------------- */
 
+    /* the buffer size for the bounded strings (attribute values, ids,
+       numbers); the document content strings have no length limit */
     #define MAX_STR_LEN							   4096
 	#define CYBERIADA_SINGLE_NEWLINE               "\n"
     #define CYBERIADA_NEWLINE                      "\n\n"

@@ -63,7 +63,7 @@ constructed programmatically.
 | `cyb_actions.c` | Regex-driven parsing of state/transition action text into `CyberiadaAction` lists (`trigger [guard] / behavior`); legacy yEd block splitting; action comparison for the diff. |
 | `cyb_regexps.c` | Compilation and release of the action regexps; carries per-parse dialect flags (`berloga_legacy`, `arena_legacy`, `flattened_regexps`). |
 | `cyb_regex.h` | Platform wrapper selecting the regex backend: POSIX `<regex.h>` on Linux, `pcre2posix` elsewhere (`CYBERIADA_PCRE2_REGEXPS`). |
-| `cyb_string.c/.h` | String copy/append/trim helpers; `MAX_STR_LEN` (4096) limit. |
+| `cyb_string.c/.h` | String copy/append/trim helpers; `MAX_STR_LEN` bounds only the attribute buffers. |
 | `cyb_structs.c/.h` | One generic `{key, data, next}` node reused as stack, list and queue. |
 | `cyb_node_stack.c/.h` | Typed stack tracking (current XML element, current node) during the DOM walk. |
 | `geometry.c/.h` | Bridge to libhtgeom: Cyberiada graph -> `HTDocument` -> convert / reconstruct -> back. Clean, round and validation helpers. |
@@ -183,7 +183,7 @@ arguments.
 * Every structure has `new` / `copy` / `destroy` functions in `cyb_types.c`;
   the document owns its state machines, which own their nodes and edges.
 * Every string field is paired with an explicit `_len` and must be set via
-  `cyberiada_copy_string()`; strings are limited by `MAX_STR_LEN` (4096).
+  `cyberiada_copy_string()`; the content strings have no length limit.
 * `cyberiada_cleanup_sm_document()` frees the content but not the structure
   (for stack allocation); `cyberiada_destroy_sm_document()` frees both.
 * The isomorphism result arrays are allocated by the check and released with

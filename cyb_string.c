@@ -41,10 +41,7 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 		}
 		return CYBERIADA_NO_ERROR;
 	}
-	strsize = strlen(source);  
-	if (strsize > MAX_STR_LEN - 1) {
-		return CYBERIADA_MEMORY_ERROR;
-	}
+	strsize = strlen(source);
 	target_str = (char*)malloc(strsize + 1);
 	if (!target_str) {
 		return CYBERIADA_MEMORY_ERROR;
@@ -108,9 +105,6 @@ int cyberiada_append_string(char** target, size_t* size, const char* source, con
 		separator_size = 0;
 	}
 	new_target_size = target_size + separator_size + source_size;
-	if (new_target_size > MAX_STR_LEN - 1) {
-		return CYBERIADA_BAD_PARAMETER;
-	}
 	new_target_str = (char*)malloc(new_target_size + 1);
 	if (!new_target_str) {
 		return CYBERIADA_MEMORY_ERROR;

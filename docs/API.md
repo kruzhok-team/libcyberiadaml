@@ -37,7 +37,8 @@ stated otherwise; constructors return a pointer or `NULL` on failure.
 ```
 
 Every string field `s` is paired with a length field `s_len` and must be set
-with `cyberiada_copy_string()`.
+with `cyberiada_copy_string()`. The document content strings (titles,
+actions, comments) have no length limit.
 
 ### Node types (`CyberiadaNodeType`)
 
@@ -284,9 +285,10 @@ int cyberiada_destroy_sm(CyberiadaSM* sm);
 const char* cyberiada_error_str(int error_code);
 ```
 
-`cyberiada_copy_string` initializes a string field and its length; it is
-the required way to set strings in the Cyberiada structures. It does not
-free the previous value - release it first when replacing a string. `encode_meta`
+`cyberiada_copy_string` initializes a string field and its length (of any
+size); it is the required way to set strings in the Cyberiada structures.
+It does not free the previous value - release it first when replacing a
+string. `encode_meta`
 serializes metainformation into the comment-body format used in GraphML.
 `cyberiada_error_str` returns a static human-readable description of a
 library error code.
