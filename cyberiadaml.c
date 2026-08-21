@@ -1764,11 +1764,15 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 {
 	xmlNode *cur_xml_node = NULL;
 	for (cur_xml_node = xml_root; cur_xml_node; cur_xml_node = cur_xml_node->next) {
-/*		CyberiadaNode* current = node_stack_current_node(stack);
-		DEBUG("xml node %s current %s gps %s\n",
-			  cur_xml_node->name,
-			  current ? current->id : "null",
-			  debug_state_names[*gps]);*/
+#ifdef __DEBUG__
+		{
+			CyberiadaNode* current = node_stack_current_node(stack);
+			DEBUG("xml node %s current %s gps %s\n",
+				  cur_xml_node->name,
+				  current ? current->id : "null",
+				  debug_state_names[*gps]);
+		}
+#endif
 		node_stack_push(stack);
 		dispatch_processor(cur_xml_node, doc, stack, gps,
 						   processor_state_table, processor_state_table_size,
