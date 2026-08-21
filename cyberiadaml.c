@@ -359,7 +359,7 @@ typedef enum {
 	gpsInvalidMeta
 } GraphProcessorState;
 
-#ifdef __DEBUG__
+/*#ifdef __DEBUG__
 static const char* debug_state_names[] = {
 	"Init",
 	"Graph",
@@ -381,7 +381,7 @@ static const char* debug_state_names[] = {
 	"Invalid",
 	"InvalidMeta",
 };
-#endif
+#endif*/
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML XML reader functions
@@ -1764,7 +1764,7 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 {
 	xmlNode *cur_xml_node = NULL;
 	for (cur_xml_node = xml_root; cur_xml_node; cur_xml_node = cur_xml_node->next) {
-#ifdef __DEBUG__
+/*#ifdef __DEBUG__
 		{
 			CyberiadaNode* current = node_stack_current_node(stack);
 			DEBUG("xml node %s current %s gps %s\n",
@@ -1772,7 +1772,7 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 				  current ? current->id : "null",
 				  debug_state_names[*gps]);
 		}
-#endif
+#endif*/
 		node_stack_push(stack);
 		dispatch_processor(cur_xml_node, doc, stack, gps,
 						   processor_state_table, processor_state_table_size,
