@@ -71,6 +71,14 @@ typedef enum {
     cybActionDo =         0x8
 } CyberiadaActionType;
 
+/* SM event handling parameters (the keywords of the event description) */
+typedef enum {
+	cybEventPropagationNone =      0,   /* not set */
+	cybEventPropagationBlock =     1,   /* block the event */
+	cybEventPropagationPropagate = 2,   /* propagate the event */
+	cybEventPropagationDefer =     3    /* defer the event */
+} CyberiadaEventPropagation;
+
 /* SM behavior */
 typedef struct _CyberiadaAction {
     CyberiadaActionType         type;
@@ -80,6 +88,7 @@ typedef struct _CyberiadaAction {
     size_t                      guard_len;
     char*                       behavior;
     size_t                      behavior_len;
+	CyberiadaEventPropagation   propagation;  /* for transition actions */
     struct _CyberiadaAction*    next;
 } CyberiadaAction;
 

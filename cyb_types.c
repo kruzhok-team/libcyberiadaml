@@ -87,10 +87,15 @@ CyberiadaAction* cyberiada_new_action(CyberiadaActionType type,
 
 static CyberiadaAction* cyberiada_copy_action(CyberiadaAction* src)
 {
+	CyberiadaAction* dst;
 	if (!src) {
 		return NULL;
 	}
-	return cyberiada_new_action(src->type, src->trigger, src->guard, src->behavior);
+	dst = cyberiada_new_action(src->type, src->trigger, src->guard, src->behavior);
+	if (dst) {
+		dst->propagation = src->propagation;
+	}
+	return dst;
 }
 
 CyberiadaNode* cyberiada_new_node(const char* id)

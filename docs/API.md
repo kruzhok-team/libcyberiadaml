@@ -55,8 +55,11 @@ Bit-flag values, so the same constants form a `CyberiadaNodeTypeMask`:
 ### Action types (`CyberiadaActionType`)
 
 `cybActionTransition`, `cybActionEntry`, `cybActionExit`, `cybActionDo`.
-An action is `trigger [guard] / behavior`; a state owns a list of
-entry/exit/do actions, a transition owns a list of transition actions.
+An action is `trigger [guard] keyword / behavior`; a state owns a list of
+entry/exit/do actions, a transition owns a list of transition actions. The
+optional event handling keyword before the slash — `propagate`, `block` or
+`defer` (PNST 1044-2025, 6.8) — is stored in the `propagation` field as a
+`CyberiadaEventPropagation` value and written back on export.
 
 ### Metainformation (`CyberiadaMetainformation`)
 

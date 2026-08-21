@@ -913,6 +913,7 @@ static int cyberiada_compare_actions(CyberiadaAction* action1, CyberiadaAction* 
 		int found = 0;
 		for (a2 = action2; a2; a2 = a2->next) {
 			if (a1->type == a2->type &&
+				a1->propagation == a2->propagation &&
 				strcmp(a1->trigger, a2->trigger) == 0 &&
 				strcmp(a1->guard, a2->guard) == 0 &&
 				strcmp(a1->behavior, a2->behavior) == 0) {

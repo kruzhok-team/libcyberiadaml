@@ -43,6 +43,7 @@ extern "C" {
 	int cyberiada_join_action_doubles(CyberiadaAction** action);
 	int cyberiada_remove_empty_actions(CyberiadaAction** action);
 	int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n2action, int* compare_flags);
+	const char* cyberiada_propagation_str(CyberiadaEventPropagation propagation);
 	
 #ifdef __cplusplus
 }

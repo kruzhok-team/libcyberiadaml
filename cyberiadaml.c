@@ -2491,11 +2491,24 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 					return CYBERIADA_ASSERT;
 				}
 			} else {
+				const char* prop = cyberiada_propagation_str(action->propagation);
 				if (*(action->guard)) {
 					if (*(action->trigger)) {
-						snprintf(buffer, buffer_len - 1, "%s [%s]/", action->trigger, action->guard);
+						if (prop) {
+							snprintf(buffer, buffer_len - 1, "%s [%s] %s/", action->trigger, action->guard, prop);
+						} else {
+							snprintf(buffer, buffer_len - 1, "%s [%s]/", action->trigger, action->guard);
+						}
+					} else if (prop) {
+						snprintf(buffer, buffer_len - 1, "[%s] %s/", action->guard, prop);
 					} else {
 						snprintf(buffer, buffer_len - 1, "[%s]/", action->guard);
+					}
+				} else if (prop) {
+					if (*(action->trigger)) {
+						snprintf(buffer, buffer_len - 1, "%s %s/", action->trigger, prop);
+					} else {
+						snprintf(buffer, buffer_len - 1, "%s/", prop);
 					}
 				} else {
 					snprintf(buffer, buffer_len - 1, "%s/", action->trigger);

@@ -77,6 +77,7 @@ typedef struct {                                        /* the pair of edges */
 #define CYBERIADA_ACTION_DIFF_TYPES                       0x10   /* the two nodes' have different action types */
 #define CYBERIADA_ACTION_DIFF_GUARDS                      0x20   /* the two nodes' have different guards */
 #define CYBERIADA_ACTION_DIFF_NUMBER                      0x40   /* the two nodes' have different action numbers */
+#define CYBERIADA_ACTION_DIFF_PROPAGATION                 0x80   /* the two nodes' have different event handling parameters */
 
 /* The isomorphism check result. The arrays are allocated by the check and
    released by cyberiada_cleanup_isomorphism_result(); the nodes and edges
