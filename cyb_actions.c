@@ -230,9 +230,11 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 						   CYBERIADA_ACTION_LEGACY_EDGE_MATCHES, pmatch, 0)) != 0) {
 			if (res == REG_NOMATCH) {
 				ERROR("legacy edge action text didn't match the regexp\n");
+				free(buffer);
 				return CYBERIADA_ACTION_FORMAT_ERROR;
 			} else {
 				ERROR("legacy edge action regexp error %d\n", res);
+				free(buffer);
 				return CYBERIADA_ASSERT;
 			}
 		}
@@ -242,6 +244,7 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_TRIGGER,
 											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_GUARD,
 											  CYBERIADA_ACTION_REGEXP_MATCH_LEGACY_ACTION) != CYBERIADA_NO_ERROR) {
+			free(buffer);
 			return CYBERIADA_ASSERT;
 		}		
 	} else {
@@ -249,9 +252,11 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 						   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 			if (res == REG_NOMATCH) {
 				ERROR("edge action text didn't match the regexp\n");
+				free(buffer);
 				return CYBERIADA_ACTION_FORMAT_ERROR;
 			} else {
 				ERROR("edge action regexp error %d\n", res);
+				free(buffer);
 				return CYBERIADA_ASSERT;
 			}
 		}
@@ -261,6 +266,7 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 											  CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER,
 											  CYBERIADA_ACTION_REGEXP_MATCH_GUARD,
 											  CYBERIADA_ACTION_REGEXP_MATCH_ACTION) != CYBERIADA_NO_ERROR) {
+			free(buffer);
 			return CYBERIADA_ASSERT;
 		}
 		match_prop = cyberiada_match_propagation(buffer,
@@ -448,6 +454,7 @@ int cyberiada_decode_state_actions(const char* text, CyberiadaAction** actions, 
 
 		if ((res = cyberiada_decode_state_block_action(start, actions, regexps)) != CYBERIADA_NO_ERROR) {
 			ERROR("error while decoding state block %s: %d\n", start, res);
+			free(buffer);
 			return res;
 		}
 	}
@@ -475,6 +482,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 	if (regexps->flattened_regexps) {
 		buffer2 = (char*)malloc(buffer_len * 2);
 		if (!buffer2) {
+			free(buffer);
 			return CYBERIADA_MEMORY_ERROR;
 		}
 		memset(buffer2, 0, buffer_len * 2);
