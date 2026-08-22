@@ -406,6 +406,10 @@ static int cyberiada_get_attr_value(char* buffer, size_t buffer_len,
 	while(attribute) {
 		if (strcmp((const char*)attribute->name, attrname) == 0) {
 			xmlChar* value = xmlNodeListGetString(node->doc, attribute->children, 1);
+			if (!value) {
+				buffer[0] = 0;
+				return CYBERIADA_NO_ERROR;
+			}
 			strncpy(buffer, (char*)value, buffer_len - 1);
 			buffer[buffer_len - 1] = 0;
 			xmlFree(value);
@@ -2423,7 +2427,7 @@ static int cyberiada_detect_flattened_file(const char* filename, int* flattened)
 		size_t r;
 		r = fread(buffer, 1, 2, f);
 		if (r < 2) break;
-		if (isspace(buffer[0]) && isspace(buffer[1])) {
+		if (isspace((unsigned char)(buffer[0])) && isspace((unsigned char)(buffer[1]))) {
 			*flattened = 0;
 			break;
 		}
@@ -2445,7 +2449,7 @@ static int cyberiada_detect_flattened_buffer(const char* buffer, size_t buffer_s
 	*flattened = 1;
 	
 	for (i = 0; i + 1 < buffer_size; i += 2) {
-		if (isspace(buffer[i]) && isspace(buffer[i + 1])) {
+		if (isspace((unsigned char)(buffer[i])) && isspace((unsigned char)(buffer[i + 1]))) {
 			*flattened = 0;
 			break;
 		}

@@ -196,15 +196,30 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 		return NULL;
 	}
 	t_node = htree_new_node(type, node->id);
+	if (!t_node) {
+		ERROR("Cannot create new node\n");
+		return NULL;
+	}
 	if (node->geometry_point) {
 		t_node->point = htree_copy_point(node->geometry_point);
+		if (!t_node->point) {
+			ERROR("Cannot copy a point\n");
+			htree_destroy_node(t_node);
+			return NULL;
+		}
 	}
 	if (node->geometry_rect) {
 		t_node->rect = htree_copy_rect(node->geometry_rect);
+		if (!t_node->rect) {
+			ERROR("Cannot copy a rect\n");
+			htree_destroy_node(t_node);
+			return NULL;
+		}
 	}
 	if (node->children) {
 		for (child = node->children; child; child = child->next) {
 			t_child = cyberiada_node_to_htree(child);
+			if (!t_child) continue;
 			t_child->parent = t_node;
 			if (t_node->children) {
 				n = t_node->children;

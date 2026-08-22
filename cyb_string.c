@@ -58,7 +58,7 @@ int cyberiada_copy_string(char** target, size_t* size, const char* source)
 int cyberiada_string_is_empty(const char* s)
 {
 	while(*s) {
-		if (!isspace(*s)) {
+		if (!isspace((unsigned char)(*s))) {
 			return 0;
 		}
 		s++;
@@ -73,7 +73,7 @@ int cyberiada_string_trim(char* orig)
 	if (!*orig) return 0;
 	s = orig + strlen(orig) - 1;
 	while(s >= orig) {
-		if (isspace(*s)) {
+		if (isspace((unsigned char)(*s))) {
 			*s = 0;
 			s--;
 		} else {

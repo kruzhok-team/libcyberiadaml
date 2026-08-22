@@ -271,7 +271,7 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 		*parts = 0;
 		do {
 			parts++;
-		} while (isspace(*parts));
+		} while (isspace((unsigned char)(*parts)));
 		cyberiada_string_trim(parts);
 		
 		if (strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0) {
