@@ -485,7 +485,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 			free(buffer);
 			return CYBERIADA_MEMORY_ERROR;
 		}
-		memset(buffer2, 0, buffer_len * 2);
+		memset(buffer2, 0, 3 * buffer_len + 1);
 		char* start2 = buffer2;
 		block = buffer2;
 		
