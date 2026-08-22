@@ -252,11 +252,11 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 						   CYBERIADA_ACTION_REGEXP_MATCHES, pmatch, 0)) != 0) {
 			if (res == REG_NOMATCH) {
 				ERROR("edge action text didn't match the regexp\n");
-				free(buffer);
+				free(buffer);	
 				return CYBERIADA_ACTION_FORMAT_ERROR;
 			} else {
 				ERROR("edge action regexp error %d\n", res);
-				free(buffer);
+				free(buffer);	
 				return CYBERIADA_ASSERT;
 			}
 		}
@@ -480,7 +480,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 		return CYBERIADA_NO_ERROR;
 	}
 	if (regexps->flattened_regexps) {
-		buffer2 = (char*)malloc(buffer_len * 2);
+		buffer2 = (char*)malloc(3 * buffer_len + 1);
 		if (!buffer2) {
 			free(buffer);
 			return CYBERIADA_MEMORY_ERROR;
@@ -518,7 +518,7 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 	} else {
 		while (*next) {
 			start = next;
-			while (*start && isspace(*start)) start++;
+			while (*start && isspace((unsigned char)(*start))) start++;
 			if (!*start) {
 				res = CYBERIADA_NO_ERROR;
 				break;

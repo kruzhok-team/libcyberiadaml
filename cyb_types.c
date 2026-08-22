@@ -193,7 +193,7 @@ static int cyberiada_destroy_node(CyberiadaNode* node)
 	if(node != NULL) {
 		if (node->id) free(node->id);
 		if (node->title) free(node->title);
-		if (node->formal_title) free(node->title);
+		if (node->formal_title) free(node->formal_title);
 		if (node->children) {
 			cyberiada_destroy_all_nodes(node->children);
 		}
