@@ -91,7 +91,7 @@ timer1.start(1000)
     <data key="dNote">informal</data>
     <data key="dData"> Включение и выключение лампочки по таймеру! </data>
     <data key="dGeometry">
-      <point x="640" y="114" />
+      <rect x="640" y="114" width="250" height="70" />
     </data>
   </node>
   <edge id="init-edge" source="init" target="diod1"/>

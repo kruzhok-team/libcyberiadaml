@@ -54,6 +54,7 @@ extern "C" {
 														  int flags, CyberiadaXMLFormat file_format);
 	int                cyberiada_document_has_geometry(CyberiadaDocument* doc);
 	int                cyberiada_check_nodes_geometry(CyberiadaNode* nodes);
+	int                cyberiada_repair_nodes_geometry(CyberiadaNode* nodes);
 	
 #ifdef __cplusplus
 }

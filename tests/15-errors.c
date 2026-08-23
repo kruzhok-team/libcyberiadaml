@@ -59,6 +59,15 @@ int main(void)
 				CYBERIADA_BAD_PARAMETER);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
+	/* a comment with point geometry violates the standard */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/point-comment.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_ACTION_FORMAT_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+
 	/* the check-initial flag rejects a document without an initial pseudostate */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);

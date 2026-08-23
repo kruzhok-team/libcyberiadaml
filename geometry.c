@@ -833,6 +833,39 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 	return 0;
 }
 
+int cyberiada_repair_nodes_geometry(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeInitial || n->type == cybNodeFinal || n->type == cybNodeTerminate) {
+			if (n->geometry_rect) {
+				ERROR("warning: dropping the rect geometry of the point node %s\n", n->id);
+				htree_destroy_rect(n->geometry_rect);
+				n->geometry_rect = NULL;
+			}
+		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
+				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice ||
+				   n->type == cybNodeComment || n->type == cybNodeFormalComment) {
+			if (n->geometry_point) {
+				ERROR("warning: dropping the point geometry of the rect node %s\n", n->id);
+				htree_destroy_point(n->geometry_point);
+				n->geometry_point = NULL;
+			}
+			if (n->geometry_rect && n->geometry_rect->width == 0.0 && n->geometry_rect->height == 0.0) {
+				ERROR("warning: dropping the zero-size rect of the node %s\n", n->id);
+				htree_destroy_rect(n->geometry_rect);
+				n->geometry_rect = NULL;
+			}
+		}
+		if (n->children) {
+			cyberiada_repair_nodes_geometry(n->children);
+		}
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
 int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 {
 	CyberiadaNode* n;
@@ -844,7 +877,8 @@ int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 				return CYBERIADA_ACTION_FORMAT_ERROR;
 			}
 		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
-				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice) {
+				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice ||
+				   n->type == cybNodeComment || n->type == cybNodeFormalComment) {
 			if (n->geometry_point) {
 				ERROR("Rect (node %s) has point geometry\n", n->id);
 				return CYBERIADA_ACTION_FORMAT_ERROR;
