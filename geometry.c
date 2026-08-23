@@ -252,6 +252,9 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge)
 	if (edge->geometry_label_point) {
 		t_edge->label_point = htree_copy_point(edge->geometry_label_point);
 	}
+	if (edge->geometry_label_rect) {
+		t_edge->label_rect = htree_copy_rect(edge->geometry_label_rect);
+	}
 	return t_edge;
 }
 
@@ -450,6 +453,18 @@ static int cyberiada_update_edge_geometry(CyberiadaEdge* edge, HTreeEdge* tree_e
 		}
 		if (tree_edge->label_point) {
 			edge->geometry_label_point = htree_copy_point(tree_edge->label_point);
+		}
+	}
+
+	if (edge->geometry_label_rect && tree_edge->label_rect) {
+		htree_set_rect(edge->geometry_label_rect, tree_edge->label_rect);
+	} else {
+		if (edge->geometry_label_rect) {
+			htree_destroy_rect(edge->geometry_label_rect);
+			edge->geometry_label_rect = NULL;
+		}
+		if (tree_edge->label_rect) {
+			edge->geometry_label_rect = htree_copy_rect(tree_edge->label_rect);
 		}
 	}
 	
@@ -831,6 +846,44 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 	}
 	
 	return 0;
+}
+
+int cyberiada_check_edges_geometry(CyberiadaEdge* edges)
+{
+	CyberiadaEdge* e;
+
+	for (e = edges; e; e = e->next) {
+		if (e->type == cybEdgeComment &&
+			(e->geometry_label_point || e->geometry_label_rect)) {
+			ERROR("Comment edge %s has label geometry\n", e->id);
+			return CYBERIADA_ACTION_FORMAT_ERROR;
+		}
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_repair_edges_geometry(CyberiadaEdge* edges)
+{
+	CyberiadaEdge* e;
+
+	for (e = edges; e; e = e->next) {
+		if (e->type != cybEdgeComment) {
+			continue;
+		}
+		if (e->geometry_label_point) {
+			ERROR("warning: dropping the label point of the comment edge %s\n", e->id);
+			htree_destroy_point(e->geometry_label_point);
+			e->geometry_label_point = NULL;
+		}
+		if (e->geometry_label_rect) {
+			ERROR("warning: dropping the label rect of the comment edge %s\n", e->id);
+			htree_destroy_rect(e->geometry_label_rect);
+			e->geometry_label_rect = NULL;
+		}
+	}
+
+	return CYBERIADA_NO_ERROR;
 }
 
 int cyberiada_repair_nodes_geometry(CyberiadaNode* nodes)
