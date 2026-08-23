@@ -2358,6 +2358,14 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
+		if (!(flags & CYBERIADA_FLAG_SKIP_GEOMETRY) &&
+			(flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY))) {
+			/* malformed geometry is dropped and rebuilt by the reconstruction */
+			for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
+				cyberiada_repair_nodes_geometry(sm->nodes);
+			}
+		}
+
 		res = cyberiada_check_graphs(cyb_doc,
 									 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 									 flags & CYBERIADA_FLAG_CHECK_INITIAL,

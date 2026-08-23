@@ -25,6 +25,7 @@
 int main(void)
 {
 	CyberiadaDocument* doc;
+	CyberiadaNode* node;
 
 	/* the geometry is imported by default */
 	doc = cyberiada_new_sm_document();
@@ -76,6 +77,19 @@ int main(void)
 										   CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the reconstruction flag repairs malformed node geometry */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/point-comment.graphml",
+										   cybxmlUnknown,
+										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) ==
+				CYBERIADA_NO_ERROR);
+	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "cX");
+	TEST_ASSERT(node);
+	TEST_ASSERT(node->geometry_point == NULL);
+	TEST_ASSERT(node->geometry_rect != NULL);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	return 0;
