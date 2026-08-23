@@ -19,6 +19,7 @@
  * along with this program. If not, see https://www.gnu.org/licenses/
  * ----------------------------------------------------------------------------- */
 
+#include <math.h>
 #include <cyberiadaml.h>
 #include "testutils.h"
 
@@ -26,6 +27,7 @@ int main(void)
 {
 	CyberiadaDocument* doc;
 	CyberiadaNode* node;
+	CyberiadaEdge* edge;
 
 	/* the geometry is imported by default */
 	doc = cyberiada_new_sm_document();
@@ -77,6 +79,43 @@ int main(void)
 										   CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the edge label rect is converted with the rest of the geometry
+	   and extends the document bounding rect */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/label-geometry.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(doc->bounding_rect);
+	TEST_ASSERT(fabs(doc->bounding_rect->width - 1000.0) < 0.01);
+	TEST_ASSERT(fabs(doc->bounding_rect->height - 760.0) < 0.01);
+	TEST_ASSERT(cyberiada_convert_document_geometry(doc, coordAbsolute,
+													coordAbsolute, coordAbsolute,
+													edgeBorder) ==
+				CYBERIADA_NO_ERROR);
+	edge = doc->state_machines->edges;
+	while (edge && strcmp(edge->id, "n0-n1") != 0) edge = edge->next;
+	TEST_ASSERT(edge);
+	TEST_ASSERT(edge->geometry_label_rect);
+	/* the label is bound to the top left corner of the source node (50; 50) */
+	TEST_ASSERT(fabs(edge->geometry_label_rect->x - 950.0) < 0.01);
+	TEST_ASSERT(fabs(edge->geometry_label_rect->y - 750.0) < 0.01);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the reconstruction flag drops the label geometry of a comment edge */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/comment-edge-label.graphml",
+										   cybxmlUnknown,
+										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) ==
+				CYBERIADA_NO_ERROR);
+	edge = doc->state_machines->edges;
+	while (edge && strcmp(edge->id, "cX-n0") != 0) edge = edge->next;
+	TEST_ASSERT(edge);
+	TEST_ASSERT(edge->geometry_label_rect == NULL);
+	TEST_ASSERT(edge->geometry_label_point == NULL);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the reconstruction flag repairs malformed node geometry */

@@ -67,6 +67,14 @@ int main(void)
 				CYBERIADA_ACTION_FORMAT_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
+	/* a comment edge with label geometry violates the standard */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/comment-edge-label.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_ACTION_FORMAT_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
 
 	/* the check-initial flag rejects a document without an initial pseudostate */
 	doc = cyberiada_new_sm_document();

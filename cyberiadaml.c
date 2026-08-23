@@ -2160,6 +2160,10 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 				ERROR("error: state machine %s has wrong structure - bad geometry\n", sm->nodes->id);
 				break;
 			}
+			if (!skip_geometry && (res = cyberiada_check_edges_geometry(sm->edges)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: state machine %s has wrong structure - bad edge geometry\n", sm->nodes->id);
+				break;
+			}
 			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries, skip_empty)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has doubles in the graph's entries\n", sm->nodes->id);
 				break;
@@ -2363,6 +2367,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			/* malformed geometry is dropped and rebuilt by the reconstruction */
 			for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
 				cyberiada_repair_nodes_geometry(sm->nodes);
+				cyberiada_repair_edges_geometry(sm->edges);
 			}
 		}
 
