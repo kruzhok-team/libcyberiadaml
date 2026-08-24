@@ -11,8 +11,6 @@ Meta information:
  description: Пример описания схемы, который может быть многострочным,
 потому что так удобнее
  target: Hoover
- transition order flag: 1
- event propagation flag: 1
 State Machine
 Nodes: 7 (6 w/o comments)
 Node {id: G, title: "Робот-пылесос", type: 0}

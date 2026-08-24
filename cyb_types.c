@@ -27,6 +27,7 @@
 #include "cyb_types.h"
 #include "cyb_actions.h"
 #include "cyb_meta.h"
+#include "cyb_graph.h"
 
 CyberiadaCommentData* cyberiada_new_comment_data(void)
 {
@@ -412,7 +413,10 @@ static CyberiadaSM* cyberiada_copy_sm(CyberiadaSM* src)
 	while (edge) {
 		CyberiadaNode* source = cyberiada_graph_find_node_by_id(dst->nodes, edge->source_id);
 		CyberiadaNode* target = cyberiada_graph_find_node_by_id(dst->nodes, edge->target_id);
-		if (!source || !target) {
+		if (!target && edge->type == cybEdgeComment) {
+			edge->target_edge = cyberiada_graph_find_edge_by_id(dst->edges, edge->target_id);
+		}
+		if (!source || (!target && !edge->target_edge)) {
 			cyberiada_destroy_sm(dst);
 			return NULL;
 		}
@@ -587,7 +591,7 @@ int cyberiada_print_edge(CyberiadaEdge* edge)
 		   edge->source_id,
 		   edge->source->type == cybNodeInitial ? "INIT" : edge->source->title,
 		   edge->target_id,
-		   edge->target->type == cybNodeInitial ? "INIT" : edge->target->title,
+		   edge->target ? (edge->target->type == cybNodeInitial ? "INIT" : edge->target->title) : "TRANSITION",
 		   edge->type);
 	if (edge->color) {
 		printf("  Color: %s\n", edge->color);

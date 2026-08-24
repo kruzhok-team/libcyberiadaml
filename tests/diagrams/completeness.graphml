@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <data key="gFormat">Cyberiada-GraphML-1.0</data>
+  <key id="gFormat" for="graphml" attr.name="format" attr.type="string"/>
+  <key id="dName" for="graph" attr.name="name" attr.type="string"/>
+  <key id="dName" for="node" attr.name="name" attr.type="string"/>
+  <key id="dStateMachine" for="graph" attr.name="stateMachine"/>
+  <key id="dRegion" for="graph" attr.name="region" attr.type="string"/>
+  <key id="dSubmachineState" for="node" attr.name="submachineState" attr.type="string"/>
+  <key id="dNote" for="node" attr.name="note" attr.type="string"/>
+  <key id="dVertex" for="node" attr.name="vertex" attr.type="string"/>
+  <key id="dData" for="node" attr.name="data" attr.type="string"/>
+  <key id="dData" for="edge" attr.name="data" attr.type="string"/>
+  <key id="dPivot" for="edge" attr.name="pivot" attr.type="string"/>
+  <key id="dCollapsed" for="node" attr.name="collapsed"/>
+  <key id="dFormalName" for="graph" attr.name="formalName" attr.type="string"/>
+  <key id="dFormalName" for="node" attr.name="formalName" attr.type="string"/>
+  <graph id="M1" edgedefault="directed">
+    <data key="dStateMachine"/>
+    <data key="dName">Completeness</data>
+    <node id="nMeta">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_META</data>
+      <data key="dData">standardVersion/ 1.0</data>
+    </node>
+    <node id="init">
+      <data key="dVertex">initial</data>
+    </node>
+    <node id="c0">
+      <data key="dName">Composite</data>
+      <data key="dCollapsed"/>
+      <graph id="c0:">
+        <data key="dRegion"/>
+        <node id="cinit">
+          <data key="dVertex">initial</data>
+        </node>
+        <node id="cs1">
+          <data key="dName">Inner</data>
+        </node>
+      </graph>
+    </node>
+    <node id="sub0">
+      <data key="dSubmachineState">M2</data>
+      <data key="dName">Nested</data>
+    </node>
+    <node id="cN">
+      <data key="dNote">informal</data>
+      <data key="dData">The guarded transition.</data>
+    </node>
+    <edge id="init-c0#1" source="init" target="c0"/>
+    <edge id="cinit-cs1#1" source="cinit" target="cs1"/>
+    <edge id="c0-sub0#1" source="c0" target="sub0">
+      <data key="dData">FIND [text.Contains(\[sample\])]/ mark()</data>
+    </edge>
+    <edge id="cN-t#1" source="cN" target="c0-sub0#1">
+      <data key="dPivot">dData</data>
+    </edge>
+  </graph>
+  <graph id="M2" edgedefault="directed">
+    <data key="dStateMachine"/>
+    <data key="dName">Worker</data>
+    <node id="m2i">
+      <data key="dVertex">initial</data>
+    </node>
+    <node id="m2s">
+      <data key="dName">Run</data>
+    </node>
+    <edge id="m2i-m2s#1" source="m2i" target="m2s"/>
+  </graph>
+</graphml>

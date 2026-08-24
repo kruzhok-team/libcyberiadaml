@@ -40,6 +40,7 @@
 #define CMD_PARAM_INDEX_RECONSTR_SM 8
 #define CMD_PARAM_INDEX_SIMPLIFY_ID 9
 #define CMD_PARAM_INDEX_SKIP_META   10
+#define CMD_PARAM_INDEX_STRICT      11
 
 #define CMD_PARAMETER_FROM_TYPE     1
 #define CMD_PARAMETER_TO_TYPE       2
@@ -52,6 +53,7 @@
 #define CMD_PARAMETER_RECONSTR_SM   256
 #define CMD_PARAMETER_SIMPLIFY_ID   512
 #define CMD_PARAMETER_SKIP_META     1024
+#define CMD_PARAMETER_STRICT        2048
 
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
@@ -94,6 +96,7 @@ CyberiadaCommandParameters parameters[] = {
 	{CMD_PARAMETER_RECONSTR_SM, "-R",  "--reconstruct-sm",      argNone,   "reconstruct geometry of the loaded graph (with SM)", 0, NULL, -1},
 	{CMD_PARAMETER_SIMPLIFY_ID, "-i",  "--simplify-ids",        argNone,   "simplify graph identifiers", 0, NULL, -1},
 	{CMD_PARAMETER_SKIP_META,   "-m",  "--skip-meta",           argNone,   "skip meta from the loaded graph", 0, NULL, -1},
+	{CMD_PARAMETER_STRICT,      "-x",  "--strict",              argNone,   "strictly check the standard requirements", 0, NULL, -1},
 };
 
 size_t parameters_count = sizeof(parameters) / sizeof(CyberiadaCommandParameters);
@@ -110,15 +113,15 @@ typedef struct {
 CyberiadaCommand commands[] = {
 	{CMD_PRINT,   "print", CMD_PARAMETER_GRAPH, CMD_PARAMETER_GRAPH,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM | CMD_PARAMETER_SKIP_GEOM |
-	 CMD_PARAMETER_SKIP_EMPTY | CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
+	 CMD_PARAMETER_SKIP_EMPTY | CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT,
 	 "read the HSM diagram and print its content to stdout; use -f key to set the graph format (default - unknown)"},
 	{CMD_CONVERT, "convert", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM |
-	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
+	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT,
 	 "convert HSM from -f <from-format> to -t <output-format> into the file named -o <output-graph>"},
 	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY |
-	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META,
+	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT,
 	 "compare HSMs from <graph> and <output-graph> and print the difference"}
 };
 
@@ -216,7 +219,7 @@ int main(int argc, char** argv)
 	int flags = CYBERIADA_FLAG_NO;
     const char *source_filename, *dest_filename;
 	int silent = 0, require_initial = 0, ignore_comments = 1, reconstruct = 0, reconstruct_sm = 0, skip = 0,
-		skip_empty = 0, simplify = 0, skip_meta = 0;
+		skip_empty = 0, simplify = 0, skip_meta = 0, strict = 0;
 	CyberiadaXMLFormat source_format, dest_format;
 	CyberiadaDocument doc;
 	size_t i;
@@ -244,6 +247,7 @@ int main(int argc, char** argv)
 	reconstruct = parameters[CMD_PARAM_INDEX_RECONSTR].present | reconstruct_sm;
 	simplify = parameters[CMD_PARAM_INDEX_SIMPLIFY_ID].present;
 	skip_meta = parameters[CMD_PARAM_INDEX_SKIP_META].present;
+	strict = parameters[CMD_PARAM_INDEX_STRICT].present;
 	require_initial = 0;
 	ignore_comments = 1;
 
@@ -267,6 +271,9 @@ int main(int argc, char** argv)
 	}
 	if (skip_meta) {
 		flags |= CYBERIADA_FLAG_SKIP_META;
+	}
+	if (strict) {
+		flags |= CYBERIADA_FLAG_STRICT;
 	}
 	
 	if ((res = cyberiada_read_sm_document(&doc, source_filename, source_format, flags)) != CYBERIADA_NO_ERROR) {

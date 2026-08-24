@@ -198,6 +198,7 @@ typedef struct _CyberiadaEdge {
     size_t                       target_id_len;
     CyberiadaNode*               source;                /* link to the source node */
     CyberiadaNode*               target;                /* link to the target node */
+    struct _CyberiadaEdge*       target_edge;           /* link to the commented transition (8.5) */
 	CyberiadaAction*             action;                /* for transition */
 	CyberiadaCommentSubject*     comment_subject;       /* for comment subject */
     /* base edge geometry */
@@ -225,8 +226,9 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_META_STANDARD_VERSION          "standardVersion"
 #define CYBERIADA_META_NAME                      "name"
 #define CYBERIADA_META_TRANSITION_ORDER          "transitionOrder"
-#define CYBERIADA_META_AO_TRANSITION             "transitionFirst"
+#define CYBERIADA_META_AO_ACTION                 "actionFirst"
 #define CYBERIADA_META_AO_EXIT                   "exitFirst"
+#define CYBERIADA_META_AO_TRANSITION             "transitionFirst" /* the legacy name of actionFirst, read only */
 #define CYBERIADA_META_EVENT_PROPAGATION         "eventPropagation"
 #define CYBERIADA_META_EP_PROPAGATE              "propagate"
 #define CYBERIADA_META_EP_BLOCK                  "block"
@@ -333,12 +335,14 @@ typedef enum {
 #define CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR                0x100000 /* skip empty behaviour in actions  */
 #define CYBERIADA_FLAG_SIMPLIFY_IDS                       0x200000 /* simplify node/edge identifiers  */
 #define CYBERIADA_FLAG_SKIP_META                          0x400000 /* skip meta-information and format from graphml */
+#define CYBERIADA_FLAG_STRICT                             0x800000 /* check the optional requirements of the standard */
 #define CYBERIADA_FLAG_NON_GEOMETRY                       (CYBERIADA_FLAG_FLATTENED | \
 														   CYBERIADA_FLAG_CHECK_INITIAL | \
 														   CYBERIADA_FLAG_STRICT_ACTION_ENTRIES | \
 														   CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR | \
 														   CYBERIADA_FLAG_SIMPLIFY_IDS | \
-														   CYBERIADA_FLAG_SKIP_META)
+														   CYBERIADA_FLAG_SKIP_META | \
+														   CYBERIADA_FLAG_STRICT)
 
 
 #include "cyberiadaml_iso.h"

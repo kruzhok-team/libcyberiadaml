@@ -187,9 +187,13 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 		type = htTree;
 	} else if (node->type == cybNodeCompositeState || node->type == cybNodeRegion) {
 		type = htCompositeNode;
-	} else if (node->type & (cybNodeSimpleState | cybNodeChoice | cybNodeComment | cybNodeFormalComment)) {
+	} else if (node->type & (cybNodeSimpleState | cybNodeSubmachineState | cybNodeChoice |
+							 cybNodeComment | cybNodeFormalComment)) {
 		type = htSimpleNode;
-	} else if (node->type & (cybNodeInitial | cybNodeFinal | cybNodeTerminate)) {
+	} else if (node->type & (cybNodeInitial | cybNodeFinal | cybNodeTerminate |
+							 cybNodeEntryPoint | cybNodeExitPoint |
+							 cybNodeShallowHistory | cybNodeDeepHistory |
+							 cybNodeFork | cybNodeJoin)) {
 		type = htPoint;
 	} else {
 		ERROR("Cannot convert node to htree, bad type: %d\n", node->type);
@@ -239,7 +243,7 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge)
 	if (!edge) {
 		return NULL;
 	}
-	t_edge = htree_new_edge(edge->id, edge->source_id, edge->target_id);
+	t_edge = htree_new_edge(edge->id, edge->source_id, edge->target_edge ? edge->target_edge->target_id : edge->target_id);
 	if (edge->geometry_polyline) {
 		t_edge->polyline = htree_copy_polyline(edge->geometry_polyline);
 	}

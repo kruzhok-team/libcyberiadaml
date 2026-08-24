@@ -41,11 +41,11 @@
 #define CYBERIADA_ACTION_BRACKET_CHR           '('
 #define CYBERIADA_ACTION_STRINGS_CHR           '\n'
 
-#define CYBERIADA_ACTION_REGEXP_MATCHES        10
+#define CYBERIADA_ACTION_REGEXP_MATCHES        11
 #define CYBERIADA_ACTION_REGEXP_MATCH_TRIGGER  1
 #define CYBERIADA_ACTION_REGEXP_MATCH_GUARD    6
-#define CYBERIADA_ACTION_REGEXP_MATCH_PROP     7
-#define CYBERIADA_ACTION_REGEXP_MATCH_ACTION   9
+#define CYBERIADA_ACTION_REGEXP_MATCH_PROP     8
+#define CYBERIADA_ACTION_REGEXP_MATCH_ACTION   10
 /*  #define CYBERIADA_ACTION_NL_REGEXP_MATCHES     4*/
 #define CYBERIADA_ACTION_LEGACY_MATCHES        7
 #define CYBERIADA_ACTION_LEGACY_MATCH_TRIGGER  1
@@ -209,6 +209,29 @@ static CyberiadaEventPropagation cyberiada_extract_propagation(char* trigger)
 	return cybEventPropagationNone;
 }
 
+/* the defer keyword follows the action separator (6.8) */
+static CyberiadaEventPropagation cyberiada_extract_defer(char* behavior)
+{
+	const char* keyword = cyberiada_propagation_str(cybEventPropagationDefer);
+	size_t klen;
+	if (!behavior || !*behavior || !keyword) {
+		return cybEventPropagationNone;
+	}
+	klen = strlen(keyword);
+	if (strncmp(behavior, keyword, klen) != 0 ||
+		(behavior[klen] && !isspace((unsigned char)behavior[klen]))) {
+		return cybEventPropagationNone;
+	}
+	memmove(behavior, behavior + klen, strlen(behavior + klen) + 1);
+	klen = 0;
+	while (behavior[klen] && isspace((unsigned char)behavior[klen])) {
+		klen++;
+	}
+	memmove(behavior, behavior + klen, strlen(behavior + klen) + 1);
+	cyberiada_string_trim(behavior);
+	return cybEventPropagationDefer;
+}
+
 int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, CyberiadaRegexps* regexps)
 {
 	int res;
@@ -289,6 +312,9 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 		cyberiada_string_trim(behavior);
 		propagation = match_prop != cybEventPropagationNone ?
 			match_prop : cyberiada_extract_propagation(trigger);
+			if (propagation == cybEventPropagationNone) {
+				propagation = cyberiada_extract_defer(behavior);
+			}
 		if (*trigger || *guard || *behavior || propagation != cybEventPropagationNone) {
 			*action = cyberiada_new_action(cybActionTransition, trigger, guard, behavior);
 			if (*action) {
@@ -379,6 +405,9 @@ int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** acti
 		cyberiada_string_trim(behavior);
 		propagation = match_prop != cybEventPropagationNone ?
 			match_prop : cyberiada_extract_propagation(trigger);
+			if (propagation == cybEventPropagationNone) {
+				propagation = cyberiada_extract_defer(behavior);
+			}
 		cyberiada_add_action(trigger, guard, behavior, action);
 		if (propagation != cybEventPropagationNone && *action) {
 			last = *action;

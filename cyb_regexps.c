@@ -26,8 +26,8 @@
 #include "cyb_regexps.h"
 #include "cyb_error.h"
 
-#define CYBERIADA_ACTION_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[([^]]+)\\])?\\s*(propagate|block|defer)?\\s*(/\\s*(.*))?\\s*$"
-#define CYBERIADA_ACTION_NODE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*(propagate|block|defer)?\\s*(/\\s*(.*)?)\\s*$"
+#define CYBERIADA_ACTION_EDGE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[((\\\\.|[^]\\\\])+)\\])?\\s*(propagate|block|defer)?\\s*(/\\s*(.*))?\\s*$"
+#define CYBERIADA_ACTION_NODE_REGEXP           "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*(\\[((\\\\.|[^]\\\\])+)\\])?\\s*(propagate|block|defer)?\\s*(/\\s*(.*)?)\\s*$"
 #define CYBERIADA_ACTION_SPACES_REGEXP         "^\\s*$"
 #define CYBERIADA_ACTION_LEGACY_REGEXP         "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)\\s*(\\[([^]]+)\\])?\\s*/"
 #define CYBERIADA_ACTION_LEGACY_EDGE_REGEXP    "^\\s*(\\w((\\w| |\\.)*\\w)?(\\(\\w+\\))?)?\\s*/?\\s*(\\[([^]]+)\\])?(\\s*(.*))?\\s*$"

@@ -56,7 +56,7 @@ int main(void)
 	TEST_ASSERT(body_len == strlen(body));
 	TEST_ASSERT(strstr(body, "standardVersion/ 1.0"));
 	TEST_ASSERT(strstr(body, "name/ minimal"));
-	TEST_ASSERT(strstr(body, "transitionOrder/ transitionFirst"));
+	TEST_ASSERT(strstr(body, "transitionOrder/ actionFirst"));
 	TEST_ASSERT(strstr(body, "eventPropagation/ block"));
 	free(body);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);

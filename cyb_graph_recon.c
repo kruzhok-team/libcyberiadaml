@@ -125,6 +125,16 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 	
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 
+		/* the comment link may reference a transition (8.5) */
+		edge = sm->edges;
+		while (edge) {
+			if (edge->type == cybEdgeComment &&
+				!cyberiada_graph_find_node_by_id(sm->nodes, edge->target_id)) {
+				edge->target_edge = cyberiada_graph_find_edge_by_id(sm->edges, edge->target_id);
+			}
+			edge = edge->next;
+		}
+
 		edge = sm->edges;
 		while (edge) {
 			if (rename || !*(edge->source_id)) {
@@ -137,7 +147,7 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 				edge->source_id = NULL;
 				cyberiada_copy_string(&(edge->source_id), &(edge->source_id_len), new_id);
 			}
-			if (rename || !*(edge->target_id)) {
+			if (!edge->target_edge && (rename || !*(edge->target_id))) {
 				new_id = cyberiada_find_name_in_list(nl, edge->target_id);
 				if (!new_id) {
 					ERROR("Cannot find replacement for target id %s\n", edge->target_id);
@@ -154,7 +164,7 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 		while (edge) {
 			CyberiadaNode* source = cyberiada_graph_find_node_by_id(sm->nodes, edge->source_id);
 			CyberiadaNode* target = cyberiada_graph_find_node_by_id(sm->nodes, edge->target_id);
-			if (!source || !target) {
+			if (!source || (!target && !edge->target_edge)) {
 				ERROR("cannot find source/target node for edge %s %s\n", edge->source_id, edge->target_id);
 				return CYBERIADA_FORMAT_ERROR;
 			}
@@ -162,7 +172,7 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 				snprintf(buffer, buffer_len, "%s-%s", edge->source_id, edge->target_id);
 				while (cyberiada_graph_find_edge_by_id(sm->edges, buffer)) {
 					snprintf(buffer, buffer_len, "%s-%s#%u",
-							 edge->source_id, edge->target_id, num);
+						 edge->source_id, edge->target_id, num);
 					num++;
 				}
 				if (edge->id) free(edge->id);
@@ -171,6 +181,18 @@ int cyberiada_graphs_reconstruct_edge_identifiers(CyberiadaDocument* doc, NamesL
 			}
 			edge->source = source;
 			edge->target = target;
+			edge = edge->next;
+		}
+
+		/* the renamed transitions update the comment links */
+		edge = sm->edges;
+		while (edge) {
+			if (edge->target_edge) {
+				free(edge->target_id);
+				edge->target_id = NULL;
+				cyberiada_copy_string(&(edge->target_id), &(edge->target_id_len),
+							  edge->target_edge->id);
+			}
 			edge = edge->next;
 		}
 	}
