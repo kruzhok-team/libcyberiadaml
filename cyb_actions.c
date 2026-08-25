@@ -306,6 +306,8 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 
 	{
 		int trigger_allocated = (*trigger != 0);
+		int guard_allocated = (*guard != 0);
+		int behavior_allocated = (*behavior != 0);
 		CyberiadaEventPropagation propagation;
 		cyberiada_string_trim(trigger);
 		cyberiada_string_trim(guard);
@@ -324,9 +326,9 @@ int cyberiada_decode_edge_action(const char* text, CyberiadaAction** action, Cyb
 			*action = NULL;
 		}
 		if (trigger_allocated) free(trigger);
+		if (guard_allocated) free(guard);
+		if (behavior_allocated) free(behavior);
 	}
-	if (*guard) free(guard);
-	if (*behavior) free(behavior);
 
 	free(buffer);
 	return CYBERIADA_NO_ERROR;
@@ -398,6 +400,8 @@ int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** acti
 	decode_utf8_strings(&trigger, &guard, &behavior);
 	{
 		int trigger_allocated = (*trigger != 0);
+		int guard_allocated = (*guard != 0);
+		int behavior_allocated = (*behavior != 0);
 		CyberiadaEventPropagation propagation;
 		CyberiadaAction* last;
 		cyberiada_string_trim(trigger);
@@ -417,9 +421,9 @@ int cyberiada_decode_state_block_action(const char* text, CyberiadaAction** acti
 			}
 		}
 		if (trigger_allocated) free(trigger);
+		if (guard_allocated) free(guard);
+		if (behavior_allocated) free(behavior);
 	}
-	if (*guard) free(guard);
-	if (*behavior) free(behavior);
 	
 	return CYBERIADA_NO_ERROR;
 }
