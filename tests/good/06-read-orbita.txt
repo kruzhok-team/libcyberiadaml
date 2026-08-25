@@ -128,7 +128,7 @@ Children:
         Behavior: ""
      Children:
      Node {id: n0::n2::n2, title: "", type: 64}
-     Geometry: (0.000000, -268.714350)
+     Geometry: (0.804774, -268.714350)
       Actions:
      Children:
  Node {id: n1, title: "", type: 64}

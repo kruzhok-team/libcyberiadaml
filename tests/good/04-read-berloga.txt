@@ -102,16 +102,16 @@ Edges: 7 (7 w/o comments)
     Guard: ""
     Behavior: ""
  Edge n0::n1-n0::n2 [n0::n1 Сближение]->[n0::n2 Атака] [type 0]
-  Geometry:    Source point: (0.000000, -104.000000)
-   Target point: (0.000000, 104.000000)
+  Geometry:    Source point: (-0.105051, -104.000000)
+   Target point: (0.105051, 104.000000)
   Actions:
    Action (type 1):
     Trigger: "ОружиеЦелевое.ЦельВошлаВЗонуАтаки"
     Guard: ""
     Behavior: ""
  Edge n0::n2-n0::n1 [n0::n2 Атака]->[n0::n1 Сближение] [type 0]
-  Geometry:    Source point: (0.000000, 104.000000)
-   Target point: (0.000000, -104.000000)
+  Geometry:    Source point: (0.105051, 104.000000)
+   Target point: (-0.105051, -104.000000)
   Actions:
    Action (type 1):
     Trigger: "ОружиеЦелевое.ЦельВышлаИзЗоныАтаки"

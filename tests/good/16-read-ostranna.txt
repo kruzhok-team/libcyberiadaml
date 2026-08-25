@@ -437,7 +437,7 @@ Edges: 19 (19 w/o comments)
     Behavior: ""
  Edge e0 [n5 active]->[n5::n1::n1 healthy] [type 0]
   Geometry:    Polyline: (-1.004719, -514.095902) (-247.751036, -514.095902)
-   Source point: (0.000000, -487.408649)
+   Source point: (-0.952563, -487.408649)
    Target point: (100.365057, -92.583621)
    Label point: (-166.323789, -42.671355)
   Actions:
@@ -447,7 +447,7 @@ Edges: 19 (19 w/o comments)
     Behavior: "Reset(me);"
  Edge n5::n3::e2 [n5::n3::n2 ghoul_healing]->[n5::n3::n0 ghoul_good] [type 0]
   Geometry:    Source point: (-231.121159, 1.260407)
-   Target point: (142.968750, 0.000000)
+   Target point: (142.968750, -0.779672)
    Label point: (-322.509094, 15.801642)
   Actions:
    Action (type 1):
