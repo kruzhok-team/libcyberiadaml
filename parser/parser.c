@@ -57,12 +57,16 @@
 
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
-	"yed"           /* cybxmlYED */
+	"yed",          /* cybxmlYED */
+	"yed-ostranna", /* cybxmlYEDOstranna */
+	"yed-berloga"   /* cybxmlYEDBerloga16 */
 };
 
 const char* format_descr[] = {
 	"Cyberiada-GraphML 1.0 format",
-	"yEd editor format used by Ostranna projects and the Orbita Simulator"
+	"yEd editor format (the Ostranna dialect is written)",
+	"yEd editor format used by Ostranna projects and the Orbita Simulator",
+	"yEd editor format of the Berloga 1.6 tool"
 };
 
 size_t format_count = sizeof(formats) / sizeof(char*);

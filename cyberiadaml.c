@@ -118,10 +118,17 @@
 #define GRAPHML_YED_NODE_CONFIG_START2		     "com.yworks.bpmn.Event.withShadow"
 #define GRAPHML_YED_NODE_CONFIG_CHOICE		     "com.yworks.bpmn.Gateway"
 #define GRAPHML_YED_NODE_CONFIG_CHOICE2		     "com.yworks.bpmn.Gateway.withShadow"
+#define GRAPHML_YED_NODE_CONFIG_STATE		     "com.yworks.entityRelationship.big_entity"
+#define GRAPHML_YED_STYLEPROPNODE			     "StyleProperties"
 #define GRAPHML_YED_PROPNODE				     "Property"
 #define GRAPHML_YED_PROP_VALUE_ATTRIBUTE	     "value"
 #define GRAPHML_YED_PROP_VALUE_START		     "EVENT_CHARACTERISTIC_START"
 #define GRAPHML_YED_PROP_VALUE_END               "EVENT_CHARACTERISTIC_END"
+#define GRAPHML_YED_PROP_VALUE_GATEWAY           "GATEWAY_TYPE_PLAIN"
+#define GRAPHML_YED_PROP_CLASS_EVENT             "com.yworks.yfiles.bpmn.view.EventCharEnum"
+#define GRAPHML_YED_PROP_NAME_EVENT              "com.yworks.bpmn.characteristic"
+#define GRAPHML_YED_PROP_CLASS_TYPE              "com.yworks.yfiles.bpmn.view.BPMNTypeEnum"
+#define GRAPHML_YED_PROP_NAME_TYPE               "com.yworks.bpmn.type"
 #define GRAPHML_YED_EDGELABEL				     "EdgeLabel"
 #define GRAPHML_YED_POLYLINEEDGE                 "PolyLineEdge"
 
@@ -287,7 +294,7 @@ static const size_t cyberiada_graphml_keys_count = sizeof(cyberiada_graphml_keys
 #define GRAPHML_YED_KEY_EDGE_GRAPHICS   "d10"
 
 static const GraphMLKey yed_graphml_keys[] = {
-	{ GRAPHML_YED_KEY_GRAPH_DESCR,    GRAPHML_GRAPH_ELEMENT,   "description", "string", NULL,           1 },
+	{ GRAPHML_YED_KEY_GRAPH_DESCR,    GRAPHML_GRAPH_ELEMENT,   "Description", "string", NULL,           1 },
 	{ GRAPHML_YED_KEY_PORT_GRAPHICS,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgraphics", 1 },
 	{ GRAPHML_YED_KEY_PORT_GEOMETRY,  GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portgeometry", 1 },
 	{ GRAPHML_YED_KEY_PORT_USER_DATA, GRAPHML_PORT_ELEMENT,    NULL,          NULL,     "portuserdata", 1 },
@@ -2807,6 +2814,36 @@ static int cyberiada_write_action_text(xmlTextWriterPtr writer, CyberiadaAction*
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the Berloga edge action text: trigger / [guard] behavior */
+static int cyberiada_write_action_text_legacy(xmlTextWriterPtr writer, CyberiadaAction* action)
+{
+	int res;
+
+	while (action) {
+		if (action->type != cybActionTransition) {
+			ERROR("Bad legacy edge action type %d", action->type);
+			return CYBERIADA_ASSERT;
+		}
+		if (*(action->trigger)) {
+			XML_WRITE_TEXT(writer, action->trigger);
+		}
+		XML_WRITE_TEXT(writer, "/");
+		if (*(action->guard)) {
+			XML_WRITE_TEXT(writer, "[");
+			XML_WRITE_TEXT(writer, action->guard);
+			XML_WRITE_TEXT(writer, "]");
+		}
+		if (*(action->behavior)) {
+			XML_WRITE_TEXT(writer, " ");
+			XML_WRITE_TEXT(writer, action->behavior);
+		}
+		XML_WRITE_TEXT(writer, "\n");
+		action = action->next;
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_write_geometry_rect_cyberiada(xmlTextWriterPtr writer, CyberiadaRect* rect, int indent)
 {
 	int res;
@@ -3279,36 +3316,40 @@ static const char* yed_graphml_attributes[] = {
 	"xmlns:x", "http://www.yworks.com/xml/yfiles-common/markup/2.0",
 	"xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance",
 	"xmlns:y", "http://www.yworks.com/xml/graphml",
-	"xmlns:yed", "http://www.yworks.com/xml/yed/3",
-	"yed:schemaLocation", "http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd"
+	"xmlns:yed", "http://www.yworks.com/xml/yed/3"
 };
+#define GRAPHML_YED_SCHEMA_LOCATION_ATTR "yed:schemaLocation"
+#define GRAPHML_XSI_SCHEMA_LOCATION_ATTR "xsi:schemaLocation"
+#define GRAPHML_YED_SCHEMA_LOCATION      "http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd"
 const size_t yed_graphml_attributes_count = (sizeof(yed_graphml_attributes) / sizeof(const char*));
 
 static int cyberiada_write_node_style_yed(xmlTextWriterPtr writer, CyberiadaNodeType type, int indent)
 {
 	int res;
 
-	if (type == cybNodeCompositeState) {
-		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_FILLNODE, GRAPHML_YED_NS, indent);
+	const char* border = "#000000";
+
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_FILLNODE, GRAPHML_YED_NS, indent);
+	if (type == cybNodeSimpleState) {
 		XML_WRITE_ATTR(writer, "color", "#E8EEF7");
 		XML_WRITE_ATTR(writer, "color2", "#B7C9E3");
-		XML_WRITE_ATTR(writer, "transparent", "false");
-		XML_WRITE_CLOSE_E(writer);
-	} else if (type == cybNodeInitial) {
-		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_FILLNODE, GRAPHML_YED_NS, indent);
+	} else if (type == cybNodeCompositeState) {
+		XML_WRITE_ATTR(writer, "color", "#F5F5F5");
+	} else if (type == cybNodeInitial || type == cybNodeFinal) {
 		XML_WRITE_ATTR(writer, "color", "#333333");
 		XML_WRITE_ATTR(writer, "color2", "#000000");
-		XML_WRITE_ATTR(writer, "transparent", "false");
-		XML_WRITE_CLOSE_E(writer);
-	} else if (type == cybNodeCompositeState) {
-		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_FILLNODE, GRAPHML_YED_NS, indent);
-		XML_WRITE_ATTR(writer, "color", "#F5F5F5");
-		XML_WRITE_ATTR(writer, "transparent", "false");
-		XML_WRITE_CLOSE_E(writer);
-	} 
+	} else if (type == cybNodeChoice) {
+		XML_WRITE_ATTR(writer, "color", "#FFFFFFE6");
+		XML_WRITE_ATTR(writer, "color2", "#D4D4D4CC");
+		border = "#E38B00";
+	} else if (type == cybNodeComment) {
+		XML_WRITE_ATTR(writer, "color", "#FFCC00");
+	}
+	XML_WRITE_ATTR(writer, "transparent", "false");
+	XML_WRITE_CLOSE_E(writer);
 	
 	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_BORDERSTYLENODE, GRAPHML_YED_NS, indent);
-	XML_WRITE_ATTR(writer, "color", "#000000");
+	XML_WRITE_ATTR(writer, "color", border);
 	XML_WRITE_ATTR(writer, "type", "line");
 	XML_WRITE_ATTR(writer, "width", "1.0");
 	XML_WRITE_CLOSE_E(writer);
@@ -3346,7 +3387,32 @@ static int cyberiada_write_node_title_yed(xmlTextWriterPtr writer, const char* t
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, int indent)
+static int cyberiada_write_comment_body_yed(xmlTextWriterPtr writer, const char* body, int indent)
+{
+	int res;
+
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_LABELNODE, GRAPHML_YED_NS, indent);
+	XML_WRITE_ATTR(writer, "alignment", "left");
+	XML_WRITE_ATTR(writer, "fontSize", "12");
+	XML_WRITE_ATTR(writer, "fontStyle", "plain");
+	XML_WRITE_ATTR(writer, "textColor", "#000000");
+	XML_WRITE_ATTR(writer, "xml:space", "preserve");
+	XML_WRITE_ATTR(writer, "hasBackgroundColor", "false");
+	XML_WRITE_ATTR(writer, "hasLineColor", "false");
+	XML_WRITE_ATTR(writer, "visible", "true");
+	XML_WRITE_ATTR(writer, "horizontalTextPosition", "center");
+	XML_WRITE_ATTR(writer, "verticalTextPosition", "bottom");
+	XML_WRITE_ATTR(writer, "autoSizePolicy", "content");
+	XML_WRITE_ATTR(writer, "modelName", "internal");
+	XML_WRITE_ATTR(writer, "modelPosition", "tl");
+	XML_WRITE_TEXT(writer, body);
+	XML_WRITE_CLOSE_E(writer);
+
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, int indent,
+										   CyberiadaXMLFormat format)
 {
 	int res;
 
@@ -3362,6 +3428,13 @@ static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAct
 	XML_WRITE_ATTR(writer, "horizontalTextPosition", "center");
 	XML_WRITE_ATTR(writer, "verticalTextPosition", "bottom");
 	XML_WRITE_ATTR(writer, "autoSizePolicy", "node_size");
+	if (format != cybxmlYEDBerloga16) {
+		XML_WRITE_ATTR(writer, "configuration", "com.yworks.entityRelationship.label.attributes");
+		XML_WRITE_ATTR(writer, "modelName", "internal");
+		XML_WRITE_ATTR(writer, "modelPosition", "tl");
+	} else {
+		XML_WRITE_ATTR(writer, "modelName", "custom");
+	}
 	XML_WRITE_TEXT(writer, "\n");
 	XML_WRITE_TEXT(writer, "\n");
 
@@ -3375,9 +3448,14 @@ static int cyberiada_write_node_action_yed(xmlTextWriterPtr writer, CyberiadaAct
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAction* action, int indent)
+static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent,
+										   CyberiadaXMLFormat format)
 {
 	int res;
+	char buffer[MAX_STR_LEN];
+	size_t buffer_len = sizeof(buffer);
+	CyberiadaAction* action = edge->action;
+	buffer[buffer_len - 1] = 0;
 
 	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_EDGELABEL, GRAPHML_YED_NS, indent);
 	XML_WRITE_ATTR(writer, "alignment", "center");
@@ -3393,9 +3471,20 @@ static int cyberiada_write_edge_action_yed(xmlTextWriterPtr writer, CyberiadaAct
 	XML_WRITE_ATTR(writer, "modelName", "centered");
 	XML_WRITE_ATTR(writer, "modelPosition", "center");
 	XML_WRITE_ATTR(writer, "preferredPlacement", "center_on_edge");
+	if (edge->geometry_label_point) {
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_label_point->x);
+		XML_WRITE_ATTR(writer, GRAPHML_GEOM_X_ATTRIBUTE, buffer);
+		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_label_point->y);
+		XML_WRITE_ATTR(writer, GRAPHML_GEOM_Y_ATTRIBUTE, buffer);
+	}
 	
-	if (cyberiada_write_action_text(writer, action) != CYBERIADA_NO_ERROR) {
-		ERROR("error while writing node bevavior text\n");
+	if (format == cybxmlYEDBerloga16) {
+		res = cyberiada_write_action_text_legacy(writer, action);
+	} else {
+		res = cyberiada_write_action_text(writer, action);
+	}
+	if (res != CYBERIADA_NO_ERROR) {
+		ERROR("error while writing edge behavior text\n");
 		return CYBERIADA_XML_ERROR;
 	}
 
@@ -3428,7 +3517,54 @@ static int cyberiada_write_geometry_yed(xmlTextWriterPtr writer, CyberiadaRect* 
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node, int indent)
+/* the yEd BPMN event/gateway style properties identifying the vertex kind */
+static int cyberiada_write_node_properties_yed(xmlTextWriterPtr writer, CyberiadaNodeType type, int indent)
+{
+	int res;
+
+	if (type != cybNodeInitial && type != cybNodeFinal && type != cybNodeChoice) {
+		return CYBERIADA_NO_ERROR;
+	}
+
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_STYLEPROPNODE, GRAPHML_YED_NS, indent);
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_PROPNODE, GRAPHML_YED_NS, indent + 1);
+	if (type == cybNodeChoice) {
+		XML_WRITE_ATTR(writer, "class", GRAPHML_YED_PROP_CLASS_TYPE);
+		XML_WRITE_ATTR(writer, "name", GRAPHML_YED_PROP_NAME_TYPE);
+		XML_WRITE_ATTR(writer, GRAPHML_YED_PROP_VALUE_ATTRIBUTE, GRAPHML_YED_PROP_VALUE_GATEWAY);
+	} else {
+		XML_WRITE_ATTR(writer, "class", GRAPHML_YED_PROP_CLASS_EVENT);
+		XML_WRITE_ATTR(writer, "name", GRAPHML_YED_PROP_NAME_EVENT);
+		if (type == cybNodeFinal) {
+			XML_WRITE_ATTR(writer, GRAPHML_YED_PROP_VALUE_ATTRIBUTE, GRAPHML_YED_PROP_VALUE_END);
+		} else {
+			XML_WRITE_ATTR(writer, GRAPHML_YED_PROP_VALUE_ATTRIBUTE, GRAPHML_YED_PROP_VALUE_START);
+		}
+	}
+	XML_WRITE_CLOSE_E(writer);
+	XML_WRITE_CLOSE_E_I(writer, indent);
+
+	return CYBERIADA_NO_ERROR;
+}
+
+/* the vertexes are stored as points, while yEd requires a rect */
+static int cyberiada_write_vertex_geometry_yed(xmlTextWriterPtr writer, CyberiadaNode* node, int indent)
+{
+	CyberiadaRect rect;
+
+	if (!node->geometry_point) {
+		return CYBERIADA_NO_ERROR;
+	}
+	rect.x = node->geometry_point->x - PSEUDO_NODE_SIZE / 2.0;
+	rect.y = node->geometry_point->y - PSEUDO_NODE_SIZE / 2.0;
+	rect.width = PSEUDO_NODE_SIZE;
+	rect.height = PSEUDO_NODE_SIZE;
+
+	return cyberiada_write_geometry_yed(writer, &rect, indent);
+}
+
+static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node, int indent,
+									CyberiadaXMLFormat format)
 {
 	int res;
 	CyberiadaNode* cur_node;
@@ -3439,172 +3575,239 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 	if (node->type == cybNodeSM) {
 		
 		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
-			res = cyberiada_write_node_yed(writer, cur_node, indent);
+			res = cyberiada_write_node_yed(writer, cur_node, indent, format);
 			if (res != CYBERIADA_NO_ERROR) {
 				ERROR("error while writing root node %s\n", cur_node->id);
-				return CYBERIADA_XML_ERROR;
+				return res;
 			}
 		}
-		
-	} else {
-	
-		XML_WRITE_OPEN_E_I(writer, GRAPHML_NODE_ELEMENT, indent);
-		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, node->id);
-		
-		if (node->type == cybNodeInitial) {
-			
-			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
-			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
 
-			XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GENERICNODE, GRAPHML_YED_NS, indent + 2);
-			XML_WRITE_ATTR(writer, "configuration", GRAPHML_YED_NODE_CONFIG_START2);
-
-			if (node->geometry_rect) {
-				if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 3) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing initial node geometry\n");
-					return CYBERIADA_XML_ERROR;
-				}
-				if (cyberiada_write_node_style_yed(writer, node->type, indent + 3) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing initial node style\n");
-					return CYBERIADA_XML_ERROR;
-				}
-			}
-			
-			if (node->title) {
-				if (cyberiada_write_node_title_yed(writer, node->title, indent + 3) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing initial node label\n");
-					return CYBERIADA_XML_ERROR;
-				}
-			}
-			
-			XML_WRITE_CLOSE_E_I(writer, indent + 2);
-			XML_WRITE_CLOSE_E_I(writer, indent + 1);
-			
-		} else if (node->type == cybNodeSimpleState) {
-
-			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
-			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
-			XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GENERICNODE, GRAPHML_YED_NS, indent + 2);
-
-			if (node->geometry_rect) {
-				if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 3) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing composite node geometry\n");
-					return CYBERIADA_XML_ERROR;
-				}
-				if (cyberiada_write_node_style_yed(writer, node->type, indent + 3) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing composite node style\n");
-					return CYBERIADA_XML_ERROR;
-				}
-			}
-
-			text = node->title;
-			if (!text) text = "";
-			if (cyberiada_write_node_title_yed(writer, text, indent + 3) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing simple node label\n");
-				return CYBERIADA_XML_ERROR;
-			}
-
-			if (cyberiada_write_node_action_yed(writer, node->actions, indent + 3) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing simple node action\n");
-				return CYBERIADA_XML_ERROR;
-			}
-
-			XML_WRITE_CLOSE_E_I(writer, indent + 2);
-			XML_WRITE_CLOSE_E_I(writer, indent + 1);
-			
-		} else if (node->type == cybNodeCompositeState) {
-			XML_WRITE_ATTR(writer, "yfiles.foldertype", "group");
-
-			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
-			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_DESCR);
-			XML_WRITE_ATTR(writer, "xml:space", "preserve");
-			XML_WRITE_CLOSE_E(writer);
-
-			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
-			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
-			XML_WRITE_OPEN_E_NS_I(writer, "ProxyAutoBoundsNode", GRAPHML_YED_NS, indent + 2);
-			XML_WRITE_OPEN_E_NS_I(writer, "Realizers", GRAPHML_YED_NS, indent + 3);
-			XML_WRITE_ATTR(writer, "active", "0");
-			XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GROUPNODE, GRAPHML_YED_NS, indent + 4);
-
-			if (node->geometry_rect) {
-				if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 5) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing composite node geometry\n");
-					return CYBERIADA_XML_ERROR;
-				}
-				if (cyberiada_write_node_style_yed(writer, node->type, indent + 5) != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing composite node style\n");
-					return CYBERIADA_XML_ERROR;
-				}
-			}
-
-			text = node->title;
-			if (!text) text = "";
-			if (cyberiada_write_node_title_yed(writer, text, indent + 5) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing composite node label\n");
-				return CYBERIADA_XML_ERROR;
-			}
-
-			if (cyberiada_write_node_action_yed(writer, node->actions, indent + 5) != CYBERIADA_NO_ERROR) {
-				ERROR("error while writing composite node action\n");
-				return CYBERIADA_XML_ERROR;
-			}
-
-			XML_WRITE_OPEN_E_NS_I(writer, "Shape", GRAPHML_YED_NS, indent + 5);
-			XML_WRITE_ATTR(writer, "type", "roundrectangle");
-			XML_WRITE_CLOSE_E(writer);
-			
-			XML_WRITE_CLOSE_E_I(writer, indent + 4);
-			XML_WRITE_CLOSE_E_I(writer, indent + 3);
-			XML_WRITE_CLOSE_E_I(writer, indent + 2);
-			XML_WRITE_CLOSE_E_I(writer, indent + 1);
-
-			if (!node->children || node->children->next) {
-				ERROR("no single region subnode of the composite node %s\n", node->children->id);
-				return CYBERIADA_XML_ERROR;
-			}
-
-			/* the root graph element */
-			XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
-			snprintf(buffer, buffer_len - 1, "%s", node->children->id);
-			buffer[buffer_len - 1] = 0;
-			XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
-			XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
-
-			for (cur_node = node->children->children; cur_node; cur_node = cur_node->next) {
-				res = cyberiada_write_node_yed(writer, cur_node, indent + 2);
-				if (res != CYBERIADA_NO_ERROR) {
-					ERROR("error while writing node %s\n", cur_node->id);
-					return CYBERIADA_XML_ERROR;
-				}
-			}
-
-			XML_WRITE_CLOSE_E_I(writer, indent + 1);
-		}
-
-		XML_WRITE_CLOSE_E_I(writer, indent);
+		return CYBERIADA_NO_ERROR;
 	}
+
+	if (node->type == cybNodeFormalComment) {
+		/* the metainformation is carried by the format itself: the Berloga 1.6
+		   core meta node, the Ostranna state machine title */
+		if (node->title && strcmp(node->title, CYBERIADA_META_NODE_TITLE) == 0) {
+			return CYBERIADA_NO_ERROR;
+		}
+		/* yEd has a single kind of comments, so the formal ones are informal there */
+	}
+
+	XML_WRITE_OPEN_E_I(writer, GRAPHML_NODE_ELEMENT, indent);
+	XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, node->id);
+		
+	if (node->type == cybNodeInitial || node->type == cybNodeFinal || node->type == cybNodeChoice) {
+
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
+
+		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GENERICNODE, GRAPHML_YED_NS, indent + 2);
+		if (node->type == cybNodeChoice) {
+			XML_WRITE_ATTR(writer, GRAPHML_YED_NODE_CONFIG_ATTRIBUTE, GRAPHML_YED_NODE_CONFIG_CHOICE2);
+		} else {
+			XML_WRITE_ATTR(writer, GRAPHML_YED_NODE_CONFIG_ATTRIBUTE, GRAPHML_YED_NODE_CONFIG_START2);
+		}
+
+		if (node->type == cybNodeChoice) {
+			if (node->geometry_rect) {
+				if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 3) != CYBERIADA_NO_ERROR) {
+					ERROR("error while writing choice node geometry\n");
+					return CYBERIADA_XML_ERROR;
+				}
+			}
+		} else if (cyberiada_write_vertex_geometry_yed(writer, node, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing vertex node geometry\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		if (cyberiada_write_node_style_yed(writer, node->type, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing vertex node style\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		if (node->title) {
+			if (cyberiada_write_node_title_yed(writer, node->title, indent + 3) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing vertex node label\n");
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+
+		if (cyberiada_write_node_properties_yed(writer, node->type, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing vertex node properties\n");
+			return CYBERIADA_XML_ERROR;
+		}
+			
+		XML_WRITE_CLOSE_E_I(writer, indent + 2);
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+
+	} else if (node->type == cybNodeComment || node->type == cybNodeFormalComment) {
+
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
+		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_COMMENTNODE, GRAPHML_YED_NS, indent + 2);
+
+		if (node->geometry_rect) {
+			if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 3) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing comment node geometry\n");
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+		if (cyberiada_write_node_style_yed(writer, cybNodeComment, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing comment node style\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		text = "";
+		if (node->comment_data && node->comment_data->body) {
+			text = node->comment_data->body;
+		}
+		if (cyberiada_write_comment_body_yed(writer, text, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing comment node body\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		XML_WRITE_CLOSE_E_I(writer, indent + 2);
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+
+	} else if (node->type == cybNodeSimpleState) {
+
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
+		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GENERICNODE, GRAPHML_YED_NS, indent + 2);
+		if (format != cybxmlYEDBerloga16) {
+			XML_WRITE_ATTR(writer, GRAPHML_YED_NODE_CONFIG_ATTRIBUTE, GRAPHML_YED_NODE_CONFIG_STATE);
+		}
+
+		if (node->geometry_rect) {
+			if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 3) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing simple node geometry\n");
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+		if (cyberiada_write_node_style_yed(writer, node->type, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing simple node style\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		text = node->title;
+		if (!text) text = "";
+		if (cyberiada_write_node_title_yed(writer, text, indent + 3) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing simple node label\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		if (cyberiada_write_node_action_yed(writer, node->actions, indent + 3, format) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing simple node action\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		XML_WRITE_CLOSE_E_I(writer, indent + 2);
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+			
+	} else if (node->type == cybNodeCompositeState) {
+		XML_WRITE_ATTR(writer, "yfiles.foldertype", "group");
+
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_DESCR);
+		XML_WRITE_ATTR(writer, "xml:space", "preserve");
+		XML_WRITE_CLOSE_E(writer);
+
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_NODE_GRAPHICS);
+		XML_WRITE_OPEN_E_NS_I(writer, "ProxyAutoBoundsNode", GRAPHML_YED_NS, indent + 2);
+		XML_WRITE_OPEN_E_NS_I(writer, "Realizers", GRAPHML_YED_NS, indent + 3);
+		XML_WRITE_ATTR(writer, "active", "0");
+		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_GROUPNODE, GRAPHML_YED_NS, indent + 4);
+
+		if (node->geometry_rect) {
+			if (cyberiada_write_geometry_yed(writer, node->geometry_rect, indent + 5) != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing composite node geometry\n");
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+		if (cyberiada_write_node_style_yed(writer, node->type, indent + 5) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing composite node style\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		text = node->title;
+		if (!text) text = "";
+		if (cyberiada_write_node_title_yed(writer, text, indent + 5) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing composite node label\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		if (cyberiada_write_node_action_yed(writer, node->actions, indent + 5, format) != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing composite node action\n");
+			return CYBERIADA_XML_ERROR;
+		}
+
+		XML_WRITE_OPEN_E_NS_I(writer, "Shape", GRAPHML_YED_NS, indent + 5);
+		XML_WRITE_ATTR(writer, "type", "roundrectangle");
+		XML_WRITE_CLOSE_E(writer);
+			
+		XML_WRITE_CLOSE_E_I(writer, indent + 4);
+		XML_WRITE_CLOSE_E_I(writer, indent + 3);
+		XML_WRITE_CLOSE_E_I(writer, indent + 2);
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+
+		if (!node->children || node->children->next) {
+			ERROR("no single region subnode of the composite node %s\n", node->id);
+			return CYBERIADA_XML_ERROR;
+		}
+
+		/* the region graph element */
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
+		snprintf(buffer, buffer_len - 1, "%s", node->children->id);
+		buffer[buffer_len - 1] = 0;
+		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
+		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
+
+		for (cur_node = node->children->children; cur_node; cur_node = cur_node->next) {
+			res = cyberiada_write_node_yed(writer, cur_node, indent + 2, format);
+			if (res != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing node %s\n", cur_node->id);
+				return res;
+			}
+		}
+
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+
+	} else {
+
+		ERROR("the node %s of type %d cannot be written in the yEd format\n",
+			  node->id, node->type);
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	XML_WRITE_CLOSE_E_I(writer, indent);
 
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent)
+static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent,
+									CyberiadaXMLFormat format)
 {
 	int res;
+	CyberiadaPolyline* pl;
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer);
 	buffer[buffer_len - 1] = 0;	
 	
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_EDGE_ELEMENT, indent);
+	if (edge->id && *(edge->id)) {
+		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, edge->id);
+	}
 	XML_WRITE_ATTR(writer, GRAPHML_SOURCE_ATTRIBUTE, edge->source_id);
 	XML_WRITE_ATTR(writer, GRAPHML_TARGET_ATTRIBUTE, edge->target_id);
 
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
 	XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_EDGE_GRAPHICS);
 
-	XML_WRITE_OPEN_E_I(writer, GRAPHML_YED_POLYLINEEDGE, indent + 2);
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_POLYLINEEDGE, GRAPHML_YED_NS, indent + 2);
 
-	XML_WRITE_OPEN_E_I(writer, GRAPHML_YED_PATHNODE, indent + 3);
+	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_PATHNODE, GRAPHML_YED_NS, indent + 3);
 	if (edge->geometry_source_point && edge->geometry_target_point) {	
 		snprintf(buffer, buffer_len - 1, "%lf", edge->geometry_source_point->x);
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_SOURCE_X_ATTRIBUTE, buffer);
@@ -3620,7 +3823,19 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_TARGET_X_ATTRIBUTE, "0");
 		XML_WRITE_ATTR(writer, GRAPHML_YED_GEOM_TARGET_Y_ATTRIBUTE, "0");
 	}
-	XML_WRITE_CLOSE_E(writer);
+	for (pl = edge->geometry_polyline; pl; pl = pl->next) {
+		XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_POINTNODE, GRAPHML_YED_NS, indent + 4);
+		snprintf(buffer, buffer_len - 1, "%lf", pl->point.x);
+		XML_WRITE_ATTR(writer, GRAPHML_GEOM_X_ATTRIBUTE, buffer);
+		snprintf(buffer, buffer_len - 1, "%lf", pl->point.y);
+		XML_WRITE_ATTR(writer, GRAPHML_GEOM_Y_ATTRIBUTE, buffer);
+		XML_WRITE_CLOSE_E(writer);
+	}
+	if (edge->geometry_polyline) {
+		XML_WRITE_CLOSE_E_I(writer, indent + 3);
+	} else {
+		XML_WRITE_CLOSE_E(writer);
+	}
 
 	XML_WRITE_OPEN_E_NS_I(writer, GRAPHML_YED_LINESTYLENODE, GRAPHML_YED_NS, indent + 3);
 	XML_WRITE_ATTR(writer, "color", "#000000");
@@ -3633,7 +3848,7 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 	XML_WRITE_ATTR(writer, "target", "standard");
 	XML_WRITE_CLOSE_E(writer);
 
-	if (cyberiada_write_edge_action_yed(writer, edge->action, indent + 3) != CYBERIADA_NO_ERROR) {
+	if (cyberiada_write_edge_action_yed(writer, edge, indent + 3, format) != CYBERIADA_NO_ERROR) {
 		ERROR("error while writing edge action\n");
 		return CYBERIADA_XML_ERROR;
 	}
@@ -3645,7 +3860,46 @@ static int cyberiada_write_edge_yed(xmlTextWriterPtr writer, CyberiadaEdge* edge
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriterPtr writer)
+/* the Berloga 1.6 metainformation node; the standard version is added by the
+   reader itself, so it is not written back */
+static int cyberiada_write_core_meta_yed(xmlTextWriterPtr writer, CyberiadaDocument* doc, int indent)
+{
+	int res;
+	char* meta_body = NULL;
+	const char* body;
+	size_t skip;
+
+	if (!doc->meta_info) {
+		return CYBERIADA_NO_ERROR;
+	}
+	if (cyberiada_encode_meta(doc->meta_info, &meta_body, NULL) != CYBERIADA_NO_ERROR || !meta_body) {
+		ERROR("cannot encode the metainformation\n");
+		return CYBERIADA_ASSERT;
+	}
+	body = meta_body;
+	skip = strlen(CYBERIADA_META_STANDARD_VERSION);
+	if (strncmp(body, CYBERIADA_META_STANDARD_VERSION, skip) == 0) {
+		const char* next = strstr(body, "\n\n");
+		if (next) {
+			body = next + 2;
+		}
+	}
+
+	XML_WRITE_OPEN_E_I(writer, GRAPHML_NODE_ELEMENT, indent);
+	XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, YED_CORE_META);
+	XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+	XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_DATA);
+	XML_WRITE_TEXT(writer, body);
+	XML_WRITE_CLOSE_E(writer);
+	XML_WRITE_CLOSE_E_I(writer, indent);
+
+	free(meta_body);
+
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriterPtr writer,
+										  CyberiadaXMLFormat format)
 {
 	size_t i;
 	int res;
@@ -3661,12 +3915,19 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
 	for (i = 0; i < yed_graphml_attributes_count; i += 2) {
 		XML_WRITE_ATTR(writer, yed_graphml_attributes[i], yed_graphml_attributes[i + 1]);		
 	}
+	/* the schema location is the only attribute the dialects spell differently */
+	if (format == cybxmlYEDBerloga16) {
+		XML_WRITE_ATTR(writer, GRAPHML_YED_SCHEMA_LOCATION_ATTR, GRAPHML_YED_SCHEMA_LOCATION);
+	} else {
+		XML_WRITE_ATTR(writer, GRAPHML_XSI_SCHEMA_LOCATION_ATTR, GRAPHML_YED_SCHEMA_LOCATION);
+	}
 
-	/* add scheme name if it is available */
+	/* the Berloga dialect keeps the state machine name in the scheme attribute,
+	   the Ostranna one in the title of the top composite state */
 	if (doc->meta_info) {
 		name = cyberiada_find_meta_string(doc->meta_info, CYBERIADA_META_NAME);
 	}
-	if (name) {
+	if (name && format == cybxmlYEDBerloga16) {
 		XML_WRITE_ATTR(writer, GRAPHML_BERLOGA_SCHEMENAME_ATTR, name);
 	}
 
@@ -3691,6 +3952,15 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
 	XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, GRAPHML_YED_ROOT_GRAPH_ID);
 	XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
 
+	/* the Berloga 1.6 dialect keeps the metainformation in its own node */
+	if (format == cybxmlYEDBerloga16) {
+		res = cyberiada_write_core_meta_yed(writer, doc, 2);
+		if (res != CYBERIADA_NO_ERROR) {
+			ERROR("error while writing the core meta node\n");
+			return res;
+		}
+	}
+
 	XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, 2);
 	XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_YED_KEY_GRAPH_DESCR);
 	XML_WRITE_ATTR(writer, "xml:space", "preserve");
@@ -3698,19 +3968,19 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
 
 	/* write nodes */
 	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
-		res = cyberiada_write_node_yed(writer, cur_node, 2);
+		res = cyberiada_write_node_yed(writer, cur_node, 2, format);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while writing node %s\n", cur_node->id);
-			return CYBERIADA_XML_ERROR;
+			return res;
 		}
 	}
 		
 	/* write edges */
 	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
-		res = cyberiada_write_edge_yed(writer, cur_edge, 2);
+		res = cyberiada_write_edge_yed(writer, cur_edge, 2, format);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while writing edge %s\n", cur_edge->id);
-			return CYBERIADA_XML_ERROR;
+			return res;
 		}
 	}
 
@@ -3740,7 +4010,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 			ERROR("The skip geometry flag is not compatible with other flags\n");
 			return CYBERIADA_BAD_PARAMETER;
 		}
-		if (format == cybxmlYED) {
+		if (CYBERIADA_FORMAT_IS_YED(format)) {
 			ERROR("Skip geometry flag is not allowed for YED export\n");
 			return CYBERIADA_BAD_PARAMETER;
 		}
@@ -3751,7 +4021,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	if (format != cybxmlCyberiada10 && format != cybxmlYED) {
+	if (format != cybxmlCyberiada10 && !CYBERIADA_FORMAT_IS_YED(format)) {
 		ERROR("unsupported SM format for write: %d\n", format);
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -3761,7 +4031,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	if (format == cybxmlYED && (!doc->state_machines ||doc->state_machines->next)) {
+	if (CYBERIADA_FORMAT_IS_YED(format) && (!doc->state_machines || doc->state_machines->next)) {
 		ERROR("YED format supports only single SM documents\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -3792,16 +4062,19 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 			cyberiada_export_document_geometry(copy_doc, flags, format);
 		}
 		
-		if (format == cybxmlYED) {
-			res = cyberiada_write_sm_document_yed(copy_doc, writer);
+		if (CYBERIADA_FORMAT_IS_YED(format)) {
+			res = cyberiada_write_sm_document_yed(copy_doc, writer, format);
 		} else if (format == cybxmlCyberiada10) {
 			res = cyberiada_write_sm_document_cyberiada(copy_doc, writer);
+		} else {
+			ERROR("unsupported SM format for write: %d\n", format);
+			res = CYBERIADA_BAD_PARAMETER;
 		}
 		cyberiada_destroy_sm_document(copy_doc);
 
 		if (res != CYBERIADA_NO_ERROR) {
+			/* keep the writer error: the document may be inexpressible in the format */
 			ERROR("error writing xml %d\n", res);
-			res = CYBERIADA_XML_ERROR;
 			break;
 		}
 

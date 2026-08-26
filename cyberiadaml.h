@@ -281,9 +281,18 @@ typedef struct {
 /* Cyberiada GraphML Library supported formats */
 typedef enum {
     cybxmlCyberiada10 = 0,                                 /* Cyberiada 1.0 format */
-    cybxmlYED = 1,                                         /* Old YED-based Berloga/Ostranna format */
+    cybxmlYED = 1,                                         /* Old YED-based Berloga/Ostranna format:
+															  the dialect is detected while reading,
+															  the Ostranna one is written */
+    cybxmlYEDOstranna = 2,                                 /* Write the yEd Ostranna dialect */
+    cybxmlYEDBerloga16 = 3,                                /* Write the yEd Berloga 1.6 dialect */
     cybxmlUnknown = 99                                     /* Format is not specified */
 } CyberiadaXMLFormat;
+
+/* Check if the format is one of the yEd dialects */
+#define CYBERIADA_FORMAT_IS_YED(f)                        ((f) == cybxmlYED || \
+														   (f) == cybxmlYEDOstranna || \
+														   (f) == cybxmlYEDBerloga16)
 	
 /* Cyberiada GraphML Library import/export flags */
 #define CYBERIADA_FLAG_NO                                 0

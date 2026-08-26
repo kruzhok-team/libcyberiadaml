@@ -576,7 +576,7 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	if (file_format == cybxmlYED) {
+	if (CYBERIADA_FORMAT_IS_YED(file_format)) {
 		old_node_coord_format = coordAbsolute;
 		old_edge_coord_format = coordLocalCenter;
 		old_edge_pl_coord_format = coordAbsolute;		
@@ -709,7 +709,7 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	if (file_format == cybxmlYED) {
+	if (CYBERIADA_FORMAT_IS_YED(file_format)) {
 		to_node_coord_format = coordAbsolute;
 		to_edge_coord_format = coordLocalCenter;
 		to_edge_pl_coord_format = coordAbsolute;
