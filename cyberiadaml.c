@@ -116,6 +116,8 @@
 #define GRAPHML_YED_NODE_CONFIG_ATTRIBUTE	     "configuration"
 #define GRAPHML_YED_NODE_CONFIG_START		     "com.yworks.bpmn.Event"
 #define GRAPHML_YED_NODE_CONFIG_START2		     "com.yworks.bpmn.Event.withShadow"
+#define GRAPHML_YED_NODE_CONFIG_CHOICE		     "com.yworks.bpmn.Gateway"
+#define GRAPHML_YED_NODE_CONFIG_CHOICE2		     "com.yworks.bpmn.Gateway.withShadow"
 #define GRAPHML_YED_PROPNODE				     "Property"
 #define GRAPHML_YED_PROP_VALUE_ATTRIBUTE	     "value"
 #define GRAPHML_YED_PROP_VALUE_START		     "EVENT_CHARACTERISTIC_START"
@@ -868,6 +870,13 @@ static GraphProcessorState handle_generic_node(xmlNode* xml_node,
 			return gpsInvalid;
 		}
 		cyberiada_copy_string(&(current->title), &(current->title_len), "");
+	} else if (cyberiada_get_attr_value(buffer, buffer_len,
+										xml_node,
+										GRAPHML_YED_NODE_CONFIG_ATTRIBUTE) == CYBERIADA_NO_ERROR &&
+			   (strcmp(buffer, GRAPHML_YED_NODE_CONFIG_CHOICE) == 0 ||
+				strcmp(buffer, GRAPHML_YED_NODE_CONFIG_CHOICE2) == 0)) {
+		/* the yEd gateway node is the choice pseudostate */
+		current->type = cybNodeChoice;
 	} else {
 		current->type = cybNodeSimpleState;
 	}

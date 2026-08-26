@@ -312,7 +312,7 @@ TIME_TICK_1S/
       Behavior: "BeepForPeriod(SHORT_BEEP_MS);
     Flash(255, 0, 0, FLASH_1M);"
    Children:
-   Node {id: n5::n5, title: "", type: 1}
+   Node {id: n5::n5, title: "", type: 256}
    Geometry: (505.824843, -5.739976, 26.000000, 26.000000)
     Actions:
    Children:
