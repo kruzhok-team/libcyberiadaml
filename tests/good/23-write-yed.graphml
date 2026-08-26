@@ -1,0 +1,702 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:java="http://www.yworks.com/xml/yfiles-common/1.0/java" xmlns:sys="http://www.yworks.com/xml/yfiles-common/markup/primitives/2.0" xmlns:x="http://www.yworks.com/xml/yfiles-common/markup/2.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:y="http://www.yworks.com/xml/graphml" xmlns:yed="http://www.yworks.com/xml/yed/3" xsi:schemaLocation="http://graphml.graphdrawing.org/xmlns http://www.yworks.com/xml/schema/graphml/1.1/ygraphml.xsd">
+  <key id="d0" for="graph" attr.name="Description" attr.type="string"/>
+  <key id="d1" for="port" yfiles.type="portgraphics"/>
+  <key id="d2" for="port" yfiles.type="portgeometry"/>
+  <key id="d3" for="port" yfiles.type="portuserdata"/>
+  <key id="d4" for="node" attr.name="url" attr.type="string"/>
+  <key id="d5" for="node" attr.name="description" attr.type="string"/>
+  <key id="d6" for="node" yfiles.type="nodegraphics"/>
+  <key id="d7" for="graphml" yfiles.type="resources"/>
+  <key id="d8" for="edge" attr.name="url" attr.type="string"/>
+  <key id="d9" for="edge" attr.name="description" attr.type="string"/>
+  <key id="d10" for="edge" yfiles.type="edgegraphics"/>
+  <graph id="G" edgedefault="directed">
+    <data key="d0" xml:space="preserve"/>
+    <node id="n0">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="-863.518642" y="-272.935324" width="294.581262" height="100.000000"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">State fields (do not delete this caption):
+
+unsigned int CharHP;
+QStateHandler StartState;
+unsigned int TimerAgony;</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n1">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="-863.518642" y="282.401897" width="294.581262" height="345.557880"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">Code for h-file: (do not delete this caption):
+#define HEALTHY 1
+#define AGONY 2
+#define DEAD 0
+#define GHOUL_GOOD 3
+#define GHOUL_WOUNDED 4
+#define GHOUL_HEALING 5
+#define BLESSED 6
+#define FLASH_MS 200
+#define FLASH_SEC 1010
+#define FLASH_1M 60100
+#define TIMEOUT_AGONY_S 600
+#define TIMEOUT_DEATH_S 15
+#define TIMEOUT_RADX_S 900
+#define LONG_BEEP_MS 15000
+#define MEDIUM_BEEP_MS 3000
+#define SHORT_BEEP_MS 500
+#define RED 255
+#define RED_MEDIUM 127
+#define GREEN_MEDIUM 127
+#define BLUE_MEDIUM 127
+
+#define DEFAULT_HP 27000
+#define GHOUL_HP (DEFAULT_HP/3)</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n2">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="-862.594933" y="10.622824" width="293.657553" height="100.000000"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">Constructor fields (do not delete this caption):
+unsigned int HP;
+unsigned int State;
+unsigned int TimerAgony;
+</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n3">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="846.057991" y="114.120979" width="516.489882" height="537.925862"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">Constructor code: (do not delete this caption):
+me-&gt;CharHP = HP;
+me-&gt;TimerAgony = TimerAgony;
+switch (State) {
+           case HEALTHY: {
+               me-&gt;StartState =
+               (QStateHandler)&amp;OregonPlayer_healthy;
+               break;
+           }
+           case AGONY: {
+               me-&gt;StartState =
+               (QStateHandler)&amp; OregonPlayer_agony;
+               break;
+           }
+           case DEAD: {
+               me-&gt;StartState =
+               (QStateHandler)&amp; OregonPlayer_dead;
+               break;
+
+           }
+           case GHOUL_GOOD: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_ghoul_good;
+                    break;
+                }
+           case GHOUL_WOUNDED: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_wounded;
+                    break;
+                }
+           case GHOUL_HEALING: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_ghoul_healing;
+                    break;
+                }
+           case BLESSED: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_blessed;
+                    break;
+                }
+           default:
+               me-&gt;StartState =(QStateHandler)&amp; OregonPlayer_healthy;
+       }
+</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n4">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="839.167994" y="-369.598817" width="554.610715" height="453.719796"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">Comments:
+
+void ShowCurrentHealth (OregonPlayer* me) {
+     Flash(255 - me-&gt;CharHP*255/DEFAULT_HP, me&gt;CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void ShowCurrentHealthGhoul (OregonPlayer* me) {
+     Flash(255 - me-&gt;CharHP*255/DEFAULT_HP, me&gt;CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void UpdateHP(OregonPlayer* me, unsigned int NewHP) {
+    if (NewHP &lt;= DEFAULT_HP) {
+        me-&gt;CharHP = NewHP;;
+    } else {
+        me-&gt;CharHP = DEFAULT_HP
+    SaveHP(me-&gt;CharHP);
+}
+
+void Reset(OregonPlayer* me) {
+    UpdateHP(me, DEFAULT_HP);
+    me-&gt;TimerDeath = 0;
+    UpdateTimerAgony(0);
+    return Q_TRAN(healthy);
+
+}
+
+void UpdateTimerAgony(PlayerOregon* me, unsigned int Timer) {
+    me-&gt;TimerAgony = Timer;
+    SaveTimerAgony(Timer);
+}</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n5" yfiles.foldertype="group">
+      <data key="d5" xml:space="preserve"/>
+      <data key="d6">
+        <y:ProxyAutoBoundsNode>
+          <y:Realizers active="0">
+            <y:GroupNode>
+              <y:Geometry x="-558.225586" y="-371.144227" width="1380.008628" height="974.817297"/>
+              <y:Fill color="#F5F5F5" transparent="false"/>
+              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">active</y:NodeLabel>
+              <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/</y:NodeLabel>
+              <y:Shape type="roundrectangle"/>
+            </y:GroupNode>
+          </y:Realizers>
+        </y:ProxyAutoBoundsNode>
+      </data>
+      <graph id="n5:" edgedefault="directed">
+        <node id="n5::n0">
+          <data key="d6">
+            <y:GenericNode configuration="com.yworks.bpmn.Event.withShadow">
+              <y:Geometry x="-326.062500" y="-95.319744" width="20.000000" height="20.000000"/>
+              <y:Fill color="#333333" color2="#000000" transparent="false"/>
+              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:NodeLabel/>
+              <y:StyleProperties>
+                <y:Property class="com.yworks.yfiles.bpmn.view.EventCharEnum" name="com.yworks.bpmn.characteristic" value="EVENT_CHARACTERISTIC_START"/>
+              </y:StyleProperties>
+            </y:GenericNode>
+          </data>
+        </node>
+        <node id="n5::n1" yfiles.foldertype="group">
+          <data key="d5" xml:space="preserve"/>
+          <data key="d6">
+            <y:ProxyAutoBoundsNode>
+              <y:Realizers active="0">
+                <y:GroupNode>
+                  <y:Geometry x="-442.599145" y="-334.683290" width="885.836525" height="621.085187"/>
+                  <y:Fill color="#F5F5F5" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">alive</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/</y:NodeLabel>
+                  <y:Shape type="roundrectangle"/>
+                </y:GroupNode>
+              </y:Realizers>
+            </y:ProxyAutoBoundsNode>
+          </data>
+          <graph id="n5::n1:" edgedefault="directed">
+            <node id="n5::n1::n0">
+              <data key="d6">
+                <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                  <y:Geometry x="115.762771" y="-185.632244" width="284.189453" height="174.525473"/>
+                  <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">agony</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+BeepForPeriod(LONG_BEEP_MS);
+    SaveState(AGONY);
+    UpdateHP(me, 1);
+    me-&gt;TimerAgony = 0;
+
+TIME_TICK_1S [else]/
+me-&gt;TimerAgony++;
+    Flash(RED, 0, 0, FLASH_MS);
+
+TIME_TICK_10S/
+BeepForPeriod(SHORT_BEEP_MS);
+</y:NodeLabel>
+                </y:GenericNode>
+              </data>
+            </node>
+            <node id="n5::n1::n1">
+              <data key="d6">
+                <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                  <y:Geometry x="-359.306115" y="-185.632244" width="285.937500" height="185.167241"/>
+                  <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">healthy</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(HEALTHY);
+    BeepForTime(MEDIUM_BEEP_MS);
+
+RAD_RCVD [else]/
+UpdateHP(me, me-&gt;CharHP-((oregonPlayerQEvt*)e)-&gt;value);
+   
+TIME_TICK_1S/
+    ShowCurrentHealth(me);
+
+HEAL/
+UpdateHP(me, me-&gt;CharHP+((oregonPlayerQEvt*)e)-&gt;value);
+</y:NodeLabel>
+                </y:GenericNode>
+              </data>
+            </node>
+            <node id="n5::n1::n2" yfiles.foldertype="group">
+              <data key="d5" xml:space="preserve"/>
+              <data key="d6">
+                <y:ProxyAutoBoundsNode>
+                  <y:Realizers active="0">
+                    <y:GroupNode>
+                      <y:Geometry x="-374.306115" y="15.595784" width="802.543495" height="251.806113"/>
+                      <y:Fill color="#F5F5F5" transparent="false"/>
+                      <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                      <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">immune</y:NodeLabel>
+                      <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+BeepForTime(MEDIUM_BEEP_MS);
+
+TIME_TICK_1S/
+Flash(0, GREEN_MEDIUM, 0, FLASH_SEC);
+
+HEAL/
+UpdateHP(me, me-&gt;CharHP+((oregonPlayerQEvt*)e)-&gt;value);
+</y:NodeLabel>
+                      <y:Shape type="roundrectangle"/>
+                    </y:GroupNode>
+                  </y:Realizers>
+                </y:ProxyAutoBoundsNode>
+              </data>
+              <graph id="n5::n1::n2:" edgedefault="directed">
+                <node id="n5::n1::n2::n0">
+                  <data key="d6">
+                    <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                      <y:Geometry x="-359.306115" y="152.401897" width="285.937500" height="100.000000"/>
+                      <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                      <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                      <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">temp_immune</y:NodeLabel>
+                      <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/</y:NodeLabel>
+                    </y:GenericNode>
+                  </data>
+                </node>
+                <node id="n5::n1::n2::n1">
+                  <data key="d6">
+                    <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                      <y:Geometry x="125.550857" y="133.389372" width="284.189453" height="108.858905"/>
+                      <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                      <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                      <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">blessed</y:NodeLabel>
+                      <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(BLESSED);
+</y:NodeLabel>
+                    </y:GenericNode>
+                  </data>
+                </node>
+              </graph>
+            </node>
+          </graph>
+        </node>
+        <node id="n5::n3" yfiles.foldertype="group">
+          <data key="d5" xml:space="preserve"/>
+          <data key="d6">
+            <y:ProxyAutoBoundsNode>
+              <y:Realizers active="0">
+                <y:GroupNode>
+                  <y:Geometry x="-442.599145" y="303.155653" width="1234.382187" height="277.741955"/>
+                  <y:Fill color="#F5F5F5" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">ghoul</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+
+TIME_TICK_1S/
+ShowCurrentHealthGhoul(me);
+</y:NodeLabel>
+                  <y:Shape type="roundrectangle"/>
+                </y:GroupNode>
+              </y:Realizers>
+            </y:ProxyAutoBoundsNode>
+          </data>
+          <graph id="n5::n3:" edgedefault="directed">
+            <node id="n5::n3::n0">
+              <data key="d6">
+                <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                  <y:Geometry x="-374.306115" y="392.116591" width="285.937500" height="116.263935"/>
+                  <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">ghoul_good</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(GHOUL_GOOD);
+    BeepForPeriod(MEDIUM_BEEP_MS);
+    UpdateHP(me, GHOUL_HP);
+</y:NodeLabel>
+                </y:GenericNode>
+              </data>
+            </node>
+            <node id="n5::n3::n1">
+              <data key="d6">
+                <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                  <y:Geometry x="512.136018" y="387.687138" width="220.935105" height="120.693388"/>
+                  <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">wounded</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(GHOUL_WOUNDED);
+    UpdateHP(me, 1);
+    BeepForPeriod(LONG_BEEP_MS);
+
+TIME_TICK_10S/
+BeepForPeriod(SHORT_BEEP_MS);
+</y:NodeLabel>
+                </y:GenericNode>
+              </data>
+            </node>
+            <node id="n5::n3::n2">
+              <data key="d6">
+                <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+                  <y:Geometry x="30.089889" y="386.744419" width="462.242318" height="121.636107"/>
+                  <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+                  <y:BorderStyle color="#000000" type="line" width="1.0"/>
+                  <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">ghoul_healing</y:NodeLabel>
+                  <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(GHOUL_HEALING);
+
+RAD_RCVD [else]/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</y:NodeLabel>
+                </y:GenericNode>
+              </data>
+            </node>
+          </graph>
+        </node>
+        <node id="n5::n4">
+          <data key="d6">
+            <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+              <y:Geometry x="527.136018" y="-185.632244" width="220.935105" height="174.525473"/>
+              <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">dead</y:NodeLabel>
+              <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+SaveState(DEAD);
+    BeepForTime(LONG_BEEP_MS);
+    UpdateHP(me, 0);
+    Flash(RED, 0, 0, 1000);
+
+TIME_TICK_1M/
+BeepForPeriod(SHORT_BEEP_MS);
+    Flash(255, 0, 0, FLASH_1M);
+</y:NodeLabel>
+            </y:GenericNode>
+          </data>
+        </node>
+        <node id="n5::n5">
+          <data key="d6">
+            <y:GenericNode configuration="com.yworks.bpmn.Gateway.withShadow">
+              <y:Geometry x="624.603571" y="97.524446" width="26.000000" height="26.000000"/>
+              <y:Fill color="#FFFFFFE6" color2="#D4D4D4CC" transparent="false"/>
+              <y:BorderStyle color="#E38B00" type="line" width="1.0"/>
+              <y:NodeLabel/>
+              <y:StyleProperties>
+                <y:Property class="com.yworks.yfiles.bpmn.view.BPMNTypeEnum" name="com.yworks.bpmn.type" value="GATEWAY_TYPE_PLAIN"/>
+              </y:StyleProperties>
+            </y:GenericNode>
+          </data>
+        </node>
+      </graph>
+    </node>
+    <node id="n6">
+      <data key="d6">
+        <y:UMLNoteNode>
+          <y:Geometry x="-861.910260" y="152.401897" width="292.972879" height="100.000000"/>
+          <y:Fill color="#FFCC00" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="left" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasBackgroundColor="false" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="content" modelName="internal" modelPosition="tl">Event fields (do not delete this caption):
+
+unsigned int value;</y:NodeLabel>
+        </y:UMLNoteNode>
+      </data>
+    </node>
+    <node id="n7">
+      <data key="d6">
+        <y:GenericNode configuration="com.yworks.entityRelationship.big_entity">
+          <y:Geometry x="-326.804917" y="621.063931" width="220.935105" height="212.926496"/>
+          <y:Fill color="#E8EEF7" color2="#B7C9E3" transparent="false"/>
+          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:NodeLabel alignment="center" backgroundColor="#EBEBEB" fontSize="15" fontStyle="bold" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="top" autoSizePolicy="node_width" y="0" height="20" configuration="com.yworks.entityRelationship.label.name" modelName="internal" modelPosition="t">test</y:NodeLabel>
+          <y:NodeLabel alignment="left" hasBackgroundColor="false" fontSize="12" fontStyle="plain" textColor="#000000" xml:space="preserve" hasLineColor="false" visible="true" horizontalTextPosition="center" verticalTextPosition="bottom" autoSizePolicy="node_size" configuration="com.yworks.entityRelationship.label.attributes" modelName="internal" modelPosition="tl">
+
+entry/
+BeepForPeriod(SHORT_BEEP_MS);
+  Flash(127, 0, 0, FLASH_MS);
+
+RAD_RCVD/
+BeepForPeriod(SHORT_BEEP_MS);
+  Flash(127, 0, 0, FLASH_MS);
+</y:NodeLabel>
+        </y:GenericNode>
+      </data>
+    </node>
+    <edge id="n5::n1::e0" source="n5::n1::n1" target="n5::n1::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="-18.016861" tx="0.000000" ty="-12.695977"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-15.298388" y="-7.535271">RAD_RCVD [((oregonPlayerQEvt*)e)-&gt;value &gt;= me-&gt;CharHP]/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::e0" source="n5::n1::n0" target="n5::n4">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="0.000000">
+            <y:Point x="257.857497" y="-215.728051"/>
+            <y:Point x="392.941094" y="-215.728051"/>
+            <y:Point x="637.603571" y="-215.728051"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="32.826589" y="-39.030775">TIME_TICK_1S [me-&gt;TimerAgony &gt; TIMEOUT_AGONY_S]/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e1" source="n5::n1::n1" target="n5::n1::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="25.105784" tx="0.000000" ty="30.426668"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="111.418471" y="-5.492088">AGONY/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e2" source="n5::n1::n1" target="n5::n1::n2::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-83.974688" sy="0.997303" tx="-82.194192" ty="0.000000">
+            <y:Point x="-298.531557" y="57.869563"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-26.225858" y="18.711773">IMMUNE/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::e2" source="n5::n1" target="n5::n3::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-231.656482" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-38.691399" y="-50.997064">PILL_GHOUL/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n3::e0" source="n5::n3::n0" target="n5::n3::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="84.521153" sy="0.000000" tx="54.872493" ty="0.000000">
+            <y:Point x="-146.816212" y="355.529711"/>
+            <y:Point x="677.476064" y="359.474538"/>
+            <y:Point x="677.476064" y="355.529711"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="287.533115" y="-37.375608">PILL_REMOVED/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n3::e1" source="n5::n3::n1" target="n5::n3::n2">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-64.643095" sy="0.000000" tx="-37.907600" ty="0.000000">
+            <y:Point x="557.960476" y="536.620684"/>
+            <y:Point x="223.303448" y="536.620684"/>
+            <y:Point x="223.303448" y="526.652586"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-365.981290" y="8.495272">RAD_RCVD/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e3" source="n5::n1::n2::n0" target="n5::n1::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-42.669915" y="-85.394651">NOT_IMMUNE/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e4" source="n5::n1::n0" target="n5::n1::n2::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="9.788086" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-29.278306" y="62.892851">BLESSED/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e5" source="n5::n1::n2" target="n5::n1::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-12.886632" sy="0.000000" tx="0.000000" ty="75.153089">
+            <y:Point x="14.079000" y="-23.216418"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="23.056634" y="-163.498990">AGONY/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e0" source="n5" target="n5::n1::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="100.365057" ty="0.000000">
+            <y:Point x="130.774009" y="-397.831481"/>
+            <y:Point x="-115.972308" y="-397.831481"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-166.323789" y="-42.671355">PILL_RESET/
+Reset(me);
+</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n3::e2" source="n5::n3::n2" target="n5::n3::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-322.509094" y="15.801642">RAD_RCVD [((((oregonPlayerQEvt*)e)-&gt;value+me-&gt;CharHP )&gt;=GHOUL_HP)]/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e1" source="n7" target="n5::n3::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-15.000000" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-38.691399" y="-171.789345">PILL_GHOUL/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e2" source="n7" target="n5::n1::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="52.574270">
+            <y:Point x="-505.585469" y="727.527179"/>
+            <y:Point x="-505.585469" y="-40.474353"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-332.102888" y="-399.969498">PILL_RESET/
+Reset(me);
+</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="e3" source="n5" target="n7">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-232.692631" sy="-26.993107" tx="40.834195" ty="4.736900"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-91.839698" y="506.835273">PILL_TEST/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::n1::e6" source="n5::n1::n0" target="n5::n1::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="-53.735083" sy="0.000000" tx="137.673572" ty="0.000000">
+            <y:Point x="204.122414" y="-215.661207"/>
+            <y:Point x="-78.663793" y="-215.661207"/>
+          </y:Path>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-342.606002" y="-110.244366">HEAL/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::e3" source="n5::n4" target="n5::n5">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-76.791998" y="45.308325">TEST_TRIGGER/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::e4" source="n5::n5" target="n5::n3::n1">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="15.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-84.520513" y="123.110537">[me-&gt;CharHP&gt;0]/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+    <edge id="n5::e5" source="n5::n5" target="n5::n1::n0">
+      <data key="d10">
+        <y:PolyLineEdge>
+          <y:Path sx="0.000000" sy="0.000000" tx="0.000000" ty="0.000000"/>
+          <y:LineStyle color="#000000" type="line" width="1.0"/>
+          <y:Arrows source="none" target="standard"/>
+          <y:EdgeLabel alignment="center" fontSize="12" fontStyle="plain" textColor="#000000" backgroundColor="#F5F5F5" configuration="AutoFlippingLabel" distance="2.0" hasLineColor="false" visible="true" xml:space="preserve" modelName="centered" modelPosition="center" preferredPlacement="center_on_edge" x="-135.815914" y="-73.321880">[else]/</y:EdgeLabel>
+        </y:PolyLineEdge>
+      </data>
+    </edge>
+  </graph>
+</graphml>
