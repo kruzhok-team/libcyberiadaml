@@ -556,7 +556,9 @@ int cyberiada_decode_state_actions_yed(const char* text, CyberiadaAction** actio
 				res = CYBERIADA_NO_ERROR;
 				break;
 			}
-			if (regexps->berloga_legacy > 1) {
+			if (regexps->berloga_legacy) {
+				/* the Berloga action blocks are separated by a single newline
+				   whenever the previous block has no behavior */
 				res = cyb_regexec(&(regexps->r->node_legacy_action_regexp), start,
 							  CYBERIADA_ACTION_LEGACY_MATCHES, pmatch, 0);
 				if (res != 0 && res != REG_NOMATCH) {
