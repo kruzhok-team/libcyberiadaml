@@ -860,7 +860,7 @@ int cyberiada_check_edges_geometry(CyberiadaEdge* edges)
 		if (e->type == cybEdgeComment &&
 			(e->geometry_label_point || e->geometry_label_rect)) {
 			ERROR("Comment edge %s has label geometry\n", e->id);
-			return CYBERIADA_ACTION_FORMAT_ERROR;
+			return CYBERIADA_FORMAT_ERROR;
 		}
 	}
 
@@ -931,18 +931,18 @@ int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 		if (n->type == cybNodeInitial || n->type == cybNodeFinal || n->type == cybNodeTerminate) {
 			if (n->geometry_rect) {
 				ERROR("Point node %s has rect geometry\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;
+				return CYBERIADA_FORMAT_ERROR;
 			}
 		} else if (n->type == cybNodeSM || n->type == cybNodeSimpleState || n->type == cybNodeCompositeState ||
 				   n->type == cybNodeSubmachineState || n->type == cybNodeChoice ||
 				   n->type == cybNodeComment || n->type == cybNodeFormalComment) {
 			if (n->geometry_point) {
 				ERROR("Rect (node %s) has point geometry\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;
+				return CYBERIADA_FORMAT_ERROR;
 			}
 			if (n->geometry_rect && n->geometry_rect->width == 0.0 && n->geometry_rect->height == 0.0) {
 				ERROR("Rect (node %s) has zero width & height\n", n->id);
-				return CYBERIADA_ACTION_FORMAT_ERROR;				
+				return CYBERIADA_FORMAT_ERROR;				
 			}
 		}
 		if (n->children) {
