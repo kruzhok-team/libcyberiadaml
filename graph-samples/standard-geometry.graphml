@@ -33,8 +33,11 @@
       <data key="dData">standardVersion/ 1.0
 
 geometry/ full
+
 name/ test-geometry-1
+
 transitionOrder/ actionFirst
+
 eventPropagation/ block</data>
     </node>
     <node id="node-0">
