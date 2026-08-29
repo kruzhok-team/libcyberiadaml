@@ -232,6 +232,10 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_META_EVENT_PROPAGATION         "eventPropagation"
 #define CYBERIADA_META_EP_PROPAGATE              "propagate"
 #define CYBERIADA_META_EP_BLOCK                  "block"
+#define CYBERIADA_META_GEOMETRY                  "geometry"
+#define CYBERIADA_META_GEOM_NONE                 "none"
+#define CYBERIADA_META_GEOM_SHORT                "short"
+#define CYBERIADA_META_GEOM_FULL                 "full"
 #define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
 	
 typedef struct _CyberiadaMetaStringList {

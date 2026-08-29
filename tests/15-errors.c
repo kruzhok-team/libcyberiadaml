@@ -67,6 +67,14 @@ int main(void)
 				CYBERIADA_FORMAT_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
+	/* the extended geometry format sizes every rect exactly (9.1) */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/full-zero-geometry.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
 	/* a comment edge with label geometry violates the standard */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);

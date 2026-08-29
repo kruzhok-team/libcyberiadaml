@@ -53,7 +53,10 @@ extern "C" {
 	int                cyberiada_export_document_geometry(CyberiadaDocument* doc,
 														  int flags, CyberiadaXMLFormat file_format);
 	int                cyberiada_document_has_geometry(CyberiadaDocument* doc);
-	int                cyberiada_check_nodes_geometry(CyberiadaNode* nodes);
+	int                cyberiada_document_declared_geometry(CyberiadaDocument* doc,
+															CyberiadaGeometryFormat* format);
+	int                cyberiada_size_loose_document_geometry(CyberiadaDocument* doc);
+	int                cyberiada_check_nodes_geometry(CyberiadaNode* nodes, CyberiadaGeometryFormat format);
 	int                cyberiada_check_edges_geometry(CyberiadaEdge* edges);
 	int                cyberiada_repair_nodes_geometry(CyberiadaNode* nodes);
 	int                cyberiada_repair_edges_geometry(CyberiadaEdge* edges);

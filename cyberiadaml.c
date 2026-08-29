@@ -2361,7 +2361,8 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 				ERROR("error: state machine %s has wrong structure - bad pseudostates\n", sm->nodes->id);
 				break;
 			}
-			if (!skip_geometry && (res = cyberiada_check_nodes_geometry(sm->nodes)) != CYBERIADA_NO_ERROR) {
+			if (!skip_geometry &&
+				(res = cyberiada_check_nodes_geometry(sm->nodes, doc->geometry_format)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has wrong structure - bad geometry\n", sm->nodes->id);
 				break;
 			}
@@ -2439,6 +2440,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 {
 	int res;
 	int skip_geometry = 0;
+	int declared_geometry;
 	xmlNode* root = NULL;
 	CyberiadaSM* sm;
 	NamesList* nl = NULL;
@@ -2583,6 +2585,10 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			}
 		}
 
+		/* the declared geometry format sets the strictness of the geometry checks (7.1) */
+		declared_geometry = (cyberiada_document_declared_geometry(cyb_doc,
+																 &(cyb_doc->geometry_format)) == CYBERIADA_NO_ERROR);
+
 		res = cyberiada_check_graphs(cyb_doc,
 									 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 									 flags & CYBERIADA_FLAG_CHECK_INITIAL,
@@ -2598,8 +2604,14 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 				cyberiada_clean_document_geometry(cyb_doc);
 			} else if (cyberiada_document_has_geometry(cyb_doc) ||
 					   flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
+				if (cyb_doc->geometry_format != cybgeomFull) {
+					/* the base format leaves the rect size to the consumer (7.2.2) */
+					cyberiada_size_loose_document_geometry(cyb_doc);
+				}
 				cyberiada_import_document_geometry(cyb_doc, flags, format);
-				cyb_doc->geometry_format = cybgeomFull;
+				if (!declared_geometry) {
+					cyb_doc->geometry_format = cybgeomFull;
+				}
 			} else {
 				/* document has no geometry */
 				cyberiada_document_no_geometry(cyb_doc);

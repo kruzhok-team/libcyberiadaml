@@ -28,6 +28,11 @@
 #include "geometry.h"
 #include "cyb_error.h"
 
+/* the base format sizes the rect by the node content (7.2.2);
+   the nominal size is used until the consumer lays the diagram out */
+#define CYBERIADA_LOOSE_NODE_WIDTH   300.0
+#define CYBERIADA_LOOSE_NODE_HEIGHT  200.0
+
 int cyberiada_document_no_geometry(CyberiadaDocument* doc)
 {
 	if (!doc) {
@@ -852,6 +857,84 @@ int cyberiada_document_has_geometry(CyberiadaDocument* doc)
 	return 0;
 }
 
+int cyberiada_document_declared_geometry(CyberiadaDocument* doc, CyberiadaGeometryFormat* format)
+{
+	CyberiadaMetaStringList* s;
+
+	if (!doc || !format) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	if (!doc->meta_info) {
+		return CYBERIADA_NOT_FOUND;
+	}
+
+	for (s = doc->meta_info->strings; s; s = s->next) {
+		if (!s->name || !s->value || strcmp(s->name, CYBERIADA_META_GEOMETRY) != 0) {
+			continue;
+		}
+		if (strcmp(s->value, CYBERIADA_META_GEOM_NONE) == 0) {
+			*format = cybgeomNone;
+		} else if (strcmp(s->value, CYBERIADA_META_GEOM_SHORT) == 0) {
+			*format = cybgeomShort;
+		} else if (strcmp(s->value, CYBERIADA_META_GEOM_FULL) == 0) {
+			*format = cybgeomFull;
+		} else {
+			break;
+		}
+		return CYBERIADA_NO_ERROR;
+	}
+
+	return CYBERIADA_NOT_FOUND;
+}
+
+static int cyberiada_loose_rect(const CyberiadaRect* rect)
+{
+	return rect && (rect->width == 0.0 || rect->height == 0.0);
+}
+
+static void cyberiada_size_loose_rect(CyberiadaRect* rect)
+{
+	if (!rect) {
+		return;
+	}
+	if (rect->width == 0.0) {
+		rect->width = CYBERIADA_LOOSE_NODE_WIDTH;
+	}
+	if (rect->height == 0.0) {
+		rect->height = CYBERIADA_LOOSE_NODE_HEIGHT;
+	}
+}
+
+static int cyberiada_size_loose_nodes_geometry(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		cyberiada_size_loose_rect(n->geometry_rect);
+		if (n->children) {
+			cyberiada_size_loose_nodes_geometry(n->children);
+		}
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_size_loose_document_geometry(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+
+	if (!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		cyberiada_size_loose_nodes_geometry(sm->nodes);
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
 int cyberiada_check_edges_geometry(CyberiadaEdge* edges)
 {
 	CyberiadaEdge* e;
@@ -909,10 +992,9 @@ int cyberiada_repair_nodes_geometry(CyberiadaNode* nodes)
 				htree_destroy_point(n->geometry_point);
 				n->geometry_point = NULL;
 			}
-			if (n->geometry_rect && n->geometry_rect->width == 0.0 && n->geometry_rect->height == 0.0) {
-				ERROR("warning: dropping the zero-size rect of the node %s\n", n->id);
-				htree_destroy_rect(n->geometry_rect);
-				n->geometry_rect = NULL;
+			if (cyberiada_loose_rect(n->geometry_rect)) {
+				ERROR("warning: sizing the loose rect of the node %s\n", n->id);
+				cyberiada_size_loose_rect(n->geometry_rect);
 			}
 		}
 		if (n->children) {
@@ -923,7 +1005,7 @@ int cyberiada_repair_nodes_geometry(CyberiadaNode* nodes)
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
+int cyberiada_check_nodes_geometry(CyberiadaNode* nodes, CyberiadaGeometryFormat format)
 {
 	CyberiadaNode* n;
 
@@ -940,13 +1022,14 @@ int cyberiada_check_nodes_geometry(CyberiadaNode* nodes)
 				ERROR("Rect (node %s) has point geometry\n", n->id);
 				return CYBERIADA_FORMAT_ERROR;
 			}
-			if (n->geometry_rect && n->geometry_rect->width == 0.0 && n->geometry_rect->height == 0.0) {
-				ERROR("Rect (node %s) has zero width & height\n", n->id);
-				return CYBERIADA_FORMAT_ERROR;				
+			if (format == cybgeomFull && cyberiada_loose_rect(n->geometry_rect)) {
+				/* only the extended format sizes the rect exactly (9.1) */
+				ERROR("Rect (node %s) has zero width or height\n", n->id);
+				return CYBERIADA_FORMAT_ERROR;
 			}
 		}
 		if (n->children) {
-			int res = cyberiada_check_nodes_geometry(n->children);
+			int res = cyberiada_check_nodes_geometry(n->children, format);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
