@@ -87,6 +87,10 @@ int main(void)
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(doc->geometry_format == cybgeomShort);
+	/* pin the coordinates to the frame of the file before checking them */
+	TEST_ASSERT(cyberiada_convert_document_geometry(doc, coordLeftTop, coordLeftTop,
+													coordLeftTop, edgeBorder) ==
+				CYBERIADA_NO_ERROR);
 	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0::n1");
 	TEST_ASSERT(node && node->geometry_rect);
 	/* the zero size is replaced, the coordinates of the file are kept */
@@ -94,6 +98,14 @@ int main(void)
 	TEST_ASSERT(node->geometry_rect->height > 0.0);
 	TEST_ASSERT(fabs(node->geometry_rect->x - 50.0) < 0.01);
 	TEST_ASSERT(fabs(node->geometry_rect->y - 100.0) < 0.01);
+	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0::n2");
+	TEST_ASSERT(node && node->geometry_rect);
+	TEST_ASSERT(fabs(node->geometry_rect->y - 550.0) < 0.01);
+	/* the composite covers the children the file placed inside it */
+	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0");
+	TEST_ASSERT(node && node->geometry_rect);
+	TEST_ASSERT(node->geometry_rect->width >= 350.0);
+	TEST_ASSERT(node->geometry_rect->height >= 750.0);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the good print of the robot-vacuum example */

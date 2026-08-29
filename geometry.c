@@ -32,6 +32,8 @@
    the nominal size is used until the consumer lays the diagram out */
 #define CYBERIADA_LOOSE_NODE_WIDTH   300.0
 #define CYBERIADA_LOOSE_NODE_HEIGHT  200.0
+#define CYBERIADA_LOOSE_PADDING       10.0
+#define CYBERIADA_LOOSE_MIN_SIZE      20.0
 
 int cyberiada_document_no_geometry(CyberiadaDocument* doc)
 {
@@ -893,7 +895,7 @@ static int cyberiada_loose_rect(const CyberiadaRect* rect)
 	return rect && (rect->width == 0.0 || rect->height == 0.0);
 }
 
-static void cyberiada_size_loose_rect(CyberiadaRect* rect)
+static void cyberiada_repair_loose_rect(CyberiadaRect* rect)
 {
 	if (!rect) {
 		return;
@@ -906,18 +908,133 @@ static void cyberiada_size_loose_rect(CyberiadaRect* rect)
 	}
 }
 
-static int cyberiada_size_loose_nodes_geometry(CyberiadaNode* nodes)
+/* The extent of the children in the coordinates of the node; the children
+   coordinates are relative to the left top corner of the node (7.2.1) */
+static int cyberiada_children_extent(const CyberiadaNode* node, double* w, double* h)
+{
+	const CyberiadaNode* c;
+	int found = 0;
+
+	for (c = node->children; c; c = c->next) {
+		double cw, ch;
+		if (c->geometry_rect) {
+			cw = c->geometry_rect->x + c->geometry_rect->width;
+			ch = c->geometry_rect->y + c->geometry_rect->height;
+		} else if (c->geometry_point) {
+			cw = c->geometry_point->x;
+			ch = c->geometry_point->y;
+		} else if (c->children) {
+			/* a container with no geometry of its own shares the node coordinates */
+			cw = ch = 0.0;
+			if (!cyberiada_children_extent(c, &cw, &ch)) {
+				continue;
+			}
+		} else {
+			continue;
+		}
+		if (!found || cw > *w) *w = cw;
+		if (!found || ch > *h) *h = ch;
+		found = 1;
+	}
+
+	return found;
+}
+
+/* The room the neighbours leave for the node: a sibling anchor or an own
+   transition label caps the size on the axis it lies on */
+static void cyberiada_loose_bounds(const CyberiadaNode* node, const CyberiadaNode* siblings,
+								   const CyberiadaEdge* edges, double* w, double* h)
+{
+	const CyberiadaNode* s;
+	const CyberiadaEdge* e;
+	double x = node->geometry_rect->x;
+	double y = node->geometry_rect->y;
+
+	for (s = siblings; s; s = s->next) {
+		double dx, dy;
+		if (s == node || !s->geometry_rect) {
+			continue;
+		}
+		dx = s->geometry_rect->x - x;
+		dy = s->geometry_rect->y - y;
+		if (dx > 0.0 && dx >= fabs(dy) && dx - CYBERIADA_LOOSE_PADDING < *w) {
+			*w = dx - CYBERIADA_LOOSE_PADDING;
+		}
+		if (dy > 0.0 && dy > fabs(dx) && dy - CYBERIADA_LOOSE_PADDING < *h) {
+			*h = dy - CYBERIADA_LOOSE_PADDING;
+		}
+	}
+
+	/* the label is placed in the coordinates of the source node (7.2.1) */
+	for (e = edges; e; e = e->next) {
+		double lx, ly;
+		if (e->source != node) {
+			continue;
+		}
+		if (e->geometry_label_point) {
+			lx = e->geometry_label_point->x;
+			ly = e->geometry_label_point->y;
+		} else if (e->geometry_label_rect) {
+			lx = e->geometry_label_rect->x;
+			ly = e->geometry_label_rect->y;
+		} else {
+			continue;
+		}
+		if (lx <= 0.0 || ly <= 0.0) {
+			continue;
+		}
+		if (lx >= ly) {
+			if (lx - CYBERIADA_LOOSE_PADDING < *w) {
+				*w = lx - CYBERIADA_LOOSE_PADDING;
+			}
+		} else if (ly - CYBERIADA_LOOSE_PADDING < *h) {
+			*h = ly - CYBERIADA_LOOSE_PADDING;
+		}
+	}
+}
+
+static void cyberiada_size_loose_node(CyberiadaNode* node, double avail_w, double avail_h)
+{
+	CyberiadaRect* r = node->geometry_rect;
+	double ew = 0.0, eh = 0.0;
+	int content = cyberiada_children_extent(node, &ew, &eh);
+
+	if (r->width == 0.0) {
+		double w = content ? ew + CYBERIADA_LOOSE_PADDING : CYBERIADA_LOOSE_NODE_WIDTH;
+		if (w > avail_w) w = avail_w;
+		if (w < CYBERIADA_LOOSE_MIN_SIZE) w = CYBERIADA_LOOSE_MIN_SIZE;
+		r->width = w;
+	}
+	if (r->height == 0.0) {
+		double h = content ? eh + CYBERIADA_LOOSE_PADDING : CYBERIADA_LOOSE_NODE_HEIGHT;
+		if (h > avail_h) h = avail_h;
+		if (h < CYBERIADA_LOOSE_MIN_SIZE) h = CYBERIADA_LOOSE_MIN_SIZE;
+		r->height = h;
+	}
+}
+
+/* Size the loose rects top down (the room left by the neighbours) and
+   bottom up (the room the content needs), see 7.2.2 */
+static void cyberiada_size_loose_nodes(CyberiadaNode* nodes, const CyberiadaEdge* edges,
+									   double avail_w, double avail_h)
 {
 	CyberiadaNode* n;
 
 	for (n = nodes; n; n = n->next) {
-		cyberiada_size_loose_rect(n->geometry_rect);
+		double w = avail_w, h = avail_h;
+
+		if (n->geometry_rect) {
+			w -= n->geometry_rect->x;
+			h -= n->geometry_rect->y;
+			cyberiada_loose_bounds(n, nodes, edges, &w, &h);
+		}
 		if (n->children) {
-			cyberiada_size_loose_nodes_geometry(n->children);
+			cyberiada_size_loose_nodes(n->children, edges, w, h);
+		}
+		if (n->geometry_rect) {
+			cyberiada_size_loose_node(n, w, h);
 		}
 	}
-
-	return CYBERIADA_NO_ERROR;
 }
 
 int cyberiada_size_loose_document_geometry(CyberiadaDocument* doc)
@@ -929,7 +1046,7 @@ int cyberiada_size_loose_document_geometry(CyberiadaDocument* doc)
 	}
 
 	for (sm = doc->state_machines; sm; sm = sm->next) {
-		cyberiada_size_loose_nodes_geometry(sm->nodes);
+		cyberiada_size_loose_nodes(sm->nodes, sm->edges, HUGE_VAL, HUGE_VAL);
 	}
 
 	return CYBERIADA_NO_ERROR;
@@ -994,7 +1111,7 @@ int cyberiada_repair_nodes_geometry(CyberiadaNode* nodes)
 			}
 			if (cyberiada_loose_rect(n->geometry_rect)) {
 				ERROR("warning: sizing the loose rect of the node %s\n", n->id);
-				cyberiada_size_loose_rect(n->geometry_rect);
+				cyberiada_repair_loose_rect(n->geometry_rect);
 			}
 		}
 		if (n->children) {
