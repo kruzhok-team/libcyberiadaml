@@ -25,6 +25,13 @@
 #include "cyb_graph.h"
 #include "cyb_error.h"
 
+/* the metainformation node of the document (6.9) */
+int cyberiada_graph_node_is_meta(const CyberiadaNode* node)
+{
+	return (node && node->type == cybNodeFormalComment && node->title &&
+			strcmp(node->title, CYBERIADA_META_NODE_TITLE) == 0);
+}
+
 CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id)
 {
 	CyberiadaNode* node;

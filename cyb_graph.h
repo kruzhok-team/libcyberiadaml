@@ -29,6 +29,7 @@
 extern "C" {
 #endif
 	
+	int cyberiada_graph_node_is_meta(const CyberiadaNode* node);
 	CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id);
 	CyberiadaNode* cyberiada_graph_find_node_by_type(CyberiadaNode* root, CyberiadaNodeTypeMask mask);
 	CyberiadaEdge* cyberiada_graph_find_edge_by_id(CyberiadaEdge* root, const char* id);

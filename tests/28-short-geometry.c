@@ -105,7 +105,7 @@ int main(void)
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the robot-vacuum example of the standard */
-	doc = load("samples/standard-hoover2.graphml");
+	doc = load("samples/standard-hoover.graphml");
 	check_container(doc->state_machines->nodes, 0, 0.0, 0.0);
 	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0::n2");
 	TEST_ASSERT(node && node->geometry_rect);

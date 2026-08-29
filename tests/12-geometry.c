@@ -20,6 +20,7 @@
  * ----------------------------------------------------------------------------- */
 
 #include <math.h>
+#include <string.h>
 #include <cyberiadaml.h>
 #include "testutils.h"
 
@@ -116,6 +117,40 @@ int main(void)
 	TEST_ASSERT(edge);
 	TEST_ASSERT(edge->geometry_label_rect == NULL);
 	TEST_ASSERT(edge->geometry_label_point == NULL);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the metainformation node stays out of the reconstructed layout (6.9) */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/minimal.graphml",
+										   cybxmlUnknown,
+										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY |
+										   CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY) ==
+				CYBERIADA_NO_ERROR);
+	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "nMeta");
+	TEST_ASSERT(node);
+	TEST_ASSERT(node->geometry_rect == NULL);
+	TEST_ASSERT(node->geometry_point == NULL);
+	/* the SM covers the states only, not a shelf slot for the meta node */
+	node = doc->state_machines->nodes;
+	TEST_ASSERT(node && node->geometry_rect);
+	TEST_ASSERT(fabs(node->geometry_rect->width - 360.0) < 0.01);
+	TEST_ASSERT(fabs(node->geometry_rect->height - 120.0) < 0.01);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* an edge incident to the metainformation node is left out with it */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/meta-comment-edge.graphml",
+										   cybxmlUnknown,
+										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY) ==
+				CYBERIADA_NO_ERROR);
+	node = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "nMeta");
+	TEST_ASSERT(node && node->geometry_rect == NULL);
+	/* the edges after it keep their place in the copy back */
+	edge = doc->state_machines->edges;
+	while (edge && strcmp(edge->id, "n0-n1") != 0) edge = edge->next;
+	TEST_ASSERT(edge && edge->geometry_source_point);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the reconstruction flag repairs malformed node geometry */

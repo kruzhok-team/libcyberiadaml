@@ -26,6 +26,7 @@
 #include <math.h>
 
 #include "geometry.h"
+#include "cyb_graph.h"
 #include "cyb_error.h"
 
 /* the base format sizes the rect by the node content (7.2.2);
@@ -34,6 +35,20 @@
 #define CYBERIADA_LOOSE_NODE_HEIGHT  200.0
 #define CYBERIADA_LOOSE_PADDING       10.0
 #define CYBERIADA_LOOSE_MIN_SIZE      20.0
+
+/* the metainformation node is not a displayed element (6.9), so it takes no
+   part in the layout unless the document gives it geometry of its own */
+static int cyberiada_geometry_skip_node(const CyberiadaNode* node)
+{
+	return (cyberiada_graph_node_is_meta(node) &&
+			!node->geometry_rect && !node->geometry_point);
+}
+
+static int cyberiada_geometry_skip_edge(const CyberiadaEdge* edge)
+{
+	return (edge && (cyberiada_geometry_skip_node(edge->source) ||
+					 cyberiada_geometry_skip_node(edge->target)));
+}
 
 int cyberiada_document_no_geometry(CyberiadaDocument* doc)
 {
@@ -187,7 +202,7 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 	HTreeNode *t_node, *t_child, *n;
 	CyberiadaNode *child;
 	
-	if (!node || !(node->id)) {
+	if (!node || !(node->id) || cyberiada_geometry_skip_node(node)) {
 		return NULL;
 	}
 	if (node->type == cybNodeSM) {
@@ -284,6 +299,7 @@ static HTree* cyberiada_sm_to_htree(CyberiadaSM* sm)
 	
 	for (node = sm->nodes; node; node = node->next) {
 		HTreeNode* t_node = cyberiada_node_to_htree(node);
+		if (!t_node) continue;
 		if (tree->nodes) {
 			HTreeNode* n = tree->nodes;
 			while (n->next) n = n->next;
@@ -294,7 +310,9 @@ static HTree* cyberiada_sm_to_htree(CyberiadaSM* sm)
 	}
 
 	for (edge = sm->edges; edge; edge = edge->next) {
-		HTreeEdge* t_edge = cyberiada_edge_to_htree(edge);
+		HTreeEdge* t_edge;
+		if (cyberiada_geometry_skip_edge(edge)) continue;
+		t_edge = cyberiada_edge_to_htree(edge);
 		if (tree->edges) {
 			HTreeEdge* e = tree->edges;
 			while (e->next) e = e->next;
@@ -365,6 +383,9 @@ static int cyberiada_update_nodes_geometry(CyberiadaNode* nodes, HTreeNode* tree
 		 node && t_node;
 		 node = node->next, t_node = t_node->next) {
 		//DEBUG("update nodes %s -> %s\n", t_node->id, node->id);
+
+		while (node && cyberiada_geometry_skip_node(node)) node = node->next;
+		if (!node) break;
 		
 		if (node->id && t_node->id && strcmp(node->id, t_node->id) != 0) {
 			ERROR("Node IDs don't match %s %s\n", node->id, t_node->id);
@@ -498,6 +519,8 @@ static int cyberiada_update_sm_geometry(CyberiadaSM* sm, HTree* tree)
 	for (edge = sm->edges, t_edge = tree->edges;
 		 edge && t_edge;
 		 edge = edge->next, t_edge = t_edge->next) {
+		while (edge && cyberiada_geometry_skip_edge(edge)) edge = edge->next;
+		if (!edge) break;
 		cyberiada_update_edge_geometry(edge, t_edge);
 	}	
 	

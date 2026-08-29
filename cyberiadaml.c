@@ -142,8 +142,6 @@
 
 /* CybediadaML metadata constants */
 
-#define CYBERIADA_META_NODE_DEFAULT_ID           "nMeta"
-#define CYBERIADA_META_NODE_TITLE                "CGML_META"
 #define YED_CORE_META                            "coreMeta"
 
 /* Misc. constants */
@@ -1314,8 +1312,7 @@ static CyberiadaNode* cyberiada_find_meta_node(CyberiadaNode* nodes)
 {
 	CyberiadaNode* n;
 	for (n = nodes; n; n = n->next) {
-		if (n->type == cybNodeFormalComment && n->title &&
-			strcmp(n->title, CYBERIADA_META_NODE_TITLE) == 0) {
+		if (cyberiada_graph_node_is_meta(n)) {
 			return n;
 		}
 	}
@@ -1477,8 +1474,7 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 			}
 			cyberiada_copy_string(&(current->comment_data->body),
 								  &(current->comment_data->body_len), buffer);
-			if (current->type == cybNodeFormalComment &&
-				current->title && strcmp(current->title, CYBERIADA_META_NODE_TITLE) == 0) {
+			if (cyberiada_graph_node_is_meta(current)) {
 				char* meta_copy = NULL;
 				cyberiada_copy_string(&meta_copy, NULL, buffer);
 				if (cyberiada_decode_meta(doc, meta_copy, ctx->regexps) != CYBERIADA_NO_ERROR) {
@@ -2403,10 +2399,7 @@ static int cyberiada_update_metainfo_comment(CyberiadaDocument* doc)
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	first_node = sm_node->children; 
-	if (first_node &&
-		first_node->type == cybNodeFormalComment &&
-		first_node->title &&
-		strcmp(first_node->title, CYBERIADA_META_NODE_TITLE) == 0) {
+	if (cyberiada_graph_node_is_meta(first_node)) {
 		if (first_node->comment_data) {
 			if (first_node->comment_data->body) {
 				free(first_node->comment_data->body);
@@ -3600,7 +3593,7 @@ static int cyberiada_write_node_yed(xmlTextWriterPtr writer, CyberiadaNode* node
 	if (node->type == cybNodeFormalComment) {
 		/* the metainformation is carried by the format itself: the Berloga 1.6
 		   core meta node, the Ostranna state machine title */
-		if (node->title && strcmp(node->title, CYBERIADA_META_NODE_TITLE) == 0) {
+		if (cyberiada_graph_node_is_meta(node)) {
 			return CYBERIADA_NO_ERROR;
 		}
 		/* yEd has a single kind of comments, so the formal ones are informal there */

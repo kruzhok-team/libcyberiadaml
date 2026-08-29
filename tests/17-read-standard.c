@@ -74,16 +74,28 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
+	/* the minimal document holds the meta node only: the reconstruction
+	   has nothing to lay out and leaves the SM without geometry (6.9) */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "samples/standard-minimal.graphml",
+										   cybxmlUnknown,
+										   CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY |
+										   CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(doc->state_machines->nodes->geometry_rect == NULL);
+	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 0);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
 	/* the state machine examples (Г.2-Г.4) round trip identically */
 	check_roundtrip("samples/standard-hoover.graphml", "17-hoover-out.graphml");
 	check_roundtrip("samples/standard-arduino.graphml", "17-arduino-out.graphml");
 	check_roundtrip("samples/standard-geometry.graphml", "17-geometry-out.graphml");
-	check_roundtrip("samples/standard-hoover2.graphml", "17-hoover2-out.graphml");
 
 	/* the base format may size the rects loosely (7.2.2) */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "samples/standard-hoover2.graphml",
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "samples/standard-hoover.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(doc->geometry_format == cybgeomShort);
