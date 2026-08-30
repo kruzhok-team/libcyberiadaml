@@ -240,10 +240,86 @@ int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size
 	return CYBERIADA_NO_ERROR;
 }
 
-int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps)
+/* the parameter list blocks are separated by an empty line (6.9) */
+static int cyberiada_meta_block_blank(CyberiadaRegexps* regexps, const char* s)
+{
+	if (cyberiada_action_regexps_spaces(regexps, s)) {
+		return 1;
+	}
+	while (*s) {
+		if (!isspace((unsigned char)*s)) {
+			return 0;
+		}
+		s++;
+	}
+	return 1;
+}
+
+/* the next 'name/ value' parameter of the list; the buffer is modified (6.9) */
+static int cyberiada_meta_next_param(char** next, char** name, char** value,
+									 CyberiadaRegexps* regexps)
+{
+	char *start, *block, *block2, *parts;
+
+	while (**next) {
+		start = *next;
+		block = strstr(start, CYBERIADA_NEWLINE);
+		block2 = strstr(start, CYBERIADA_NEWLINE_RN);
+		if (block2 && ((block && (block > block2)) || !block)) {
+			*block2 = 0;
+			*next = block2 + 4;
+		} else if (block) {
+			*block = 0;
+			*next = block + 2;
+		} else {
+			*next = start + strlen(start);
+		}
+		if (cyberiada_meta_block_blank(regexps, start)) {
+			continue;
+		}
+		parts = strchr(start, CYBERIADA_META_SEPARATOR_CHR);
+		if (parts == NULL) {
+			return CYBERIADA_METADATA_FORMAT_ERROR;
+		}
+		*parts = 0;
+		do {
+			parts++;
+		} while (isspace((unsigned char)(*parts)));
+		cyberiada_string_trim(parts);
+		*name = start;
+		*value = parts;
+		return CYBERIADA_NO_ERROR;
+	}
+	return CYBERIADA_NOT_FOUND;
+}
+
+/* the dynamic component declares the mandatory type parameter (10.3) */
+int cyberiada_check_component(const char* body)
+{
+	char *buffer = NULL, *next, *name, *value;
+	int found = 0;
+
+	cyberiada_copy_string(&buffer, NULL, body);
+	if (!buffer) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
+	next = buffer;
+	while (cyberiada_meta_next_param(&next, &name, &value, NULL) == CYBERIADA_NO_ERROR) {
+		if (strcmp(name, CYBERIADA_COMPONENT_TYPE) == 0) {
+			found = 1;
+			break;
+		}
+	}
+	free(buffer);
+	return found ? CYBERIADA_NO_ERROR : CYBERIADA_FORMAT_ERROR;
+}
+
+int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps,
+						  int strict)
 {
 	CyberiadaMetainformation* meta;
-	char  *start, *block, *block2, *next, *parts;
+	char  *start, *next, *parts;
+	int res;
 	
 	if (doc->meta_info) {
 		return CYBERIADA_BAD_PARAMETER;
@@ -256,37 +332,18 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 	memset(meta, 0, sizeof(CyberiadaMetainformation));
 
 	next = metadata;	
-	while (*next) {
-		start = next;
-		block = strstr(start, CYBERIADA_NEWLINE);
-		block2 = strstr(start, CYBERIADA_NEWLINE_RN);
-		if (block2 && ((block && (block > block2)) || !block)) {
-			block = block2;
-			*block2 = 0;
-			next = block2 + 4;
-		} else if (block) {
-			*block = 0;
-			next = block + 2;
-		} else {
-			block = start;
-			next = start + strlen(block);
-		}
-		if (cyberiada_action_regexps_spaces(regexps, start)) {
-			continue;
-		}
-
-		parts = strchr(start, CYBERIADA_META_SEPARATOR_CHR);
-		if (parts == NULL) {
-			ERROR("Error decoding SM metainformation: cannot find separator\n");
+	while ((res = cyberiada_meta_next_param(&next, &start, &parts, regexps)) == CYBERIADA_NO_ERROR) {
+		/* the parameter is declared once (6.9) */
+		if (strict &&
+			((strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0 && meta->standard_version) ||
+			 (strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0 && meta->transition_order_flag) ||
+			 (strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0 && meta->event_propagation_flag) ||
+			 cyberiada_find_meta_string(meta, start))) {
+			ERROR("Error decoding SM metainformation: parameter %s is repeated\n", start);
 			cyberiada_destroy_meta(meta);
 			return CYBERIADA_METADATA_FORMAT_ERROR;
 		}
-		*parts = 0;
-		do {
-			parts++;
-		} while (isspace((unsigned char)(*parts)));
-		cyberiada_string_trim(parts);
-		
+
 		if (strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0) {
 			cyberiada_copy_string(&(meta->standard_version), &(meta->standard_version_len), parts);
 		} else if (strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0) {
@@ -324,6 +381,12 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 				meta->strings = cyberiada_new_meta_string(start, parts);
 			}
 		}
+	}
+
+	if (res != CYBERIADA_NOT_FOUND) {
+		ERROR("Error decoding SM metainformation: cannot find separator\n");
+		cyberiada_destroy_meta(meta);
+		return CYBERIADA_METADATA_FORMAT_ERROR;
 	}
 	
 	if (!meta->standard_version) {

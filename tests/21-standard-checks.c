@@ -73,11 +73,69 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/vertex-not-first.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/key-attr-type.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/key-attr-type.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-markers.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-markers.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-not-first.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-not-first.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-else.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-else.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/no-chunk.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/no-chunk.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-self-loop.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-self-loop.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-targets-link.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-targets-link.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/chunk-target-point.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/chunk-target-point.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/collapsed-no-regions.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/collapsed-no-regions.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/bad-color.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/bad-color.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/color-on-graph.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/color-on-graph.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/repeated-meta-param.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/repeated-meta-param.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_METADATA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/component-no-type.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/component-no-type.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
 
 	/* the strict mode keeps the correct documents readable */
 	TEST_ASSERT(read_document("diagrams/minimal.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/two-machines.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/completeness.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/remapped-keys.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/short-geometry.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_NO_ERROR);
 
 	/* the empty document is reported, not written */

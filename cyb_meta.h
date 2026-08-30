@@ -35,7 +35,9 @@ extern "C" {
 	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
 	int cyberiada_add_default_meta(CyberiadaDocument* doc, const char* sm_name);	
 	int cyberiada_encode_meta(CyberiadaMetainformation* meta, char** meta_body, size_t* meta_body_len);
-	int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps);
+	int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps,
+							  int strict);
+	int cyberiada_check_component(const char* body);
 	int cyberiada_print_meta(CyberiadaMetainformation* meta);
 	const char* cyberiada_find_meta_string(CyberiadaMetainformation* meta, const char* name);
 	int cyberiada_skip_meta(CyberiadaDocument* doc);

@@ -93,6 +93,7 @@
 
 #define GRAPHML_CYB_COMMENT_FORMAL               "formal"
 #define GRAPHML_CYB_COMMENT_INFORMAL             "informal"
+#define GRAPHML_CYB_ELSE_GUARD                   "else"
 
 /* YED format constants */
 
@@ -312,6 +313,8 @@ typedef struct {
 	CyberiadaList*    key_map;  /* the document key ids bound to non-default attributes */
 	int               cyb_format; /* the document is in the CyberiadaML format */
 	int               strict;     /* check the optional requirements of the standard */
+	CyberiadaNode*    data_node;  /* the node whose data keys are being read */
+	size_t            data_keys;  /* the data keys of the node read so far */
 } CyberiadaParserContext; 
 
 /* -----------------------------------------------------------------------------
@@ -781,7 +784,7 @@ static GraphProcessorState handle_meta_data(xmlNode* xml_node,
 				 text ? text : "");
 		cyberiada_copy_string(&(current->comment_data->body),
 							  &(current->comment_data->body_len), body);
-		if (cyberiada_decode_meta(doc, body, ctx->regexps) != CYBERIADA_NO_ERROR) {
+		if (cyberiada_decode_meta(doc, body, ctx->regexps, ctx->strict) != CYBERIADA_NO_ERROR) {
 			ERROR("Error while decoding metainfo comment\n");
 			free(body);
 			free(text);
@@ -1174,7 +1177,8 @@ static const char* cyberiada_init_table_find_name(const char* id)
 }
 
 /* the standard key id is bound to the fixed element and attribute (appendix B) */
-static int cyberiada_init_table_check_key(const char* id, const char* element, const char* name)
+static int cyberiada_init_table_check_key(const char* id, const char* element,
+										  const char* name, const char* type)
 {
 	size_t i;
 	int standard_id = 0;
@@ -1185,6 +1189,12 @@ static int cyberiada_init_table_check_key(const char* id, const char* element, c
 		standard_id = 1;
 		if (strcmp(cyberiada_graphml_keys[i].attr_for, element) == 0 &&
 			(!name || strcmp(cyberiada_graphml_keys[i].attr_name, name) == 0)) {
+			/* the key redeclaration keeps the standard attribute type (5.5) */
+			if (type && cyberiada_graphml_keys[i].attr_type &&
+				strcmp(cyberiada_graphml_keys[i].attr_type, type) != 0) {
+				ERROR("Standard key %s is declared with the '%s' type\n", id, type);
+				return CYBERIADA_FORMAT_ERROR;
+			}
 			return CYBERIADA_NO_ERROR;
 		}
 	}
@@ -1193,6 +1203,14 @@ static int cyberiada_init_table_check_key(const char* id, const char* element, c
 		return CYBERIADA_FORMAT_ERROR;
 	}
 	return CYBERIADA_NO_ERROR;
+}
+
+/* the node kind marker keys (5.7): at most one, placed first */
+static int cyberiada_key_is_marker(const char* name)
+{
+	return (strcmp(name, GRAPHML_CYB_KEY_COMMENT_NAME) == 0 ||
+			strcmp(name, GRAPHML_CYB_KEY_VERTEX_NAME) == 0 ||
+			strcmp(name, GRAPHML_CYB_KEY_SUBMACHINE_NAME) == 0);
 }
 
 /* the formal name charset (10.1): a latin letter or underscore, then letters, digits, underscores */
@@ -1224,6 +1242,26 @@ static int cyberiada_check_id_chars(const char* id)
 	for (c = id; *c; c++) {
 		if (*c < '!' || *c > '~' ||
 			*c == '"' || *c == '\'' || *c == '`' || *c == '\\') {
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+/* the color value (9.2): #RRGGBB or #RRGGBBAA */
+static int cyberiada_check_color(const char* color)
+{
+	size_t len;
+	const char* c;
+	if (!color || *color != '#') {
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	len = strlen(color + 1);
+	if (len != 6 && len != 8) {
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	for (c = color + 1; *c; c++) {
+		if (!isxdigit((unsigned char)*c)) {
 			return CYBERIADA_FORMAT_ERROR;
 		}
 	}
@@ -1365,7 +1403,7 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer);
-	char *attr_id = NULL, *attr_for = NULL, *attr_name = NULL;
+	char *attr_id = NULL, *attr_for = NULL, *attr_name = NULL, *attr_type = NULL;
 	const char *table_id;
 	size_t index;
 	GraphProcessorState next = gpsInit;
@@ -1388,9 +1426,15 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 								 GRAPHML_NAME_ATTRIBUTE) == CYBERIADA_NO_ERROR) {
 		cyberiada_copy_string(&attr_name, NULL, buffer);
 	}
+	if (ctx->strict &&
+		cyberiada_get_attr_value(buffer, buffer_len,
+								 xml_node,
+								 GRAPHML_ATTR_TYPE_ATTRIBUTE) == CYBERIADA_NO_ERROR) {
+		cyberiada_copy_string(&attr_type, NULL, buffer);
+	}
 	do {
 		if (attr_id &&
-			cyberiada_init_table_check_key(attr_id, attr_for, attr_name) != CYBERIADA_NO_ERROR) {
+			cyberiada_init_table_check_key(attr_id, attr_for, attr_name, attr_type) != CYBERIADA_NO_ERROR) {
 			next = gpsInvalid;
 			break;
 		}
@@ -1415,6 +1459,7 @@ static GraphProcessorState handle_new_init_key(xmlNode* xml_node,
 	} while (0);
 	free(attr_for);
 	free(attr_name);
+	free(attr_type);
 	free(attr_id);
 	return next;
 }
@@ -1477,7 +1522,7 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 			if (cyberiada_graph_node_is_meta(current)) {
 				char* meta_copy = NULL;
 				cyberiada_copy_string(&meta_copy, NULL, buffer);
-				if (cyberiada_decode_meta(doc, meta_copy, ctx->regexps) != CYBERIADA_NO_ERROR) {
+				if (cyberiada_decode_meta(doc, meta_copy, ctx->regexps, ctx->strict) != CYBERIADA_NO_ERROR) {
 					ERROR("Error while decoding metainfo comment\n");
 					free(meta_copy);
 					return gpsInvalidMeta;
@@ -1494,13 +1539,6 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_VERTEX_NAME) == 0) {
 		if (current->actions != NULL) {
 			ERROR("Trying to set the vertex %s action\n", current->id);
-			return gpsInvalid;
-		}
-		if (ctx->strict &&
-			(current->title || current->formal_title || current->color || current->link ||
-			 current->comment_data || current->collapsed_flag ||
-			 current->geometry_point || current->geometry_rect)) {
-			ERROR("The vertex key of the node %s is not the first data key\n", current->id);
 			return gpsInvalid;
 		}
 		found = 0;
@@ -1529,6 +1567,16 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 		if (current->color) {
 			ERROR("Trying to set node %s color twice\n", current->id);
 			return gpsInvalid;
+		}
+		if (ctx->strict) {
+			if (current->type == cybNodeSM || current->type == cybNodeRegion) {
+				ERROR("Trying to set color of the graph %s\n", current->id);
+				return gpsInvalid;
+			}
+			if (cyberiada_check_color(buffer) != CYBERIADA_NO_ERROR) {
+				ERROR("Bad color '%s' of the node %s\n", buffer, current->id);
+				return gpsInvalid;
+			}
 		}
 		cyberiada_copy_string(&(current->color), &(current->color_len), buffer);
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_COLLAPSED_NAME) == 0) {
@@ -1603,6 +1651,16 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 		ERROR("cannot find key with id %s\n", buffer);
 		return gpsInvalid;
 	}
+	if (ctx->data_node != current) {
+		ctx->data_node = current;
+		ctx->data_keys = 0;
+	}
+	if (ctx->strict && cyberiada_key_is_marker(key_name) && ctx->data_keys > 0) {
+		ERROR("The marker key %s of the node %s is not the first data key\n",
+			  key_name, current->id);
+		return gpsInvalid;
+	}
+	ctx->data_keys++;
 	{
 		GraphProcessorState next;
 		char* text = cyberiada_get_element_text(xml_node);
@@ -1694,6 +1752,10 @@ static GraphProcessorState handle_edge_data_value(const char* key_name, const ch
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_LABEL_GEOMETRY_NAME) == 0) {
 		return gpsEdgeLabelGeometry;
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_COLOR_NAME) == 0) {
+		if (ctx->strict && cyberiada_check_color(buffer) != CYBERIADA_NO_ERROR) {
+			ERROR("Bad color '%s' of the edge %s\n", buffer, current->id);
+			return gpsInvalid;
+		}
 		cyberiada_copy_string(&(current->color), &(current->color_len), buffer);
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_COMMENT_SUBJECT_NAME) == 0) {
 		if (current->comment_subject) {
@@ -2342,7 +2404,96 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial, int strict_entries, int skip_empty)
+/* the optional requirements checked on the resolved graph */
+static int cyberiada_check_strict_edges(CyberiadaSM* sm)
+{
+	CyberiadaEdge *e, *e2;
+
+	for (e = sm->edges; e; e = e->next) {
+		if (e->type == cybEdgeComment) {
+			/* the comment link starts in a comment node and is not a loop (6.7) */
+			if (!e->source ||
+				(e->source->type != cybNodeComment && e->source->type != cybNodeFormalComment)) {
+				ERROR("The comment link %s does not start in a comment node\n", e->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			if (strcmp(e->source_id, e->target_id) == 0) {
+				ERROR("The comment link %s is a self-loop\n", e->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			/* the commented transition is not a comment link itself (8.5) */
+			if (e->target_edge && e->target_edge->type == cybEdgeComment) {
+				ERROR("The comment link %s comments the comment link %s\n",
+					  e->id, e->target_edge->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			if (e->comment_subject &&
+				(e->comment_subject->type == cybCommentSubjectNameFragment ||
+				 e->comment_subject->type == cybCommentSubjectDataFragment)) {
+				/* the commented fragment is required (6.7) */
+				if (!e->comment_subject->fragment || !*(e->comment_subject->fragment)) {
+					ERROR("The comment link %s has no commented fragment\n", e->id);
+					return CYBERIADA_FORMAT_ERROR;
+				}
+				/* the fragment link has no target point (9.1) */
+				if (e->geometry_target_point) {
+					ERROR("The fragment comment link %s has a target point\n", e->id);
+					return CYBERIADA_FORMAT_ERROR;
+				}
+			}
+			continue;
+		}
+		/* a single else transition leaves the node (6.3) */
+		if (!e->action || !e->action->guard ||
+			strcmp(e->action->guard, GRAPHML_CYB_ELSE_GUARD) != 0) {
+			continue;
+		}
+		for (e2 = e->next; e2; e2 = e2->next) {
+			if (e2->type == cybEdgeComment || e2->source != e->source ||
+				!e2->action || !e2->action->guard ||
+				strcmp(e2->action->guard, GRAPHML_CYB_ELSE_GUARD) != 0) {
+				continue;
+			}
+			ERROR("Two else transitions leave the node %s\n", e->source_id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_check_strict_nodes(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+	size_t component_title_len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
+
+	for (n = nodes; n; n = n->next) {
+		/* the collapsed state keeps its regions (8.4) */
+		if (n->collapsed_flag && !n->children) {
+			ERROR("The collapsed node %s has no region subgraph\n", n->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		/* the dynamic component declares its type (10.3) */
+		if (n->type == cybNodeFormalComment && n->title &&
+			strncmp(n->title, CYBERIADA_COMPONENT_NODE_TITLE, component_title_len) == 0 &&
+			(n->title[component_title_len] == 0 || n->title[component_title_len] == ' ')) {
+			if (!n->comment_data || !n->comment_data->body ||
+				cyberiada_check_component(n->comment_data->body) != CYBERIADA_NO_ERROR) {
+				ERROR("The component node %s has no type parameter\n", n->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+		}
+		if (n->children) {
+			int res = cyberiada_check_strict_nodes(n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial,
+								  int strict_entries, int skip_empty, int strict)
 {
 	int res = CYBERIADA_NO_ERROR;
 	CyberiadaSM* sm;
@@ -2373,6 +2524,16 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 			if ((res = cyberiada_check_node_ids(sm->nodes, sm->nodes)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has wrong structure - non unique state ids\n", sm->nodes->id);
 				break;
+			}
+			if (strict) {
+				if ((res = cyberiada_check_strict_nodes(sm->nodes)) != CYBERIADA_NO_ERROR) {
+					ERROR("error: state machine %s has wrong nodes\n", sm->nodes->id);
+					break;
+				}
+				if ((res = cyberiada_check_strict_edges(sm)) != CYBERIADA_NO_ERROR) {
+					ERROR("error: state machine %s has wrong edges\n", sm->nodes->id);
+					break;
+				}
 			}
 		}
 	}
@@ -2508,6 +2669,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	parser_ctx.key_map = NULL;
 	parser_ctx.cyb_format = 0;
 	parser_ctx.strict = flags & CYBERIADA_FLAG_STRICT;
+	parser_ctx.data_node = NULL;
+	parser_ctx.data_keys = 0;
 	
 	do {
 
@@ -2586,7 +2749,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 									 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 									 flags & CYBERIADA_FLAG_CHECK_INITIAL,
 									 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES,
-									 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR);
+									 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR,
+									 flags & CYBERIADA_FLAG_STRICT);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while checking graphs\n");
 			break;
@@ -4045,7 +4209,8 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 								 flags & CYBERIADA_FLAG_SKIP_GEOMETRY,
 								 flags & CYBERIADA_FLAG_CHECK_INITIAL,
 								 flags & CYBERIADA_FLAG_STRICT_ACTION_ENTRIES,
-								 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR);
+								 flags & CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR,
+								 flags & CYBERIADA_FLAG_STRICT);
 	if (res != CYBERIADA_NO_ERROR) {
 		ERROR("error while checking graphs\n");
 		return res;

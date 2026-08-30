@@ -238,6 +238,8 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_META_GEOM_FULL                 "full"
 #define CYBERIADA_META_NODE_DEFAULT_ID           "nMeta"
 #define CYBERIADA_META_NODE_TITLE                "CGML_META"
+#define CYBERIADA_COMPONENT_NODE_TITLE           "CGML_COMPONENT"
+#define CYBERIADA_COMPONENT_TYPE                 "type"
 #define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
 	
 typedef struct _CyberiadaMetaStringList {
