@@ -1,8 +1,8 @@
 # libcyberiadaml project changelog
 
-The CyberiadaML-GraphML 1.0 (PNST_1044-2025) compatible version of the library.
-
 ## Version 1.0.6
+
+The CyberiadaML-GraphML 1.0 (PNST_1044-2025) compatible version of the library.
 
 Added:
 - the strict mode (`CYBERIADA_FLAG_STRICT`) checking the requirements of the
