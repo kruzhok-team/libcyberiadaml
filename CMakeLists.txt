@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(cyberiadaml VERSION 1.0 LANGUAGES C)
+project(cyberiadaml VERSION 1.0.6 LANGUAGES C)
 
 find_package(LibXml2 2.9 REQUIRED)
 if(NOT LibXml2_FOUND)
@@ -62,17 +62,26 @@ if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml)
+install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml
+        COMPONENT runtime)
 install(FILES cyberiadaml.h cyberiadaml_iso.h
-        DESTINATION include/cyberiada)
-install(EXPORT cyberiadaml DESTINATION lib/cmake)
+        DESTINATION include/cyberiada
+        COMPONENT dev)
+install(EXPORT cyberiadaml DESTINATION lib/cmake
+        COMPONENT dev)
 
 configure_file(
    ${PROJECT_SOURCE_DIR}/cyberiadaml-config.cmake.in
    ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake @ONLY)
 
 install(FILES ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake
-	DESTINATION lib/cmake)
+	DESTINATION lib/cmake
+	COMPONENT dev)
+
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md
+	      ${CMAKE_CURRENT_SOURCE_DIR}/docs/ARCHITECTURE.md
+	DESTINATION share/doc/libcyberiadaml
+	COMPONENT dev)
 
 configure_file ("${PROJECT_SOURCE_DIR}/CyberiadaMLPackOptions.cmake.in"
                 "${PROJECT_BINARY_DIR}/CyberiadaMLPackOptions.cmake"
