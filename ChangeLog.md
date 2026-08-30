@@ -1,26 +1,21 @@
 # libcyberiadaml project changelog
 
+The CyberiadaML-GraphML 1.0 (PNST_1044-2025) compatible version of the library.
+
 ## Version 1.0.6
 
 Added:
 - the strict mode (`CYBERIADA_FLAG_STRICT`) checking the requirements of the
-  PNST 1044-2025 standard;
-- the yEd Ostranna and Berloga 1.6 export dialects;
-- the event handling keywords in the transition actions;
-- the geometry reconstruction of the documents without geometry;
-- the isomorphism result API (`cyberiadaml_iso.h`);
+  CyberiadaML-GraphML 1.0 standard;
+- the yEd Ostranna / Berloga 1.6 export support;
+- geometry reconstruction of the documents without geometry;
+- new isomorphism API (`cyberiadaml_iso.h`);
 - `cyberiada_error_str` and `cyberiada_cleanup_library` in the public interface;
 - the ctest-based test suite, the architecture and the API documentation.
 
 Fixed:
-- the metainformation node is not placed by the geometry reconstruction;
-- the document geometry format handling in the reconstruction and the export;
-- the base format rect sizes are derived from the authored coordinates;
-- the GraphML decoder is reentrant;
-- the memory leaks on the decoding error paths;
-- the string length limit of the document content is removed;
-- the buffer overflows and the null dereferences found by the security audit;
-- the metadata format error code is propagated from the parser.
+- geometry reconstruction update;
+- full CyberiadaML-GraphML 1.0 standard compatibility.
 
 ## Version 1.0
 
