@@ -113,6 +113,10 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/bad-color.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/bad-color-name.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/bad-color-name.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
 	TEST_ASSERT(read_document("diagrams/color-on-graph.graphml", CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/color-on-graph.graphml", CYBERIADA_FLAG_STRICT) ==
@@ -136,6 +140,9 @@ int main(void)
 	TEST_ASSERT(read_document("diagrams/remapped-keys.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/short-geometry.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	/* the CSS/HTML color names are accepted beside the hex values (9.2) */
+	TEST_ASSERT(read_document("diagrams/named-color.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_NO_ERROR);
 
 	/* the empty document is reported, not written */

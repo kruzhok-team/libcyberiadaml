@@ -1248,12 +1248,61 @@ static int cyberiada_check_id_chars(const char* id)
 	return CYBERIADA_NO_ERROR;
 }
 
-/* the color value (9.2): #RRGGBB or #RRGGBBAA */
+/* the CSS/HTML named colors accepted beside the hex value (9.2) */
+static const char* cyberiada_color_names[] = {
+	"aliceblue", "antiquewhite", "aqua", "aquamarine", "azure", "beige", "bisque", "black",
+	"blanchedalmond", "blue", "blueviolet", "brown", "burlywood", "cadetblue", "chartreuse",
+	"chocolate", "coral", "cornflowerblue", "cornsilk", "crimson", "cyan", "darkblue", "darkcyan",
+	"darkgoldenrod", "darkgray", "darkgreen", "darkgrey", "darkkhaki", "darkmagenta",
+	"darkolivegreen", "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
+	"darkslateblue", "darkslategray", "darkslategrey", "darkturquoise", "darkviolet", "deeppink",
+	"deepskyblue", "dimgray", "dimgrey", "dodgerblue", "firebrick", "floralwhite", "forestgreen",
+	"fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod", "gray", "green", "greenyellow",
+	"grey", "honeydew", "hotpink", "indianred", "indigo", "ivory", "khaki", "lavender",
+	"lavenderblush", "lawngreen", "lemonchiffon", "lightblue", "lightcoral", "lightcyan",
+	"lightgoldenrodyellow", "lightgray", "lightgreen", "lightgrey", "lightpink", "lightsalmon",
+	"lightseagreen", "lightskyblue", "lightslategray", "lightslategrey", "lightsteelblue",
+	"lightyellow", "lime", "limegreen", "linen", "magenta", "maroon", "mediumaquamarine",
+	"mediumblue", "mediumorchid", "mediumpurple", "mediumseagreen", "mediumslateblue",
+	"mediumspringgreen", "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream",
+	"mistyrose", "moccasin", "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange",
+	"orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise", "palevioletred",
+	"papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue", "purple", "rebeccapurple",
+	"red", "rosybrown", "royalblue", "saddlebrown", "salmon", "sandybrown", "seagreen",
+	"seashell", "sienna", "silver", "skyblue", "slateblue", "slategray", "slategrey", "snow",
+	"springgreen", "steelblue", "tan", "teal", "thistle", "tomato", "turquoise", "violet",
+	"wheat", "white", "whitesmoke", "yellow", "yellowgreen"
+};
+static const size_t cyberiada_color_names_count = (sizeof(cyberiada_color_names) /
+													sizeof(const char*));
+
+/* the table is sorted and lowercase, the name is matched case-insensitively */
+static int cyberiada_compare_color_names(const void* key, const void* element)
+{
+	const char* name = (const char*)key;
+	const char* table_name = *(const char* const*)element;
+	for (; *name && *table_name; name++, table_name++) {
+		int diff = tolower((unsigned char)*name) - (unsigned char)*table_name;
+		if (diff) {
+			return diff;
+		}
+	}
+	return tolower((unsigned char)*name) - (unsigned char)*table_name;
+}
+
+/* the color value (9.2): #RRGGBB, #RRGGBBAA or a CSS/HTML color name */
 static int cyberiada_check_color(const char* color)
 {
 	size_t len;
 	const char* c;
-	if (!color || *color != '#') {
+	if (!color || !*color) {
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	if (*color != '#') {
+		if (bsearch(color, cyberiada_color_names, cyberiada_color_names_count,
+					sizeof(const char*), cyberiada_compare_color_names)) {
+			return CYBERIADA_NO_ERROR;
+		}
 		return CYBERIADA_FORMAT_ERROR;
 	}
 	len = strlen(color + 1);
