@@ -25,6 +25,17 @@
 
 #include <cyberiada/htgeom.h>
 
+/* The version of the Cyberiada-GraphML standard supported by the library */
+
+#define CYBERIADA_STANDARD_VERSION_MAJOR 1
+#define CYBERIADA_STANDARD_VERSION_MINOR 0
+
+/* The version of the library itself */
+
+#define CYBERIADA_LIB_VERSION_MAJOR 1
+#define CYBERIADA_LIB_VERSION_MINOR 0
+#define CYBERIADA_LIB_VERSION_PATCH 6
+
 #ifdef __cplusplus
 extern "C" {
 #endif
