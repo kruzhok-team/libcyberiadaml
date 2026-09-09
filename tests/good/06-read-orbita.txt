@@ -12,7 +12,7 @@ Node {id: G, title: "orientation", type: 0}
  Actions:
 Children:
  Node {id: n0, title: "orientation", type: 2}
- Geometry: (0.000000, 37.998858, 1149.475240, 725.384262)
+ Geometry: (984.642185, 413.287432, 1149.475240, 725.384262)
   Actions:
    Action (type 2):
     Trigger: "entry"
@@ -132,7 +132,7 @@ Children:
       Actions:
      Children:
  Node {id: n1, title: "", type: 64}
- Geometry: (-38.857841, -400.690990)
+ Geometry: (945.784344, -25.402416)
   Actions:
  Children:
  Node {id: n2, title: "", type: 16}
@@ -141,7 +141,7 @@ Children:
 
 test3sm_constants.py
 test3sm_orient.py
- Geometry: (-459.137947, 324.788243, 160.084410, 95.045606)
+ Geometry: (525.504238, 700.076817, 160.084410, 95.045606)
   Actions:
  Children:
 

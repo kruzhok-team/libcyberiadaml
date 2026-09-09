@@ -18,7 +18,7 @@ Children:
 unsigned int CharHP;
 QStateHandler StartState;
 unsigned int TimerAgony;
- Geometry: (-981.358045, -441.014796, 294.581262, 100.000000)
+ Geometry: (-716.228012, -222.935324, 294.581262, 100.000000)
   Actions:
  Children:
  Node {id: n1, title: "", type: 16}
@@ -47,7 +47,7 @@ unsigned int TimerAgony;
 
 #define DEFAULT_HP 27000
 #define GHOUL_HP (DEFAULT_HP/3)
- Geometry: (-981.358045, 237.101364, 294.581262, 345.557880)
+ Geometry: (-716.228012, 455.180837, 294.581262, 345.557880)
   Actions:
  Children:
  Node {id: n2, title: "", type: 16}
@@ -57,7 +57,7 @@ unsigned int HP;
 unsigned int State;
 unsigned int TimerAgony;
 
- Geometry: (-980.896190, -157.456649, 293.657553, 100.000000)
+ Geometry: (-715.766157, 60.622824, 293.657553, 100.000000)
   Actions:
  Children:
  Node {id: n3, title: "", type: 16}
@@ -106,7 +106,7 @@ switch (State) {
                me->StartState =(QStateHandler)& OregonPlayer_healthy;
        }
 
- Geometry: (839.172899, 165.004437, 516.489882, 537.925862)
+ Geometry: (1104.302932, 383.083910, 516.489882, 537.925862)
   Actions:
  Children:
  Node {id: n4, title: "", type: 16}
@@ -141,11 +141,11 @@ void UpdateTimerAgony(PlayerOregon* me, unsigned int Timer) {
     me->TimerAgony = Timer;
     SaveTimerAgony(Timer);
 }
- Geometry: (851.343318, -360.818392, 554.610715, 453.719796)
+ Geometry: (1116.473352, -142.738919, 554.610715, 453.719796)
   Actions:
  Children:
  Node {id: n5, title: "active", type: 2}
- Geometry: (-133.351305, -101.815051, 1380.008628, 974.817297)
+ Geometry: (131.778728, 116.264421, 1380.008628, 974.817297)
   Actions:
    Action (type 2):
     Trigger: "entry"
@@ -321,11 +321,11 @@ TIME_TICK_1S/
  Event fields (do not delete this caption):
 
 unsigned int value;
- Geometry: (-980.553854, -15.677576, 292.972879, 100.000000)
+ Geometry: (-715.423820, 202.401897, 292.972879, 100.000000)
   Actions:
  Children:
  Node {id: n7, title: "test", type: 1}
- Geometry: (-481.467398, 509.447706, 220.935105, 212.926496)
+ Geometry: (-216.337365, 727.527179, 220.935105, 212.926496)
   Actions:
    Action (type 2):
     Trigger: "entry"

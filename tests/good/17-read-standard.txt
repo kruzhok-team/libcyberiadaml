@@ -20,11 +20,11 @@ Children:
   Actions:
  Children:
  Node {id: init, title: "", type: 64}
- Geometry: (-400.000000, -280.000000)
+ Geometry: (200.000000, 100.000000)
   Actions:
  Children:
  Node {id: n0, title: "Уборка мусора", type: 2}
- Geometry: (380.000000, 0.000000, 360.000000, 760.000000)
+ Geometry: (980.000000, 380.000000, 360.000000, 760.000000)
   Actions:
  Children:
   Node {id: n0:, title: "", type: 4}
@@ -47,7 +47,7 @@ Children:
       Behavior: "Пылесос.УбратьЦель()"
    Children:
  Node {id: n3, title: "Скан", type: 1}
- Geometry: (-450.000000, 20.000000, 300.000000, 200.000000)
+ Geometry: (150.000000, 400.000000, 300.000000, 200.000000)
   Actions:
    Action (type 2):
     Trigger: "entry"

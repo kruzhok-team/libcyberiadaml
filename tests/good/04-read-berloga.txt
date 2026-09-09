@@ -12,11 +12,11 @@ Node {id: G, title: "Степлер", type: 0}
  Actions:
 Children:
  Node {id: n1, title: "", type: 64}
- Geometry: (-789.000000, 19.500000)
+ Geometry: (-1062.000000, 265.000000)
   Actions:
  Children:
  Node {id: n0, title: "Бой", type: 2}
- Geometry: (443.500000, 131.000000, 691.000000, 931.000000)
+ Geometry: (170.500000, 376.500000, 691.000000, 931.000000)
   Actions:
    Action (type 2):
     Trigger: "entry"
@@ -56,7 +56,7 @@ Children:
       Behavior: ""
    Children:
  Node {id: n3, title: "Скан", type: 1}
- Geometry: (-532.500000, 148.500000, 413.000000, 288.000000)
+ Geometry: (-805.500000, 394.000000, 413.000000, 288.000000)
   Actions:
    Action (type 2):
     Trigger: "entry"

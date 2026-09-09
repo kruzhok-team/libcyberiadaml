@@ -15,11 +15,11 @@ Children:
   Actions:
  Children:
  Node {id: init, title: "", type: 64}
- Geometry: (-170.000000, -50.000000)
+ Geometry: (10.000000, 10.000000)
   Actions:
  Children:
  Node {id: n0, title: "Off", type: 1}
- Geometry: (-80.000000, 20.000000, 100.000000, 60.000000)
+ Geometry: (100.000000, 80.000000, 100.000000, 60.000000)
   Actions:
    Action (type 2):
     Trigger: "entry"
@@ -27,7 +27,7 @@ Children:
     Behavior: "off();"
  Children:
  Node {id: n1, title: "On", type: 1}
- Geometry: (120.000000, 20.000000, 100.000000, 60.000000)
+ Geometry: (300.000000, 80.000000, 100.000000, 60.000000)
   Actions:
    Action (type 2):
     Trigger: "entry"
