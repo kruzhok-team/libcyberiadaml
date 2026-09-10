@@ -10,6 +10,7 @@ the GNU Free Documentation License (version 1.3).
 
 * [The library architecture](docs/ARCHITECTURE.md)
 * [The API reference](docs/API.md)
+* [Building the stack on Windows](docs/BUILD-WINDOWS.md)
 
 ## Requirements
 
