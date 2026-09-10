@@ -1,0 +1,5 @@
+# the test reference data is compared byte by byte
+tests/good/*      text eol=lf
+tests/diagrams/*  text eol=lf
+graph-samples/*   text eol=lf
+*.sh              text eol=lf

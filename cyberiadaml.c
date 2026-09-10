@@ -2426,7 +2426,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 	}
 
 	if (initial > 1) {
-		ERROR("Too many initial pseudostates (%lu) inside the node %s\n", initial, nodes->parent->id);
+		ERROR("Too many initial pseudostates (%zu) inside the node %s\n", initial, nodes->parent->id);
 		return CYBERIADA_FORMAT_ERROR;
 	}
 
@@ -2438,7 +2438,7 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 		}
 		
 		if (initial_edges > 1) {
-			ERROR("Too many edges from the initial pseudostate %s: %lu\n", init_n->id, initial_edges);
+			ERROR("Too many edges from the initial pseudostate %s: %zu\n", init_n->id, initial_edges);
 			return CYBERIADA_FORMAT_ERROR;
 		}
 	}
@@ -2858,7 +2858,7 @@ static int cyberiada_detect_flattened_file(const char* filename, int* flattened)
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	f = fopen(filename, "r");
+	f = fopen(filename, "rb");
 	if (!f) {
 		return CYBERIADA_XML_ERROR;
 	}

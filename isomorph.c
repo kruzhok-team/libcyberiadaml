@@ -246,7 +246,7 @@ static int cyberiada_enumerate_vertexes(CyberiadaSM* sm, CyberiadaNode* nodes, V
 		}
 
 #ifdef EXTRA_DEBUG
-		DEBUG("%lu: %s +%lu -%lu\n", *cur_index, n->id, d_in, d_out);
+		DEBUG("%zu: %s +%d -%d\n", *cur_index, n->id, d_in, d_out);
 #endif
 
 		if (n->children) {
@@ -594,11 +594,11 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 #ifdef EXTRA_DEBUG
 	DEBUG("\nSM1:\n");
 	for (i = 0; i < n_v1; i++) {
-		DEBUG("\t%ld - %s [%s]\n", i + 1, v1[i].node->id, v1[i].node->title);
+		DEBUG("\t%zu - %s [%s]\n", i + 1, v1[i].node->id, v1[i].node->title);
 	}
 	DEBUG("\nSM2:\n");
 	for (i = 0; i < n_v2; i++) {
-		DEBUG("\t%ld - %s [%s]\n", i + 1, v2[i].node->id, v2[i].node->title);
+		DEBUG("\t%zu - %s [%s]\n", i + 1, v2[i].node->id, v2[i].node->title);
 	}
 #endif
 

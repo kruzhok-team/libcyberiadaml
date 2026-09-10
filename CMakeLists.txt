@@ -12,12 +12,21 @@ if(NOT HTGeom_FOUND)
   message(FATAL_ERROR "Cannot find libhtgeom library")
 endif()
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -D__DEBUG__")
+add_compile_definitions($<$<CONFIG:Debug>:__DEBUG__>)
 
-add_compile_options(-Wall)
-add_compile_options(-Wextra) 
-add_compile_options(-Wpedantic)
-add_compile_options(-Wformat-security)
+if(MSVC)
+  add_compile_options(/W4)
+  add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
+else()
+  add_compile_options(-Wall)
+  add_compile_options(-Wextra) 
+  add_compile_options(-Wpedantic)
+  add_compile_options(-Wformat-security)
+endif()
+
+if(WIN32)
+  set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 add_library(cyberiadaml SHARED
 			cyb_actions.c
@@ -48,8 +57,18 @@ target_link_directories(cyberiadaml PUBLIC
 				    "${HTGeom_LIBRARY}")
 target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
-				  "${HTGeom_LIBRARIES}"
-				  $<IF:$<PLATFORM_ID:Linux>,,pcre2-posix>)
+				  "${HTGeom_LIBRARIES}")
+
+# the POSIX regexps are not available outside Linux: use the PCRE2 wrapper
+if(NOT CMAKE_SYSTEM_NAME STREQUAL Linux)
+  find_path(PCRE2_POSIX_INCLUDE_DIR pcre2posix.h)
+  find_library(PCRE2_POSIX_LIBRARY NAMES pcre2-posix pcre2-posix-static)
+  if(NOT PCRE2_POSIX_INCLUDE_DIR OR NOT PCRE2_POSIX_LIBRARY)
+    message(FATAL_ERROR "Cannot find the PCRE2 POSIX wrapper library")
+  endif()
+  target_include_directories(cyberiadaml PRIVATE "${PCRE2_POSIX_INCLUDE_DIR}")
+  target_link_libraries(cyberiadaml PUBLIC "${PCRE2_POSIX_LIBRARY}")
+endif()
 
 target_compile_definitions(cyberiadaml PRIVATE
 					   $<$<NOT:$<PLATFORM_ID:Linux>>:CYBERIADA_PCRE2_REGEXPS>)
@@ -62,8 +81,10 @@ if(BUILD_TESTING)
   add_subdirectory(tests)
 endif()
 
-install(TARGETS cyberiadaml DESTINATION lib EXPORT cyberiadaml
-        COMPONENT runtime)
+install(TARGETS cyberiadaml EXPORT cyberiadaml
+        RUNTIME DESTINATION bin COMPONENT runtime
+        LIBRARY DESTINATION lib COMPONENT runtime
+        ARCHIVE DESTINATION lib COMPONENT dev)
 install(FILES cyberiadaml.h cyberiadaml_iso.h
         DESTINATION include/cyberiada
         COMPONENT dev)

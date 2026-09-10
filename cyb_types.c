@@ -647,13 +647,13 @@ static int cyberiada_print_sm(CyberiadaSM* sm)
 	
 	printf("State Machine\n");
 	
-	printf("Nodes: %lu (%lu w/o comments)\n", nodes_cnt, nodes_cnt_wo_cmt);
+	printf("Nodes: %zu (%zu w/o comments)\n", nodes_cnt, nodes_cnt_wo_cmt);
 	for (cur_node = sm->nodes; cur_node; cur_node = cur_node->next) {
 		cyberiada_print_node(cur_node, 0);
 	}
 	printf("\n");
 
-	printf("Edges: %lu (%lu w/o comments)\n", edges_cnt, edges_cnt_wo_cmt);
+	printf("Edges: %zu (%zu w/o comments)\n", edges_cnt, edges_cnt_wo_cmt);
 	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
 		cyberiada_print_edge(cur_edge);
 	}

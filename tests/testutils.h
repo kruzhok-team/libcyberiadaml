@@ -38,7 +38,7 @@
 /* redirect stdout to the given file to capture the test output */
 static inline void test_capture_stdout(const char* path)
 {
-	if (!freopen(path, "w", stdout)) {
+	if (!freopen(path, "wb", stdout)) {
 		fprintf(stderr, "cannot redirect stdout to %s\n", path);
 		exit(1);
 	}

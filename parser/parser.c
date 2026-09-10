@@ -366,11 +366,11 @@ int main(int argc, char** argv)
 					cyberiada_print_node(iso.new_initial, 0);
 				}
 				if (iso.diff_nodes_size > 0) {
-					printf("\nThere are %lu different nodes in the second graph:\n", iso.diff_nodes_size);
+					printf("\nThere are %zu different nodes in the second graph:\n", iso.diff_nodes_size);
 					if (iso.diff_nodes_flags) {
 						for (i = 0; i < iso.diff_nodes_size; i++) {
 							size_t flag = iso.diff_nodes_flags[i];
-							printf(" %lu. ", i + 1);
+							printf(" %zu. ", i + 1);
 							if (flag & CYBERIADA_NODE_DIFF_ID) {
 								printf("id ");
 							}
@@ -398,9 +398,9 @@ int main(int argc, char** argv)
 					if (iso.diff_nodes) {
 						printf("\n The different nodes:\n");
 						for (i = 0; i < iso.diff_nodes_size; i++) {
-							printf(" %lu sm1:\n", i + 1);
+							printf(" %zu sm1:\n", i + 1);
 							cyberiada_print_node(iso.diff_nodes[i].n1, 1);
-							printf(" %lu sm2:\n", i + 1);
+							printf(" %zu sm2:\n", i + 1);
 							cyberiada_print_node(iso.diff_nodes[i].n2, 1);
 						}
 					}
@@ -418,11 +418,11 @@ int main(int argc, char** argv)
 					}
 				}
 				if (iso.diff_edges_size > 0) {
-					printf("\nThere are %lu different edges in the second graph:\n", iso.diff_edges_size);
+					printf("\nThere are %zu different edges in the second graph:\n", iso.diff_edges_size);
 					if (iso.diff_edges_flags) {
 						for (i = 0; i < iso.diff_edges_size; i++) {
 							size_t flag = iso.diff_edges_flags[i];
-							printf(" %lu. ", i + 1);
+							printf(" %zu. ", i + 1);
 							if (flag & CYBERIADA_EDGE_DIFF_ID) {
 								printf("id ");
 							}
@@ -435,9 +435,9 @@ int main(int argc, char** argv)
 					if (iso.diff_edges) {
 						printf("\n The different edges (version from the second graph):\n");
 						for (i = 0; i < iso.diff_edges_size; i++) {
-							printf(" %lu sm1: ", i + 1);
+							printf(" %zu sm1: ", i + 1);
 							cyberiada_print_edge(iso.diff_edges[i].e1);
-							printf(" %lu sm2: ", i + 1);
+							printf(" %zu sm2: ", i + 1);
 							cyberiada_print_edge(iso.diff_edges[i].e2);
 						}
 					}
