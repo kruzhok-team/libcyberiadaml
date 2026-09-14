@@ -36,10 +36,25 @@
 #define CYBERIADA_LOOSE_PADDING       10.0
 #define CYBERIADA_LOOSE_MIN_SIZE      20.0
 
-/* decimal places for CYBERIADA_FLAG_ROUND_GEOMETRY: 3 -> 0.001, keeping the
-   half-pixel that the centred<->left-top conversion produces, so a save/reopen
-   round-trip is lossless (integer rounding dropped it, drifting coordinates) */
-#define CYBERIADA_GEOMETRY_ROUND_SIGNS 3
+/* decimal places for CYBERIADA_FLAG_ROUND_GEOMETRY: sizes to 0.001, positions
+   to 0.0001. The centred<->left-top conversion offsets a coordinate by half a
+   size, so a size rounded to N decimals yields a position with N+1; rounding
+   both to N drops that half and drifts the coordinate on every save/reopen. */
+#define CYBERIADA_GEOMETRY_ROUND_SIGNS     3
+#define CYBERIADA_GEOMETRY_ROUND_POS_SIGNS (CYBERIADA_GEOMETRY_ROUND_SIGNS + 1)
+
+/* round a rect keeping positions one decimal finer than sizes (see above) */
+static void cyberiada_round_geometry_rect(CyberiadaRect* r)
+{
+	HTreePoint pos;
+	if (!r) return;
+	pos.x = r->x;
+	pos.y = r->y;
+	htree_round_point(&pos, CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
+	htree_round_rect(r, CYBERIADA_GEOMETRY_ROUND_SIGNS); /* fixes width/height */
+	r->x = pos.x;
+	r->y = pos.y;
+}
 
 /* the metainformation node is not a displayed element (6.9), so it takes no
    part in the layout unless the document gives it geometry of its own */
@@ -150,10 +165,10 @@ static int cyberiada_round_node_geometry(CyberiadaNode* node)
 	while (node) {
 		if (node->children) {
 			if (node->geometry_point) {
-				htree_round_point(node->geometry_point, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+				htree_round_point(node->geometry_point, CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
 			}
 			if (node->geometry_rect) {
-				htree_round_rect(node->geometry_rect, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+				cyberiada_round_geometry_rect(node->geometry_rect);
 			}
 			cyberiada_round_node_geometry(node->children);
 		}
@@ -166,18 +181,18 @@ static int cyberiada_round_edges_geometry(CyberiadaEdge* edges)
 {
 	while (edges) {
 		if (edges->geometry_source_point) {
-			htree_round_point(edges->geometry_source_point, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+			htree_round_point(edges->geometry_source_point, CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
 		}
 		if (edges->geometry_target_point) {
-			htree_round_point(edges->geometry_target_point, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+			htree_round_point(edges->geometry_target_point, CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
 		}
 		if (edges->geometry_label_point) {
-			htree_round_point(edges->geometry_label_point, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+			htree_round_point(edges->geometry_label_point, CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
 		}
 		if (edges->geometry_polyline) {
 			CyberiadaPolyline* pl = edges->geometry_polyline;
 			while (pl) {
-				htree_round_point(&(pl->point), CYBERIADA_GEOMETRY_ROUND_SIGNS);
+				htree_round_point(&(pl->point), CYBERIADA_GEOMETRY_ROUND_POS_SIGNS);
 				pl = pl->next;
 			}
 		}
@@ -193,7 +208,7 @@ static int cyberiada_round_document_geometry(CyberiadaDocument* doc)
 		ERROR("Cannot round SM document geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
-	htree_round_rect(doc->bounding_rect, CYBERIADA_GEOMETRY_ROUND_SIGNS);
+	cyberiada_round_geometry_rect(doc->bounding_rect);
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		cyberiada_round_node_geometry(sm->nodes);
 		cyberiada_round_edges_geometry(sm->edges);
