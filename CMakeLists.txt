@@ -47,11 +47,17 @@ add_library(cyberiadaml SHARED
 			cyberiadaml_iso.h
 )
 
+# the public header includes <cyberiada/htgeom.h>, so the parent of the
+# directory holding htgeom.h is needed, not the directory itself
+get_filename_component(HTGeom_INCLUDE_ROOT "${HTGeom_INCLUDE_DIR}" DIRECTORY)
+
 target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+			               $<INSTALL_INTERFACE:include>
 			               $<INSTALL_INTERFACE:include/cyberiada>
 				       "${LIBXML2_INCLUDE_DIR}"
-				       "${HTGeom_INCLUDE_DIR}")
+				       "${HTGeom_INCLUDE_DIR}"
+				       "${HTGeom_INCLUDE_ROOT}")
 # the found library paths are linked directly: the *_LIBRARY variables are
 # files, not directories, and on Windows they carry the optimized/debug keywords
 target_link_libraries(cyberiadaml PUBLIC
