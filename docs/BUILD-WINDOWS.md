@@ -56,6 +56,11 @@ POSIX wrapper everywhere else, so `pcre2` is required on Windows.
           }
         }
 
+   `CMAKE_TOOLCHAIN_FILE` is read only when a build directory is configured for
+   the first time. If the folder has been configured already, delete the build
+   directory (**CMake: Delete Cache and Reconfigure**), otherwise CMake ignores
+   the toolchain file and reports it as an unused variable.
+
 3. Press `Ctrl+Shift+P` > **CMake: Select a Kit** and choose
    *Visual Studio Build Tools 2022 - amd64*.
 4. **CMake: Configure**, then **CMake: Build** (or `F7`).
