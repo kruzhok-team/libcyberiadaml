@@ -52,12 +52,11 @@ target_include_directories(cyberiadaml PUBLIC
 			               $<INSTALL_INTERFACE:include/cyberiada>
 				       "${LIBXML2_INCLUDE_DIR}"
 				       "${HTGeom_INCLUDE_DIR}")
-target_link_directories(cyberiadaml PUBLIC
-				    "${LIBXML2_LIBRARY}"
-				    "${HTGeom_LIBRARY}")
+# the found library paths are linked directly: the *_LIBRARY variables are
+# files, not directories, and on Windows they carry the optimized/debug keywords
 target_link_libraries(cyberiadaml PUBLIC
 				  "${LIBXML2_LIBRARIES}"
-				  "${HTGeom_LIBRARIES}")
+				  "${HTGeom_LIBRARY}")
 
 # the POSIX regexps are not available outside Linux: use the PCRE2 wrapper
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Linux)
