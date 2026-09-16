@@ -59,9 +59,11 @@ target_include_directories(cyberiadaml PUBLIC
 				       "${HTGeom_INCLUDE_DIR}"
 				       "${HTGeom_INCLUDE_ROOT}")
 # the found library paths are linked directly: the *_LIBRARY variables are
-# files, not directories, and on Windows they carry the optimized/debug keywords
+# files, not directories. The libxml2 list is expanded unquoted: on Windows it
+# carries the optimized/debug keywords, which are read as such only when they
+# arrive as separate arguments
 target_link_libraries(cyberiadaml PUBLIC
-				  "${LIBXML2_LIBRARIES}"
+				  ${LIBXML2_LIBRARIES}
 				  "${HTGeom_LIBRARY}")
 
 # the POSIX regexps are not available outside Linux: use the PCRE2 wrapper
