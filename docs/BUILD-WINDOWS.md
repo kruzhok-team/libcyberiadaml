@@ -84,8 +84,10 @@ Run from the *Developer Command Prompt for VS 2022*:
 The Visual Studio generator is a multi-configuration one: the configuration is
 chosen at build time by `--config`, not by `CMAKE_BUILD_TYPE`.
 
-`libhtreegeom` is found through its `FindHTGeom.cmake` module, which searches
-Unix paths only; on Windows pass the location explicitly:
+`libhtreegeom` is found through its `FindHTGeom.cmake` module. Its fallback
+paths are Unix ones, but `CMAKE_PREFIX_PATH` is searched as well, so the
+prefix above is normally enough; pass the location explicitly if it is not
+found:
 
     -DHTGeom_INCLUDE_DIR=C:/cyberiada/include/cyberiada
     -DHTGeom_LIBRARY=C:/cyberiada/lib/htgeom.lib
@@ -99,9 +101,17 @@ installed outside `CMAKE_PREFIX_PATH`.
 A DLL is searched next to the executable that uses it, so `cybparser.exe` and
 `cyberiadapp.exe` need `htgeom.dll`, `cyberiadaml.dll`, `cyberiadamlpp.dll`
 and the vcpkg DLLs (`libxml2.dll`, `pcre2-*.dll` and their dependencies) in
-the same directory or in `PATH`. The install step puts the DLLs into
-`<prefix>/bin` and the import libraries into `<prefix>/lib`; the test
-executables get their DLLs copied automatically by the build.
+the same directory or in `PATH`.
+
+The install step is not uniform: `libcyberiadaml` and `libcyberiadamlpp` put
+their DLLs into `<prefix>/bin` and the import libraries into `<prefix>/lib`,
+while `libhtreegeom` puts `htgeom.dll` into `<prefix>/lib` beside its import
+library. Keep both directories in `PATH`.
+
+The test executables of `libcyberiadaml` get their DLLs copied next to them by
+the build. `htgeom.dll` is copied explicitly: it is linked through its import
+library, so `$<TARGET_RUNTIME_DLLS>` does not list it. If a test of another
+library does not start, add `<prefix>/bin` and `<prefix>/lib` to `PATH`.
 
 ## Packaging
 
@@ -126,7 +136,7 @@ cannot be mixed with MSVC-built ones in a single process.
 * The `18-key-remap` test of `libcyberiadaml` uses POSIX threads and is
   excluded from the build under MSVC.
 * Valgrind-based memory testing (`-DMEMCHECK=ON`) is not available.
-* The MSVC build is not covered by continuous integration: the sources and the
-  CMake files were made Windows-compatible by review, and the Linux build and
-  the test suites are verified, but the MSVC compilation itself has not been
-  run by the authors. Please report the problems you meet.
+* The MSVC build is not covered by continuous integration: `libhtreegeom` and
+  `libcyberiadaml` are built, tested and packed with Visual Studio 2022, but
+  `libcyberiadamlpp` and the MinGW-w64 toolchain are not verified yet. Please
+  report the problems you meet.
