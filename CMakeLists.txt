@@ -107,7 +107,7 @@ install(TARGETS cyberiadaml EXPORT cyberiadaml
 install(FILES cyberiadaml.h cyberiadaml_iso.h
         DESTINATION include/cyberiada
         COMPONENT dev)
-install(EXPORT cyberiadaml DESTINATION lib/cmake
+install(EXPORT cyberiadaml DESTINATION lib/cmake/cyberiadaml
         COMPONENT dev)
 
 configure_file(
@@ -115,7 +115,7 @@ configure_file(
    ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake @ONLY)
 
 install(FILES ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake
-	DESTINATION lib/cmake
+	DESTINATION lib/cmake/cyberiadaml
 	COMPONENT dev)
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md

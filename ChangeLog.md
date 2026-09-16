@@ -15,7 +15,8 @@ Added:
 
 Fixed:
 - geometry reconstruction update;
-- full CyberiadaML-GraphML 1.0 standard compatibility.
+- full CyberiadaML-GraphML 1.0 standard compatibility;
+- the CMake package configuration is installed into its own directory.
 
 ## Version 1.0
 

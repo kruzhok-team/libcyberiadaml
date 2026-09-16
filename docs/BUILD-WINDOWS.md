@@ -93,8 +93,9 @@ found:
     -DHTGeom_LIBRARY=C:/cyberiada/lib/htgeom.lib
 
 `libcyberiadamlpp` finds `libcyberiadaml` through its CMake package
-configuration; pass `-Dcyberiadaml_DIR=C:/cyberiada/lib/cmake` if it is
-installed outside `CMAKE_PREFIX_PATH`.
+configuration, installed as `<prefix>/lib/cmake/cyberiadaml/`, so the
+`CMAKE_PREFIX_PATH` above is enough. Point `-Dcyberiadaml_DIR` at that
+directory only to use a package outside the prefix.
 
 ## Running the programs
 

@@ -1,7 +1,7 @@
 get_filename_component(_dir "${CMAKE_CURRENT_LIST_FILE}" PATH)
-get_filename_component(_prefix "${_dir}/../.." ABSOLUTE)
+get_filename_component(_prefix "${_dir}/../../.." ABSOLUTE)
 
-include("${_prefix}/lib/cmake/cyberiadaml.cmake")
+include("${_dir}/cyberiadaml.cmake")
 
 set(cyberiadaml_INCLUDE_DIRS "${_prefix}/include/")
 set(cyberiadaml_LIBRARY "${_prefix}/lib/")
