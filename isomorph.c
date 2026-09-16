@@ -706,7 +706,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 			for (i = 0; i < n_v1; i++) {
 				for (j = 0; j < n_v2; j++) {
 					char p = Proxi[i][j];
-					int found = 0;
+					found = 0;
 					if (p < 0) {
 						continue;
 					}
