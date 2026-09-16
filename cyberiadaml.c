@@ -2948,7 +2948,7 @@ int cyberiada_decode_sm_document(CyberiadaDocument* cyb_doc, const char* buffer,
 	}
 	
 	/* parse the file and get the DOM */
-	if ((doc = xmlReadMemory(buffer, buffer_size, XML_READMEMORY_BASENAME, NULL, 0)) == NULL) {
+	if ((doc = xmlReadMemory(buffer, (int)buffer_size, XML_READMEMORY_BASENAME, NULL, 0)) == NULL) {
 		ERROR("error: could not read buffer\n");
 		return CYBERIADA_XML_ERROR;
 	}

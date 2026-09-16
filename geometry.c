@@ -330,7 +330,6 @@ static HTree* cyberiada_sm_to_htree(CyberiadaSM* sm)
 	}
 
 	for (edge = sm->edges; edge; edge = edge->next) {
-		HTreeEdge* t_edge;
 		if (cyberiada_geometry_skip_edge(edge)) continue;
 		t_edge = cyberiada_edge_to_htree(edge);
 		if (tree->edges) {
