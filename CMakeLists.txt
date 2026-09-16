@@ -12,6 +12,18 @@ if(NOT HTGeom_FOUND)
   message(FATAL_ERROR "Cannot find libhtgeom library")
 endif()
 
+if(WIN32)
+  # htgeom is linked through its import library, which does not tell where the
+  # DLL is, so the tests cannot get it from $<TARGET_RUNTIME_DLLS>
+  get_filename_component(HTGeom_LIBRARY_DIR "${HTGeom_LIBRARY}" DIRECTORY)
+  find_file(HTGeom_RUNTIME_LIBRARY NAMES htgeom.dll
+            HINTS "${HTGeom_LIBRARY_DIR}" "${HTGeom_LIBRARY_DIR}/.." "${HTGeom_DIR}"
+            PATH_SUFFIXES bin lib)
+  if(NOT HTGeom_RUNTIME_LIBRARY)
+    message(WARNING "Cannot find htgeom.dll; copy it next to the executables manually")
+  endif()
+endif()
+
 add_compile_definitions($<$<CONFIG:Debug>:__DEBUG__>)
 
 if(MSVC)

@@ -19,6 +19,13 @@ foreach(test_source ${TEST_SOURCES})
               "$<TARGET_RUNTIME_DLLS:${test_name}>" "$<TARGET_FILE_DIR:${test_name}>"
       COMMAND_EXPAND_LISTS
       )
+    if(HTGeom_RUNTIME_LIBRARY)
+      add_custom_command(TARGET ${test_name}
+        POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                "${HTGeom_RUNTIME_LIBRARY}" "$<TARGET_FILE_DIR:${test_name}>"
+        )
+    endif()
   endif()
 endforeach()
 
