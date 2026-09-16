@@ -137,7 +137,7 @@ cannot be mixed with MSVC-built ones in a single process.
 * The `18-key-remap` test of `libcyberiadaml` uses POSIX threads and is
   excluded from the build under MSVC.
 * Valgrind-based memory testing (`-DMEMCHECK=ON`) is not available.
-* The MSVC build is not covered by continuous integration: `libhtreegeom` and
-  `libcyberiadaml` are built, tested and packed with Visual Studio 2022, but
-  `libcyberiadamlpp` and the MinGW-w64 toolchain are not verified yet. Please
+* The MSVC build is not covered by continuous integration: `libhtreegeom`,
+  `libcyberiadaml`, and `libcyberiadamlpp` are built, tested and packed with
+  Visual Studio 2022, but the MinGW-w64 toolchain are not verified yet. Please
   report the problems you meet.
