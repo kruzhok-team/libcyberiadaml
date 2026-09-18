@@ -15,6 +15,7 @@ Added:
 
 Fixed:
 - geometry reconstruction update;
+- submachine state subgraphs support;
 - full CyberiadaML-GraphML 1.0 standard compatibility;
 - the CMake package configuration is installed into its own directory.
 
