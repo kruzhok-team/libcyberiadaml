@@ -357,6 +357,7 @@ typedef enum {
 	/* CyberiadaML format states */
 	gpsNodeGeometry,
 	gpsRegion,
+	gpsSubmachineGraph,
 	gpsEdgeGeometry,
 	gpsEdgeSourcePoint,
 	gpsEdgeTargetPoint,
@@ -544,6 +545,11 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 		sm->nodes->type = cybNodeSM;
 		node_stack_set_top_node(stack, sm->nodes);
 		return gpsGraph;
+	} else if (parent->type == cybNodeSubmachineState) {
+		/* the submachine subgraph holds only entry/exit points and carries no
+		   keys (8.1.1); the submachine node stays current so the points attach
+		   directly to it, and only child nodes are accepted */
+		return gpsSubmachineGraph;
 	} else {
 		/* DEBUG("graph parent %s type %d\n", parent->id, parent->type); */
 		if (parent->type != cybNodeSimpleState && parent->type != cybNodeCompositeState) {
@@ -2021,6 +2027,7 @@ static ProcessorTransition cyb_processor_state_table[] = {
 	{gpsRegion,              GRAPHML_DATA_ELEMENT,  &handle_node_data},
 	{gpsRegion,              GRAPHML_NODE_ELEMENT,  &handle_new_node},
 	{gpsRegion,              GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
+	{gpsSubmachineGraph,     GRAPHML_NODE_ELEMENT,  &handle_new_node},
 	{gpsEdge,                GRAPHML_DATA_ELEMENT,  &handle_edge_data},
 	{gpsEdge,                GRAPHML_EDGE_ELEMENT,  &handle_new_edge},
 	{gpsNodeGeometry,        GRAPHML_POINT_ELEMENT, &handle_node_point},
@@ -2541,6 +2548,31 @@ static int cyberiada_check_strict_nodes(CyberiadaNode* nodes)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* a submachine state subgraph holds nothing but entry/exit points (8.1.2) */
+static int cyberiada_check_submachine_nodes(CyberiadaNode* nodes)
+{
+	CyberiadaNode *n, *c;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeSubmachineState) {
+			for (c = n->children; c; c = c->next) {
+				if (c->type != cybNodeEntryPoint && c->type != cybNodeExitPoint) {
+					ERROR("The submachine state %s contains a non entry/exit child %s\n",
+						  n->id, c->id);
+					return CYBERIADA_FORMAT_ERROR;
+				}
+			}
+		}
+		if (n->children) {
+			int res = cyberiada_check_submachine_nodes(n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int check_initial,
 								  int strict_entries, int skip_empty, int strict)
 {
@@ -2555,6 +2587,10 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 		if (sm->nodes) {
 			if ((res = cyberiada_check_pseudostates(sm->nodes->children, sm->edges, check_initial, 1)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has wrong structure - bad pseudostates\n", sm->nodes->id);
+				break;
+			}
+			if ((res = cyberiada_check_submachine_nodes(sm->nodes->children)) != CYBERIADA_NO_ERROR) {
+				ERROR("error: state machine %s has wrong structure - bad submachine subgraph\n", sm->nodes->id);
 				break;
 			}
 			if (!skip_geometry &&
@@ -3277,8 +3313,25 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 		}
 	}
 
+	if (node->type == cybNodeSubmachineState && node->children) {
+		/* the entry/exit subgraph (8.1.1): a bare graph without keys */
+		snprintf(buffer, buffer_len - 1, "%s:", node->id);
+		buffer[buffer_len - 1] = 0;
+		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent + 1);
+		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
+		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
+		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
+			res = cyberiada_write_node_cyberiada(writer, cur_node, indent + 2);
+			if (res != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing node %s\n", cur_node->id);
+				return CYBERIADA_XML_ERROR;
+			}
+		}
+		XML_WRITE_CLOSE_E_I(writer, indent + 1);
+	}
+
 	XML_WRITE_CLOSE_E_I(writer, indent);
-	
+
 	return CYBERIADA_NO_ERROR;
 }
 

@@ -58,6 +58,15 @@ static void check_completeness(CyberiadaDocument* doc)
 	TEST_ASSERT(node->link && node->link->ref);
 	TEST_ASSERT(strcmp(node->link->ref, "M2") == 0);
 
+	/* the entry/exit connection points nest directly under the submachine state */
+	node = cyberiada_graph_find_node_by_id(sm->nodes, "sub0::en");
+	TEST_ASSERT(node);
+	TEST_ASSERT(node->type == cybNodeEntryPoint);
+	TEST_ASSERT(node->title && strcmp(node->title, "In") == 0);
+	node = cyberiada_graph_find_node_by_id(sm->nodes, "sub0::ex");
+	TEST_ASSERT(node);
+	TEST_ASSERT(node->type == cybNodeExitPoint);
+
 	/* the escaped brackets of the guard are kept verbatim */
 	edge = find_edge(sm, "c0-sub0#1");
 	TEST_ASSERT(edge && edge->action);

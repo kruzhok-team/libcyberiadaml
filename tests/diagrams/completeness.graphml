@@ -42,6 +42,15 @@
     <node id="sub0">
       <data key="dSubmachineState">M2</data>
       <data key="dName">Nested</data>
+      <graph id="sub0:">
+        <node id="sub0::en">
+          <data key="dVertex">entryPoint</data>
+          <data key="dName">In</data>
+        </node>
+        <node id="sub0::ex">
+          <data key="dVertex">exitPoint</data>
+        </node>
+      </graph>
     </node>
     <node id="cN">
       <data key="dNote">informal</data>
