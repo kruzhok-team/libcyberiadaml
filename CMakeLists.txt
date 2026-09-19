@@ -38,6 +38,8 @@ endif()
 
 if(WIN32)
   set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+  # use MinGW's C99-conformant printf so %zu works (msvcrt's does not support it)
+  add_compile_definitions(__USE_MINGW_ANSI_STDIO=1)
 endif()
 
 add_library(cyberiadaml SHARED
