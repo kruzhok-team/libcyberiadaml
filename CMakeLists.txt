@@ -63,20 +63,27 @@ add_library(cyberiadaml SHARED
 # directory holding htgeom.h is needed, not the directory itself
 get_filename_component(HTGeom_INCLUDE_ROOT "${HTGeom_INCLUDE_DIR}" DIRECTORY)
 
+# the htgeom include dirs come from the find-module as absolute build-prefix
+# paths, so they are build-only: baking them into the export makes the installed
+# config non-relocatable (its .deb installs to /usr). The installed htgeom and
+# cyberiadaml headers share include/cyberiada, already covered by INSTALL_INTERFACE
 target_include_directories(cyberiadaml PUBLIC
 				       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			               $<INSTALL_INTERFACE:include>
 			               $<INSTALL_INTERFACE:include/cyberiada>
 				       "${LIBXML2_INCLUDE_DIR}"
-				       "${HTGeom_INCLUDE_DIR}"
-				       "${HTGeom_INCLUDE_ROOT}")
+				       $<BUILD_INTERFACE:${HTGeom_INCLUDE_DIR}>
+				       $<BUILD_INTERFACE:${HTGeom_INCLUDE_ROOT}>)
 # the found library paths are linked directly: the *_LIBRARY variables are
 # files, not directories. The libxml2 list is expanded unquoted: on Windows it
 # carries the optimized/debug keywords, which are read as such only when they
 # arrive as separate arguments
+# htgeom is linked by its absolute build-prefix path (build-only, so it is not
+# baked into the export); at runtime libcyberiadaml.so pulls libhtgeom.so via its
+# NEEDED entry, resolved from the install location (/usr/lib)
 target_link_libraries(cyberiadaml PUBLIC
 				  ${LIBXML2_LIBRARIES}
-				  "${HTGeom_LIBRARY}")
+				  $<BUILD_INTERFACE:${HTGeom_LIBRARY}>)
 
 # the POSIX regexps are not available outside Linux: use the PCRE2 wrapper
 if(NOT CMAKE_SYSTEM_NAME STREQUAL Linux)
