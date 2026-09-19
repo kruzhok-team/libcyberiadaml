@@ -12,9 +12,11 @@ if(NOT HTGeom_FOUND)
   message(FATAL_ERROR "Cannot find libhtgeom library")
 endif()
 
-if(WIN32)
+if(WIN32 AND NOT CMAKE_CROSSCOMPILING)
   # htgeom is linked through its import library, which does not tell where the
-  # DLL is, so the tests cannot get it from $<TARGET_RUNTIME_DLLS>
+  # DLL is, so the tests cannot get it from $<TARGET_RUNTIME_DLLS>. Under a
+  # cross-build the tests run via the emulator with the prefix on its DLL path
+  # (WINEPATH), so no copy is needed
   get_filename_component(HTGeom_LIBRARY_DIR "${HTGeom_LIBRARY}" DIRECTORY)
   find_file(HTGeom_RUNTIME_LIBRARY NAMES htgeom.dll
             HINTS "${HTGeom_LIBRARY_DIR}" "${HTGeom_LIBRARY_DIR}/.." "${HTGeom_DIR}"
