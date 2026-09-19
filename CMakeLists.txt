@@ -140,6 +140,9 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md
 	DESTINATION share/doc/libcyberiadaml
 	COMPONENT dev)
 
+# optional per-release suffix (e.g. ubuntu2604) for the package version, set when
+# this lib is rebuilt for a release whose libxml2 soname differs from the shared set
+set(DISTRO_TAG "" CACHE STRING "distribution suffix appended to the package version")
 configure_file ("${PROJECT_SOURCE_DIR}/CyberiadaMLPackOptions.cmake.in"
                 "${PROJECT_BINARY_DIR}/CyberiadaMLPackOptions.cmake"
                 @ONLY)

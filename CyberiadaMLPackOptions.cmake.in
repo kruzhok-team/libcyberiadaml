@@ -13,6 +13,18 @@ set(CPACK_COMPONENTS_ALL runtime dev parser)
 set(CPACK_DEBIAN_FILE_NAME DEB-DEFAULT)
 set(CPACK_DEBIAN_PACKAGE_ARCHITECTURE "amd64")
 
+# a per-release build tags the version (e.g. 1.0.6+ubuntu2604) so the rebuild for a
+# release whose libxml2 soname differs is distinguishable from the once-built set.
+# '+' keeps it above the base so the downstream ">= 1.0.6" deps stay satisfied; the
+# dev/parser "= exact" self-deps must then use the tagged version too.
+set(DISTRO_TAG "@DISTRO_TAG@")
+if(NOT DISTRO_TAG STREQUAL "")
+  set(CPACK_DEBIAN_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}+${DISTRO_TAG}")
+  set(_selfver "${CPACK_PACKAGE_VERSION}+${DISTRO_TAG}")
+else()
+  set(_selfver "${CPACK_PACKAGE_VERSION}")
+endif()
+
 set(CPACK_DEBIAN_PACKAGE_DESCRIPTION "The C library for processing the Cyberiada state machine graphs")
 
 set(CPACK_DEBIAN_RUNTIME_PACKAGE_NAME "libcyberiadaml")
@@ -23,8 +35,8 @@ set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "libxml2 (>= 2.9) | libxml2-16, libhtre
 
 set(CPACK_DEBIAN_DEV_PACKAGE_NAME "libcyberiadaml-dev")
 set(CPACK_DEBIAN_DEV_DESCRIPTION "The Cyberiada state machine graphs library development files: the headers, the CMake configuration and the documentation")
-set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS "libcyberiadaml (= ${CPACK_PACKAGE_VERSION}), libhtreegeom-dev (>= 1.0.6)")
+set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS "libcyberiadaml (= ${_selfver}), libhtreegeom-dev (>= 1.0.6)")
 
 set(CPACK_DEBIAN_PARSER_PACKAGE_NAME "libcyberiadaml-parser")
 set(CPACK_DEBIAN_PARSER_DESCRIPTION "The cybparser tool reading, converting and comparing the Cyberiada state machine graphs")
-set(CPACK_DEBIAN_PARSER_PACKAGE_DEPENDS "libcyberiadaml (= ${CPACK_PACKAGE_VERSION})")
+set(CPACK_DEBIAN_PARSER_PACKAGE_DEPENDS "libcyberiadaml (= ${_selfver})")
