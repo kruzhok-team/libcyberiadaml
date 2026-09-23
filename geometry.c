@@ -229,9 +229,12 @@ static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node)
 		type = htTree;
 	} else if (node->type == cybNodeCompositeState || node->type == cybNodeRegion) {
 		type = htCompositeNode;
-	} else if (node->type & (cybNodeSimpleState | cybNodeSubmachineState | cybNodeChoice |
-							 cybNodeComment | cybNodeFormalComment)) {
+	} else if (node->type & (cybNodeSimpleState | cybNodeSubmachineState | cybNodeChoice)) {
 		type = htSimpleNode;
+	} else if (node->type & (cybNodeComment | cybNodeFormalComment)) {
+		/* a comment keeps its geometry but is excluded from the SM border bounds,
+		   so it may sit outside the border */
+		type = htComment;
 	} else if (node->type & (cybNodeInitial | cybNodeFinal | cybNodeTerminate |
 							 cybNodeEntryPoint | cybNodeExitPoint |
 							 cybNodeShallowHistory | cybNodeDeepHistory |
