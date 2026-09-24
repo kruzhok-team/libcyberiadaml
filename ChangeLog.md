@@ -1,5 +1,15 @@
 # libcyberiadaml project changelog
 
+## Version 1.0.7 (unreleased)
+
+Added:
+- the strict mode checks of the final CyberiadaML-GraphML 1.0 text: one entry/exit/do
+  block per state, reserved event names, `defer` only as the whole behavior of an
+  internal transition, `propagate`/`block` only with an event name, the commented
+  fragment present in the subject, named entry/exit points, no behavior and no
+  self-reference in submachine states, submachine points named after the points of the
+  referenced state machine.
+
 ## Version 1.0.6
 
 The CyberiadaML-GraphML 1.0 (PNST_1044-2025) compatible version of the library.

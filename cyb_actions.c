@@ -657,7 +657,7 @@ int cyberiada_print_action(CyberiadaAction* action, int level)
 
 int cyberiada_check_action_doubles(CyberiadaAction* a)
 {
-	CyberiadaAction *entry_action = NULL, *exit_action = NULL;
+	CyberiadaAction *entry_action = NULL, *exit_action = NULL, *do_action = NULL;
 	while (a) {
 		if (a->type == cybActionEntry) {
 			if (entry_action) {
@@ -672,7 +672,14 @@ int cyberiada_check_action_doubles(CyberiadaAction* a)
 				return CYBERIADA_FORMAT_ERROR;
 			} else {
 				exit_action = a;
-			}			
+			}
+		} else if (a->type == cybActionDo) {
+			if (do_action) {
+				ERROR("Multiple do actions\n");
+				return CYBERIADA_FORMAT_ERROR;
+			} else {
+				do_action = a;
+			}
 		}
 		a = a->next;
 	}

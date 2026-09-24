@@ -2461,6 +2461,113 @@ static int cyberiada_check_pseudostates(CyberiadaNode* nodes, CyberiadaEdge* edg
 }
 
 /* the optional requirements checked on the resolved graph */
+/* the words an event name cannot be (6.8.1) */
+static const char* cyberiada_reserved_event_names[] = {
+	"entry", "exit", "do", "propagate", "block", "defer", "else"
+};
+
+static int cyberiada_event_name_is_reserved(const char* name)
+{
+	size_t i;
+	if (!name || !*name) {
+		return 0;
+	}
+	for (i = 0; i < sizeof(cyberiada_reserved_event_names) / sizeof(const char*); i++) {
+		if (strcmp(name, cyberiada_reserved_event_names[i]) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* the 6.8.1 / 6.8.2 constraints on the decoded actions of a node or an edge */
+static int cyberiada_check_strict_actions(CyberiadaAction* actions, const char* owner_id, int edge)
+{
+	CyberiadaAction* a;
+	for (a = actions; a; a = a->next) {
+		if (a->type != cybActionTransition) {
+			if (edge) {
+				ERROR("The transition %s carries the %s block of a state\n",
+					  owner_id, a->trigger ? a->trigger : "");
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			continue;
+		}
+		if (cyberiada_event_name_is_reserved(a->trigger)) {
+			ERROR("The event name '%s' of %s is a reserved word\n", a->trigger, owner_id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		if (a->propagation == cybEventPropagationDefer) {
+			if (edge) {
+				ERROR("The transition %s defers an event; defer belongs to an internal transition\n",
+					  owner_id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			if (a->behavior && *(a->behavior)) {
+				ERROR("The deferred event of %s carries a behavior after defer\n", owner_id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+		} else if ((a->propagation == cybEventPropagationPropagate ||
+					a->propagation == cybEventPropagationBlock) &&
+				   (!a->trigger || !*(a->trigger))) {
+			ERROR("The event handling keyword of %s has no event name\n", owner_id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	if (!edge) {
+		return cyberiada_check_action_doubles(actions);
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_actions_contain(CyberiadaAction* actions, const char* fragment)
+{
+	CyberiadaAction* a;
+	for (a = actions; a; a = a->next) {
+		if ((a->trigger && strstr(a->trigger, fragment)) ||
+			(a->guard && strstr(a->guard, fragment)) ||
+			(a->behavior && strstr(a->behavior, fragment))) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+/* the commented fragment is a substring of the subject's name or data (6.7) */
+static int cyberiada_check_comment_fragment(CyberiadaEdge* e)
+{
+	const char* fragment = e->comment_subject->fragment;
+	if (e->comment_subject->type == cybCommentSubjectNameFragment) {
+		if (e->target && (!e->target->title || !strstr(e->target->title, fragment))) {
+			ERROR("The comment link %s names the fragment '%s' absent from the name of %s\n",
+				  e->id, fragment, e->target_id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		return CYBERIADA_NO_ERROR;
+	}
+	if (e->target_edge) {
+		if (!cyberiada_actions_contain(e->target_edge->action, fragment)) {
+			ERROR("The comment link %s names the fragment '%s' absent from the transition %s\n",
+				  e->id, fragment, e->target_edge->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	} else if (e->target) {
+		if (e->target->type == cybNodeComment || e->target->type == cybNodeFormalComment) {
+			if (!e->target->comment_data || !e->target->comment_data->body ||
+				!strstr(e->target->comment_data->body, fragment)) {
+				ERROR("The comment link %s names the fragment '%s' absent from the comment %s\n",
+					  e->id, fragment, e->target_id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+		} else if (!cyberiada_actions_contain(e->target->actions, fragment)) {
+			ERROR("The comment link %s names the fragment '%s' absent from the data of %s\n",
+				  e->id, fragment, e->target_id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_check_strict_edges(CyberiadaSM* sm)
 {
 	CyberiadaEdge *e, *e2;
@@ -2496,8 +2603,15 @@ static int cyberiada_check_strict_edges(CyberiadaSM* sm)
 					ERROR("The fragment comment link %s has a target point\n", e->id);
 					return CYBERIADA_FORMAT_ERROR;
 				}
+				if (cyberiada_check_comment_fragment(e) != CYBERIADA_NO_ERROR) {
+					return CYBERIADA_FORMAT_ERROR;
+				}
 			}
 			continue;
+		}
+		/* the event name, defer and the event handling keywords (6.8) */
+		if (e->action && cyberiada_check_strict_actions(e->action, e->id, 1) != CYBERIADA_NO_ERROR) {
+			return CYBERIADA_FORMAT_ERROR;
 		}
 		/* a single else transition leaves the node (6.3) */
 		if (!e->action || !e->action->guard ||
@@ -2517,7 +2631,49 @@ static int cyberiada_check_strict_edges(CyberiadaSM* sm)
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_check_strict_nodes(CyberiadaNode* nodes)
+/* the state machine of the document with the given graph id, if any */
+static CyberiadaSM* cyberiada_find_sm_by_id(CyberiadaDocument* doc, const char* id)
+{
+	CyberiadaSM* sm;
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (sm->nodes && sm->nodes->id && strcmp(sm->nodes->id, id) == 0) {
+			return sm;
+		}
+	}
+	return NULL;
+}
+
+/* the points of a submachine state are named after the points of the referenced machine (8.1) */
+static int cyberiada_check_submachine_points(CyberiadaDocument* doc, CyberiadaNode* n)
+{
+	CyberiadaSM* target;
+	CyberiadaNode *point, *p;
+	if (!n->link || !n->link->ref || !n->children) {
+		return CYBERIADA_NO_ERROR;
+	}
+	target = cyberiada_find_sm_by_id(doc, n->link->ref);
+	if (!target) {
+		return CYBERIADA_NO_ERROR;  /* an external reference */
+	}
+	for (point = n->children; point; point = point->next) {
+		int found = 0;
+		if (!point->title) {
+			continue;
+		}
+		for (p = target->nodes->children; p && !found; p = p->next) {
+			found = (p->type == cybNodeEntryPoint || p->type == cybNodeExitPoint) &&
+				p->title && strcmp(p->title, point->title) == 0;
+		}
+		if (!found) {
+			ERROR("The point %s of the submachine state %s is not a point of the state machine %s\n",
+				  point->id, n->id, n->link->ref);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_id, CyberiadaNode* nodes)
 {
 	CyberiadaNode* n;
 	size_t component_title_len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
@@ -2526,6 +2682,29 @@ static int cyberiada_check_strict_nodes(CyberiadaNode* nodes)
 		/* the collapsed state keeps its regions (8.4) */
 		if (n->collapsed_flag && !n->children) {
 			ERROR("The collapsed node %s has no region subgraph\n", n->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		/* the entry and exit points carry a name (8.3.1) */
+		if ((n->type == cybNodeEntryPoint || n->type == cybNodeExitPoint) &&
+			(!n->title || !*(n->title))) {
+			ERROR("The point %s has no name\n", n->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		if (n->type == cybNodeSubmachineState) {
+			/* no behavior (8.1.2), no reference to the own machine (8.1.1), matching points (8.1) */
+			if (n->actions) {
+				ERROR("The submachine state %s carries a behavior\n", n->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			if (n->link && n->link->ref && sm_id && strcmp(n->link->ref, sm_id) == 0) {
+				ERROR("The submachine state %s references its own state machine %s\n", n->id, sm_id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			if (cyberiada_check_submachine_points(doc, n) != CYBERIADA_NO_ERROR) {
+				return CYBERIADA_FORMAT_ERROR;
+			}
+		} else if (n->actions &&
+				   cyberiada_check_strict_actions(n->actions, n->id, 0) != CYBERIADA_NO_ERROR) {
 			return CYBERIADA_FORMAT_ERROR;
 		}
 		/* the dynamic component declares its type (10.3) */
@@ -2539,7 +2718,7 @@ static int cyberiada_check_strict_nodes(CyberiadaNode* nodes)
 			}
 		}
 		if (n->children) {
-			int res = cyberiada_check_strict_nodes(n->children);
+			int res = cyberiada_check_strict_nodes(doc, sm_id, n->children);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
 			}
@@ -2602,7 +2781,8 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 				ERROR("error: state machine %s has wrong structure - bad edge geometry\n", sm->nodes->id);
 				break;
 			}
-			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries, skip_empty)) != CYBERIADA_NO_ERROR) {
+			/* the strict mode forbids the doubles the loader would otherwise join (6.8.1) */
+			if ((res = cyberiada_check_entry_doubles(sm->nodes, strict_entries || strict, skip_empty)) != CYBERIADA_NO_ERROR) {
 				ERROR("error: state machine %s has doubles in the graph's entries\n", sm->nodes->id);
 				break;
 			}
@@ -2611,7 +2791,7 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 				break;
 			}
 			if (strict) {
-				if ((res = cyberiada_check_strict_nodes(sm->nodes)) != CYBERIADA_NO_ERROR) {
+				if ((res = cyberiada_check_strict_nodes(doc, sm->nodes->id, sm->nodes)) != CYBERIADA_NO_ERROR) {
 					ERROR("error: state machine %s has wrong nodes\n", sm->nodes->id);
 					break;
 				}

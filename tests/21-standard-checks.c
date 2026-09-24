@@ -129,6 +129,46 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/component-no-type.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-entry-blocks.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/two-entry-blocks.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/reserved-event-name.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/reserved-event-name.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/defer-on-transition.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/defer-on-transition.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/defer-with-behavior.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/defer-with-behavior.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/propagate-no-event.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/propagate-no-event.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/chunk-not-found.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/chunk-not-found.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-self-reference.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-self-reference.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-data.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/submachine-data.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/point-name-mismatch.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/point-name-mismatch.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/unnamed-point.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/unnamed-point.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
 
 	/* the strict mode keeps the correct documents readable */
 	TEST_ASSERT(read_document("diagrams/minimal.graphml", CYBERIADA_FLAG_STRICT) ==
