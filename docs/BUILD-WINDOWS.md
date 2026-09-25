@@ -84,10 +84,11 @@ Run from the *Developer Command Prompt for VS 2022*:
 The Visual Studio generator is a multi-configuration one: the configuration is
 chosen at build time by `--config`, not by `CMAKE_BUILD_TYPE`.
 
-`libhtreegeom` is found through its `FindHTGeom.cmake` module. Its fallback
-paths are Unix ones, but `CMAKE_PREFIX_PATH` is searched as well, so the
-prefix above is normally enough; pass the location explicitly if it is not
-found:
+`libhtreegeom` is found through its CMake package configuration, installed
+as `<prefix>/lib/cmake/htgeom/`, so the `CMAKE_PREFIX_PATH` above is enough.
+Its `FindHTGeom.cmake` module is installed too, but CMake reads a find module
+only from `CMAKE_MODULE_PATH`. Pass the location explicitly if it is still
+not found:
 
     -DHTGeom_INCLUDE_DIR=C:/cyberiada/include/cyberiada
     -DHTGeom_LIBRARY=C:/cyberiada/lib/htgeom.lib
