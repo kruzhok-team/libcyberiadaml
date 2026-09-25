@@ -185,6 +185,28 @@ int main(void)
 	TEST_ASSERT(read_document("diagrams/named-color.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_NO_ERROR);
 
+	/* the points of a multi-region state sit in the first region (8.3-5) */
+	TEST_ASSERT(read_document("diagrams/point-in-second-region.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/point-in-second-region.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+
+	/* each of two or more regions starts with the dRegion key (6.5-5) */
+	TEST_ASSERT(read_document("diagrams/no-region-marker.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/no-region-marker.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+
+	/* a composite state with two regions is written back (6.5-5) */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/two-regions.graphml", cybxmlCyberiada10,
+										   CYBERIADA_FLAG_STRICT) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_write_sm_document(doc, "21-regions.graphml", cybxmlCyberiada10,
+											CYBERIADA_FLAG_NO) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("21-regions.graphml", CYBERIADA_FLAG_STRICT) == CYBERIADA_NO_ERROR);
+
 	/* the empty document is reported, not written */
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);

@@ -8,7 +8,12 @@ Added:
   internal transition, `propagate`/`block` only with an event name, the commented
   fragment present in the subject, named entry/exit points, no behavior and no
   self-reference in submachine states, submachine points named after the points of the
-  referenced state machine.
+  referenced state machine, the points of a multi-region state in the first region,
+  the `dRegion` key first in each of two or more regions.
+
+Fixed:
+- the writer refused the composite states with two or more regions; now they are
+  written with the `dRegion` key first in each region.
 
 ## Version 1.0.6
 

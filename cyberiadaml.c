@@ -315,6 +315,7 @@ typedef struct {
 	int               strict;     /* check the optional requirements of the standard */
 	CyberiadaNode*    data_node;  /* the node whose data keys are being read */
 	size_t            data_keys;  /* the data keys of the node read so far */
+	CyberiadaList*    unmarked_regions; /* the region nodes read without the dRegion key */
 } CyberiadaParserContext; 
 
 /* -----------------------------------------------------------------------------
@@ -514,6 +515,8 @@ static int cyberiada_xml_read_rect(xmlNode* xml_node,
  * ----------------------------------------------------------------------------- */
 
 static int cyberiada_check_sm_marker(xmlNode* xml_node, CyberiadaParserContext* ctx);
+static int cyberiada_check_region_marker(xmlNode* xml_node, CyberiadaParserContext* ctx,
+										 CyberiadaNode* first_region, CyberiadaNode* region);
 
 static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 											CyberiadaDocument* doc,
@@ -557,12 +560,24 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 			return gpsInvalid;
 		}
 		CyberiadaNode* region_node = cyberiada_new_node(buffer);
+		CyberiadaNode* first_region;
 		region_node->type = cybNodeRegion;
 		region_node->parent = parent;
-		if (parent->children) {
-			cyberiada_graph_add_sibling_node(parent->children, region_node);		
+		first_region = parent->children;
+		if (first_region) {
+			cyberiada_graph_add_sibling_node(first_region, region_node);
 		} else {
 			parent->children = region_node;
+		}
+		if (ctx->strict && ctx->cyb_format) {
+			if (cyberiada_check_region_marker(xml_node, ctx, first_region, region_node) != CYBERIADA_NO_ERROR) {
+				return gpsInvalid;
+			}
+			if (first_region && cyberiada_list_find_data(&(ctx->unmarked_regions), first_region)) {
+				ERROR("The first region %s of the node %s requires the first %s key\n",
+					  first_region->id, parent->id, GRAPHML_CYB_KEY_REGION);
+				return gpsInvalid;
+			}
 		}
 		node_stack_set_top_node(stack, region_node);
 		parent->type = cybNodeCompositeState;
@@ -1333,7 +1348,8 @@ static const char* cyberiada_parser_find_key_name(CyberiadaParserContext* ctx, c
 }
 
 /* the state machine graph starts with the empty dStateMachine key (6.1) */
-static int cyberiada_check_sm_marker(xmlNode* xml_node, CyberiadaParserContext* ctx)
+/* the first data key of the graph element is the given marker */
+static int cyberiada_graph_first_key_is(xmlNode* xml_node, CyberiadaParserContext* ctx, const char* marker)
 {
 	char buffer[MAX_STR_LEN];
 	size_t buffer_len = sizeof(buffer);
@@ -1347,13 +1363,37 @@ static int cyberiada_check_sm_marker(xmlNode* xml_node, CyberiadaParserContext* 
 			cyberiada_get_attr_value(buffer, buffer_len, n,
 									 GRAPHML_KEY_ATTRIBUTE) == CYBERIADA_NO_ERROR) {
 			key_name = cyberiada_parser_find_key_name(ctx, buffer);
-			if (key_name && strcmp(key_name, GRAPHML_CYB_KEY_STATE_MACHINE_NAME) == 0) {
-				return CYBERIADA_NO_ERROR;
+			if (key_name && strcmp(key_name, marker) == 0) {
+				return 1;
 			}
 		}
 		break;
 	}
+	return 0;
+}
+
+static int cyberiada_check_sm_marker(xmlNode* xml_node, CyberiadaParserContext* ctx)
+{
+	if (cyberiada_graph_first_key_is(xml_node, ctx, GRAPHML_CYB_KEY_STATE_MACHINE_NAME)) {
+		return CYBERIADA_NO_ERROR;
+	}
 	ERROR("The state machine graph requires the first %s key\n", GRAPHML_CYB_KEY_STATE_MACHINE);
+	return CYBERIADA_FORMAT_ERROR;
+}
+
+/* with two or more regions each of them starts with the dRegion key (6.5-5) */
+static int cyberiada_check_region_marker(xmlNode* xml_node, CyberiadaParserContext* ctx,
+										 CyberiadaNode* first_region, CyberiadaNode* region)
+{
+	if (cyberiada_graph_first_key_is(xml_node, ctx, GRAPHML_CYB_KEY_REGION_NAME)) {
+		return CYBERIADA_NO_ERROR;
+	}
+	if (!first_region) {
+		cyberiada_list_add(&(ctx->unmarked_regions), "", region);
+		return CYBERIADA_NO_ERROR;
+	}
+	ERROR("The region %s of the node %s requires the first %s key\n",
+		  region->id, region->parent->id, GRAPHML_CYB_KEY_REGION);
 	return CYBERIADA_FORMAT_ERROR;
 }
 
@@ -1364,6 +1404,7 @@ static void cyberiada_parser_free_key_map(CyberiadaParserContext* ctx)
 		free(item->key);
 	}
 	cyberiada_list_free(&(ctx->key_map));
+	cyberiada_list_free(&(ctx->unmarked_regions));
 }
 
 /* the node and edge identifiers of the state machine (5.9) */
@@ -2690,6 +2731,18 @@ static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_i
 			ERROR("The point %s has no name\n", n->id);
 			return CYBERIADA_FORMAT_ERROR;
 		}
+		/* the points of a multi-region state sit in its first region (8.3-5) */
+		if (n->type == cybNodeCompositeState && n->children) {
+			CyberiadaNode *r, *c;
+			for (r = n->children->next; r; r = r->next) {
+				for (c = r->children; c; c = c->next) {
+					if (c->type == cybNodeEntryPoint || c->type == cybNodeExitPoint) {
+						ERROR("The point %s of the node %s is not in the first region\n", c->id, n->id);
+						return CYBERIADA_FORMAT_ERROR;
+					}
+				}
+			}
+		}
 		if (n->type == cybNodeSubmachineState) {
 			/* no behavior (8.1.2), no reference to the own machine (8.1.1), matching points (8.1) */
 			if (n->actions) {
@@ -2936,6 +2989,7 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	parser_ctx.strict = flags & CYBERIADA_FLAG_STRICT;
 	parser_ctx.data_node = NULL;
 	parser_ctx.data_keys = 0;
+	parser_ctx.unmarked_regions = NULL;
 	
 	do {
 
@@ -3325,12 +3379,18 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	size_t i;
 
 	if (node->type == cybNodeRegion) {
-		/* the root graph element */
+		/* the region graph element */
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_GRAPH_ELEMENT, indent);
 		snprintf(buffer, buffer_len - 1, "%s", node->id);
 		buffer[buffer_len - 1] = 0;
 		XML_WRITE_ATTR(writer, GRAPHML_ID_ATTRIBUTE, buffer);
 		XML_WRITE_ATTR(writer, GRAPHML_EDGEDEFAULT_ATTRIBUTE, GRAPHML_EDGEDEFAULT_ATTRIBUTE_VALUE);
+		/* each of two or more regions starts with the dRegion key (6.5-5) */
+		if (node->parent && node->parent->children && node->parent->children->next) {
+			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
+			XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_REGION);
+			XML_WRITE_CLOSE_E(writer);
+		}
 
 		if (node->geometry_rect) {
 			XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
@@ -3481,15 +3541,17 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	}
 
 	if (node->type == cybNodeCompositeState) {
-		if (!node->children || node->children->next) {
-			ERROR("no single region subnode %s\n", node->children->id);
+		/* every region of the composite state is a subgraph (6.5-5) */
+		if (!node->children) {
+			ERROR("no region subnode of the composite node %s\n", node->id);
 			return CYBERIADA_XML_ERROR;
 		}
-
-		res = cyberiada_write_node_cyberiada(writer, node->children, indent + 1);
-		if (res != CYBERIADA_NO_ERROR) {
-			ERROR("error while writing node %s\n", node->children->id);
-			return CYBERIADA_XML_ERROR;
+		for (cur_node = node->children; cur_node; cur_node = cur_node->next) {
+			res = cyberiada_write_node_cyberiada(writer, cur_node, indent + 1);
+			if (res != CYBERIADA_NO_ERROR) {
+				ERROR("error while writing node %s\n", cur_node->id);
+				return CYBERIADA_XML_ERROR;
+			}
 		}
 	}
 
