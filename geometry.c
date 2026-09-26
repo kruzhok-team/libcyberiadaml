@@ -721,7 +721,8 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 	
 	if (flags & (CYBERIADA_FLAG_RECONSTRUCT_GEOMETRY | CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) {
 		if ((res = htree_reconstruct_document_geometry(htreegeom,
-													   flags & CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY)) != HTREE_OK) {
+													   flags & CYBERIADA_FLAG_RECONSTRUCT_SM_GEOMETRY,
+													   0)) != HTREE_OK) {
 			ERROR("Error while reconstructing htree geometry %d\n", res);
 			htree_destroy_document(htreegeom);
 			return CYBERIADA_BAD_PARAMETER;
@@ -832,20 +833,22 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 		edge_geom_format = edgeBorder;
 	}
 
-	cyberiada_clean_document_geometry(doc);
-
-	doc->node_coord_format = node_format;
-	doc->edge_coord_format = edge_format;
-	doc->edge_pl_coord_format = edge_pl_format;
-	doc->edge_geom_format = edge_geom_format;
-	
+	/* build the htree from the original geometry before the clean, so the
+	   reconstruction can order the nodes by their original reading order */
 	htreegeom = cyberiada_to_htree_geometry(doc);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	if ((res = htree_reconstruct_document_geometry(htreegeom, reconstruct_sm)) != HTREE_OK) {
+	cyberiada_clean_document_geometry(doc);
+
+	doc->node_coord_format = node_format;
+	doc->edge_coord_format = edge_format;
+	doc->edge_pl_coord_format = edge_pl_format;
+	doc->edge_geom_format = edge_geom_format;
+
+	if ((res = htree_reconstruct_document_geometry(htreegeom, reconstruct_sm, 1)) != HTREE_OK) {
 		ERROR("Error while reconstructing htree geometry %d\n", res);
 		htree_destroy_document(htreegeom);
 		return CYBERIADA_BAD_PARAMETER;
@@ -853,7 +856,7 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 
 	cyberiada_update_geometry(doc, htreegeom);
 	htree_destroy_document(htreegeom);
-	
+
 	return CYBERIADA_NO_ERROR;
 }
 
