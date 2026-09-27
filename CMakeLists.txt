@@ -33,14 +33,16 @@ if(MSVC)
   add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 else()
   add_compile_options(-Wall)
-  add_compile_options(-Wextra) 
+  add_compile_options(-Wextra)
   add_compile_options(-Wpedantic)
-  add_compile_options(-Wformat-security)
   if(WIN32)
     # MinGW's -Wformat uses the ms_printf archetype and rejects %zu even with
     # __USE_MINGW_ANSI_STDIO (which selects the C99 printf at runtime); the
-    # warning is spurious there, so silence the format checks on this target
+    # warning is spurious there, so drop the format checks on this target
+    # (-Wformat-security would then only warn as "ignored without -Wformat")
     add_compile_options(-Wno-format)
+  else()
+    add_compile_options(-Wformat-security)
   endif()
 endif()
 
