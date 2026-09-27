@@ -1,22 +1,13 @@
 # libcyberiadaml project changelog
 
-## Version 1.0.7 (unreleased)
+## Version 1.0.7
 
 Added:
 - the full geometry reconstruction uses the libhtgeom 1.1 layered layout
-  (the node roles, the sizes estimated from the state and transition texts);
-- the strict mode checks of the final CyberiadaML-GraphML 1.0 text: one entry/exit/do
-  block per state, reserved event names, `defer` only as the whole behavior of an
-  internal transition, `propagate`/`block` only with an event name, the commented
-  fragment present in the subject, named entry/exit points, no behavior and no
-  self-reference in submachine states, submachine points named after the points of the
-  referenced state machine, the points of a multi-region state in the first region,
-  the `dRegion` key first in each of two or more regions.
+- the strict mode checks of the final CyberiadaML-GraphML 1.0 text
 
 Fixed:
-- the geometry clean drops the transition label rects too;
-- the writer refused the composite states with two or more regions; now they are
-  written with the `dRegion` key first in each region.
+- minor bugs with the standard compatibility
 
 ## Version 1.0.6
 
