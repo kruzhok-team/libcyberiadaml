@@ -137,8 +137,15 @@ install(FILES ${PROJECT_BINARY_DIR}/cyberiadaml-config.cmake
 
 install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/docs/API.md
 	      ${CMAKE_CURRENT_SOURCE_DIR}/docs/ARCHITECTURE.md
+	      ${CMAKE_CURRENT_SOURCE_DIR}/docs/BUILD-WINDOWS.md
 	DESTINATION share/doc/libcyberiadaml
 	COMPONENT dev)
+# user-facing docs travel with the runtime package (and the packaged archives)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.md
+	      ${CMAKE_CURRENT_SOURCE_DIR}/README.md
+	      ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE
+	DESTINATION share/doc/libcyberiadaml
+	COMPONENT runtime)
 
 # optional per-release suffix (e.g. ubuntu2604) for the package version, set when
 # this lib is rebuilt for a release whose libxml2 soname differs from the shared set
