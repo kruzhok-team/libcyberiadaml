@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns">
+  <data key="gFormat">Cyberiada-GraphML-1.0</data>
+  <key id="gFormat" for="graphml" attr.name="format" attr.type="string"/>
+  <key id="dName" for="graph" attr.name="name" attr.type="string"/>
+  <key id="dName" for="node" attr.name="name" attr.type="string"/>
+  <key id="dStateMachine" for="graph" attr.name="stateMachine" attr.type="string"/>
+  <key id="dRegion" for="graph" attr.name="region" attr.type="string"/>
+  <key id="dSubmachineState" for="node" attr.name="submachineState" attr.type="string"/>
+  <key id="dGeometry" for="graph" attr.name="geometry"/>
+  <key id="dGeometry" for="node" attr.name="geometry"/>
+  <key id="dGeometry" for="edge" attr.name="geometry"/>
+  <key id="dSourcePoint" for="edge" attr.name="sourcePoint"/>
+  <key id="dTargetPoint" for="edge" attr.name="targetPoint"/>
+  <key id="dLabelGeometry" for="edge" attr.name="labelGeometry"/>
+  <key id="dNote" for="node" attr.name="note" attr.type="string"/>
+  <key id="dVertex" for="node" attr.name="vertex" attr.type="string"/>
+  <key id="dData" for="node" attr.name="data" attr.type="string"/>
+  <key id="dData" for="edge" attr.name="data" attr.type="string"/>
+  <key id="dPivot" for="edge" attr.name="pivot" attr.type="string"/>
+  <key id="dChunk" for="edge" attr.name="chunk" attr.type="string"/>
+  <key id="dCollapsed" for="node" attr.name="collapsed" attr.type="string"/>
+  <key id="dMarkup" for="node" attr.name="markup" attr.type="string"/>
+  <key id="dColor" for="node" attr.name="color" attr.type="string"/>
+  <key id="dColor" for="edge" attr.name="color" attr.type="string"/>
+  <key id="dFormalName" for="graph" attr.name="formalName" attr.type="string"/>
+  <key id="dFormalName" for="node" attr.name="formalName" attr.type="string"/>
+  <graph id="G" edgedefault="directed">
+    <data key="dStateMachine"/>
+    <data key="dName">active</data>
+    <node id="nMeta">
+      <data key="dNote">formal</data>
+      <data key="dName">CGML_META</data>
+      <data key="dData">standardVersion/ 1.0
+
+name/ active
+
+cyberiadaEditorView/ 0.666125 -835 -381
+
+geometry/ full
+
+transitionOrder/ actionFirst
+
+eventPropagation/ block</data>
+    </node>
+    <node id="n0">
+      <data key="dNote">informal</data>
+      <data key="dName">State fields</data>
+      <data key="dData">unsigned int CharHP;
+QStateHandler StartState;
+unsigned int TimerAgony;</data>
+      <data key="dGeometry">
+        <rect x="-899.077960" y="-250.008953" width="299.007961" height="103.383527"/>
+      </data>
+    </node>
+    <node id="n1">
+      <data key="dNote">informal</data>
+      <data key="dName">Code for h-file</data>
+      <data key="dData">#define HEALTHY 1
+#define AGONY 2
+#define DEAD 0
+#define GHOUL_GOOD 3
+#define GHOUL_WOUNDED 4
+#define GHOUL_HEALING 5
+#define BLESSED 6
+#define FLASH_MS 200
+#define FLASH_SEC 1010
+#define FLASH_1M 60100
+#define TIMEOUT_AGONY_S 600
+#define TIMEOUT_DEATH_S 15
+#define TIMEOUT_RADX_S 900
+#define LONG_BEEP_MS 15000
+#define MEDIUM_BEEP_MS 3000
+#define SHORT_BEEP_MS 500
+#define RED 255
+#define RED_MEDIUM 127
+#define GREEN_MEDIUM 127
+#define BLUE_MEDIUM 127
+
+#define DEFAULT_HP 27000
+#define GHOUL_HP (DEFAULT_HP/3)</data>
+      <data key="dGeometry">
+        <rect x="-897.867402" y="122.028137" width="294.581262" height="497.027324"/>
+      </data>
+    </node>
+    <node id="n2">
+      <data key="dNote">informal</data>
+      <data key="dName">Constructor fields</data>
+      <data key="dData">unsigned int HP;
+unsigned int State;
+unsigned int TimerAgony;</data>
+      <data key="dGeometry">
+        <rect x="-898.279733" y="-124.428832" width="296.843569" height="106.004591"/>
+      </data>
+    </node>
+    <node id="n3">
+      <data key="dNote">informal</data>
+      <data key="dName">Constructor code</data>
+      <data key="dData">me-&gt;CharHP = HP;
+me-&gt;TimerAgony = TimerAgony;
+switch (State) {
+           case HEALTHY: {
+               me-&gt;StartState =
+               (QStateHandler)&amp;OregonPlayer_healthy;
+               break;
+           }
+           case AGONY: {
+               me-&gt;StartState =
+               (QStateHandler)&amp; OregonPlayer_agony;
+               break;
+           }
+           case DEAD: {
+               me-&gt;StartState =
+               (QStateHandler)&amp; OregonPlayer_dead;
+               break;
+
+           }
+           case GHOUL_GOOD: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_ghoul_good;
+                    break;
+                }
+           case GHOUL_WOUNDED: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_wounded;
+                    break;
+                }
+           case GHOUL_HEALING: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_ghoul_healing;
+                    break;
+                }
+           case BLESSED: {
+                    me-&gt;StartState =
+                    (QStateHandler)&amp; OregonPlayer_blessed;
+                    break;
+                }
+           default:
+               me-&gt;StartState =(QStateHandler)&amp; OregonPlayer_healthy;
+       }</data>
+      <data key="dGeometry">
+        <rect x="846.057991" y="300.223401" width="555.913592" height="951.625561"/>
+      </data>
+    </node>
+    <node id="n4">
+      <data key="dNote">informal</data>
+      <data key="dName">Comments</data>
+      <data key="dData">void ShowCurrentHealth (OregonPlayer* me) {
+     Flash(255 - me-&gt;CharHP*255/DEFAULT_HP, me&gt;CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void ShowCurrentHealthGhoul (OregonPlayer* me) {
+     Flash(255 - me-&gt;CharHP*255/DEFAULT_HP, me&gt;CharHP*255/DEFAULT_HP, 0, FLASH_MS);
+}
+
+void UpdateHP(OregonPlayer* me, unsigned int NewHP) {
+    if (NewHP &lt;= DEFAULT_HP) {
+        me-&gt;CharHP = NewHP;;
+    } else {
+        me-&gt;CharHP = DEFAULT_HP
+    SaveHP(me-&gt;CharHP);
+}
+
+void Reset(OregonPlayer* me) {
+    UpdateHP(me, DEFAULT_HP);
+    me-&gt;TimerDeath = 0;
+    UpdateTimerAgony(0);
+    return Q_TRAN(healthy);
+
+}
+
+void UpdateTimerAgony(PlayerOregon* me, unsigned int Timer) {
+    me-&gt;TimerAgony = Timer;
+    SaveTimerAgony(Timer);
+}</data>
+      <data key="dGeometry">
+        <rect x="839.167994" y="-369.598817" width="560.322223" height="643.789720"/>
+      </data>
+    </node>
+    <node id="n5">
+      <data key="dName">active</data>
+      <data key="dGeometry">
+        <rect x="-577.135344" y="-371.144227" width="1398.918386" height="1342.434281"/>
+      </data>
+      <graph id="n5:" edgedefault="directed">
+        <node id="n5::n1">
+          <data key="dName">alive</data>
+          <data key="dGeometry">
+            <rect x="39.988814" y="38.089500" width="973.518826" height="810.699396"/>
+          </data>
+          <graph id="n5::n1:" edgedefault="directed">
+            <node id="n5::n1::n0">
+              <data key="dName">agony</data>
+              <data key="dData">entry/
+BeepForPeriod(LONG_BEEP_MS);
+SaveState(AGONY);
+UpdateHP(me, 1);
+me-&gt;TimerAgony = 0;
+
+TIME_TICK_1S [else]/
+me-&gt;TimerAgony++;
+Flash(RED, 0, 0, FLASH_MS);
+
+TIME_TICK_10S/
+BeepForPeriod(SHORT_BEEP_MS);
+</data>
+              <data key="dGeometry">
+                <rect x="558.620675" y="137.496563" width="375.004323" height="275.791264"/>
+              </data>
+            </node>
+            <node id="n5::n1::n1">
+              <data key="dName">healthy</data>
+              <data key="dData">entry/
+SaveState(HEALTHY);
+BeepForTime(MEDIUM_BEEP_MS);
+
+RAD_RCVD [else]/
+UpdateHP(me, me-&gt;CharHP-((oregonPlayerQEvt*)e)-&gt;value);
+
+TIME_TICK_1S/
+ShowCurrentHealth(me);
+
+HEAL/
+UpdateHP(me, me-&gt;CharHP+((oregonPlayerQEvt*)e)-&gt;value);
+</data>
+              <data key="dGeometry">
+                <rect x="32.996551" y="154.500892" width="478.897924" height="257.864039"/>
+              </data>
+            </node>
+            <node id="n5::n1::n2">
+              <data key="dName">immune</data>
+              <data key="dData">entry/
+BeepForTime(MEDIUM_BEEP_MS);
+
+TIME_TICK_1S/
+Flash(0, GREEN_MEDIUM, 0, FLASH_SEC);
+
+HEAL/
+UpdateHP(me, me-&gt;CharHP+((oregonPlayerQEvt*)e)-&gt;value);
+</data>
+              <data key="dGeometry">
+                <rect x="34.486219" y="475.681044" width="923.002125" height="289.106313"/>
+              </data>
+              <graph id="n5::n1::n2:" edgedefault="directed">
+                <node id="n5::n1::n2::n0">
+                  <data key="dName">temp_immune</data>
+                  <data key="dGeometry">
+                    <rect x="38.212080" y="96.105311" width="285.937500" height="100.000000"/>
+                  </data>
+                </node>
+                <node id="n5::n1::n2::n1">
+                  <data key="dName">blessed</data>
+                  <data key="dData">entry/
+SaveState(BLESSED);
+</data>
+                  <data key="dGeometry">
+                    <rect x="570.526708" y="92.963681" width="285.602856" height="108.858905"/>
+                  </data>
+                </node>
+              </graph>
+            </node>
+          </graph>
+        </node>
+        <node id="n5::n3">
+          <data key="dName">ghoul</data>
+          <data key="dData">TIME_TICK_1S/
+ShowCurrentHealthGhoul(me);
+</data>
+          <data key="dGeometry">
+            <rect x="39.888162" y="907.639267" width="1320.755299" height="389.292869"/>
+          </data>
+          <graph id="n5::n3:" edgedefault="directed">
+            <node id="n5::n3::n0">
+              <data key="dName">ghoul_good</data>
+              <data key="dData">entry/
+SaveState(GHOUL_GOOD);
+BeepForPeriod(MEDIUM_BEEP_MS);
+UpdateHP(me, GHOUL_HP);
+</data>
+              <data key="dGeometry">
+                <rect x="32.702102" y="87.266131" width="371.163089" height="128.020727"/>
+              </data>
+            </node>
+            <node id="n5::n3::n1">
+              <data key="dName">wounded</data>
+              <data key="dData">entry/
+SaveState(GHOUL_WOUNDED);
+UpdateHP(me, 1);
+BeepForPeriod(LONG_BEEP_MS);
+
+TIME_TICK_10S/
+BeepForPeriod(SHORT_BEEP_MS);
+</data>
+              <data key="dGeometry">
+                <rect x="971.428787" y="87.073694" width="314.510705" height="247.984997"/>
+              </data>
+            </node>
+            <node id="n5::n3::n2">
+              <data key="dName">ghoul_healing</data>
+              <data key="dData">entry/
+SaveState(GHOUL_HEALING);
+
+RAD_RCVD [else]/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</data>
+              <data key="dGeometry">
+                <rect x="433.092200" y="85.745791" width="508.703203" height="165.801968"/>
+              </data>
+            </node>
+          </graph>
+        </node>
+        <node id="n5::n4">
+          <data key="dName">dead</data>
+          <data key="dData">entry/
+SaveState(DEAD);
+BeepForTime(LONG_BEEP_MS);
+UpdateHP(me, 0);
+Flash(RED, 0, 0, 1000);
+
+TIME_TICK_1M/
+BeepForPeriod(SHORT_BEEP_MS);
+Flash(255, 0, 0, FLASH_1M);
+</data>
+          <data key="dGeometry">
+            <rect x="1046.587111" y="36.208209" width="327.559985" height="223.560965"/>
+          </data>
+        </node>
+        <node id="n5::n5">
+          <data key="dVertex">choice</data>
+          <data key="dName"></data>
+          <data key="dGeometry">
+            <rect x="1183.435438" y="420.943905" width="26.000000" height="26.000000"/>
+          </data>
+        </node>
+      </graph>
+    </node>
+    <node id="n6">
+      <data key="dNote">informal</data>
+      <data key="dName">Event fields</data>
+      <data key="dData">unsigned int value;</data>
+      <data key="dGeometry">
+        <rect x="-899.247488" y="11.905556" width="296.158895" height="80.556074"/>
+      </data>
+    </node>
+    <node id="n7">
+      <data key="dName">test</data>
+      <data key="dData">entry/
+BeepForPeriod(SHORT_BEEP_MS);
+Flash(127, 0, 0, FLASH_MS);
+
+RAD_RCVD/
+BeepForPeriod(SHORT_BEEP_MS);
+Flash(127, 0, 0, FLASH_MS);
+</data>
+      <data key="dGeometry">
+        <rect x="-519.933205" y="1048.722074" width="320.601503" height="170.491706"/>
+      </data>
+    </node>
+    <node id="n8">
+      <data key="dVertex">initial</data>
+      <data key="dGeometry">
+        <point x="-638.650633" y="-306.555015"/>
+      </data>
+    </node>
+    <edge id="n5::n1::n1-n5::n1::n0" source="n5::n1::n1" target="n5::n1::n0">
+      <data key="dData">RAD_RCVD [((oregonPlayerQEvt*)e)-&gt; value &gt;= me-&gt;CharHP]/</data>
+      <data key="dGeometry">
+        <point x="187.165211" y="-44.118570"/>
+        <point x="561.156900" y="-44.118570"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="187.165211" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="35.532776" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="212.952966" y="-70.355782" width="305.831992" height="65.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n0-n5::n4" source="n5::n1::n0" target="n5::n4">
+      <data key="dData">TIME_TICK_1S [me-&gt;TimerAgony &gt; TIMEOUT_AGONY_S]/</data>
+      <data key="dGeometry">
+        <point x="187.502161" y="-42.521517"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="187.502161" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="0.000000" y="109.404463"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="101.891858" y="-94.980887" width="304.903612" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n1-n5::n1::n0-2" source="n5::n1::n1" target="n5::n1::n0">
+      <data key="dData">AGONY/</data>
+      <data key="dGeometry">
+        <point x="423.261780" y="287.908227"/>
+        <point x="581.956722" y="287.908227"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="423.568358" y="257.864039"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="56.332598" y="275.791264"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="477.648056" y="277.563017" width="56.125000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n1-n5::n1::n2::n0" source="n5::n1::n1" target="n5::n1::n2::n0">
+      <data key="dData">IMMUNE/</data>
+      <data key="dSourcePoint">
+        <point x="88.933667" y="257.864039"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="49.231919" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="55.125827" y="277.052891" width="65.750000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1-n5::n3::n0" source="n5::n1" target="n5::n3::n0">
+      <data key="dData">PILL_GHOUL/</data>
+      <data key="dSourcePoint">
+        <point x="211.261780" y="810.699396"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="178.660330" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="169.413303" y="829.946593" width="104.250000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n3::n0-n5::n3::n1" source="n5::n3::n0" target="n5::n3::n1">
+      <data key="dData">PILL_REMOVED/</data>
+      <data key="dGeometry">
+        <point x="312.715492" y="-28.628495"/>
+        <point x="994.408882" y="-28.628495"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="312.715492" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="55.682197" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="561.212884" y="-42.562736" width="123.500000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n3::n1-n5::n3::n2" source="n5::n3::n1" target="n5::n3::n2">
+      <data key="dData">RAD_RCVD/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</data>
+      <data key="dGeometry">
+        <point x="-343.579064" y="205.951951"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="0.000000" y="205.951951"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="194.757523" y="165.801968"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-392.230473" y="213.973950" width="362.409172" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n2::n0-n5::n1::n1" source="n5::n1::n2::n0" target="n5::n1::n1">
+      <data key="dData">NOT_IMMUNE/</data>
+      <data key="dSourcePoint">
+        <point x="260.838666" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="300.540414" y="257.864039"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="215.690983" y="-200.880495" width="104.250000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n0-n5::n1::n2::n1" source="n5::n1::n0" target="n5::n1::n2::n1">
+      <data key="dData">BLESSED/</data>
+      <data key="dSourcePoint">
+        <point x="271.419129" y="275.791264"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="226.440280" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="233.553190" y="298.220871" width="75.375000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n2-n5::n1::n0" source="n5::n1::n2" target="n5::n1::n0">
+      <data key="dData">AGONY/</data>
+      <data key="dSourcePoint">
+        <point x="676.869603" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="152.735147" y="275.791264"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="661.811798" y="-41.885872" width="56.125000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5-n5::n1::n1" source="n5" target="n5::n1::n1">
+      <data key="dData">PILL_RESET/
+Reset(me);
+</data>
+      <data key="dSourcePoint">
+        <point x="117.937023" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="44.951658" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="54.830331" y="132.798049" width="147.902347" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n3::n2-n5::n3::n0" source="n5::n3::n2" target="n5::n3::n0">
+      <data key="dData">RAD_RCVD [((((oregonPlayerQEvt*)e)-&gt;value + me-&gt;CharHP ) &gt;= GHOUL_HP)]/</data>
+      <data key="dGeometry">
+        <point x="106.412438" y="209.196954"/>
+        <point x="-276.216338" y="209.196954"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="106.412438" y="165.801968"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="124.173760" y="128.020727"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-305.044220" y="217.397503" width="434.269693" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="n7-n5::n3::n0" source="n7" target="n5::n3::n0">
+      <data key="dData">PILL_GHOUL/</data>
+      <data key="dSourcePoint">
+        <point x="56.305930" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="40.917804" y="128.020727"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="10.394122" y="-56.978614" width="104.250000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n7-n5::n1::n1" source="n7" target="n5::n1::n1">
+      <data key="dData">PILL_RESET/
+Reset(me);
+</data>
+      <data key="dGeometry">
+        <point x="-37.509340" y="85.245853"/>
+        <point x="-38.874087" y="-982.999899"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="0.000000" y="85.245853"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="0.000000" y="217.276010"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-162.180315" y="-31.829460" width="141.673240" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="e3" source="n5" target="n7">
+      <data key="dData">PILL_TEST/</data>
+      <data key="dSourcePoint">
+        <point x="321.069866" y="1342.434281"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="263.867727" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="271.751470" y="1363.488430" width="94.625000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n1::n0-n5::n1::n1" source="n5::n1::n0" target="n5::n1::n1">
+      <data key="dData">HEAL/
+UpdateHP(me, me-&gt;CharHP + ((oregonPlayerQEvt*)e)-&gt;value);
+</data>
+      <data key="dGeometry">
+        <point x="92.930060" y="-66.402794"/>
+        <point x="-377.817177" y="-66.402794"/>
+      </data>
+      <data key="dSourcePoint">
+        <point x="92.930060" y="0.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="146.836637" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-307.402757" y="-115.645020" width="325.212485" height="46.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::e3" source="n5::n4" target="n5::n5">
+      <data key="dData">TEST_TRIGGER/</data>
+      <data key="dSourcePoint">
+        <point x="149.848327" y="223.560965"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="13.000000" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="90.390112" y="273.852110" width="123.500000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n5-n5::n3::n1" source="n5::n5" target="n5::n3::n1">
+      <data key="dData">[me-&gt;CharHP &gt; 0]/</data>
+      <data key="dSourcePoint">
+        <point x="13.000000" y="26.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="182.503999" y="0.000000"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-70.926857" y="136.739555" width="175.029312" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n5::n5-n5::n1::n0" source="n5::n5" target="n5::n1::n0">
+      <data key="dData">[else]/</data>
+      <data key="dSourcePoint">
+        <point x="0.000000" y="13.000000"/>
+      </data>
+      <data key="dTargetPoint">
+        <point x="375.004323" y="243.725190"/>
+      </data>
+      <data key="dLabelGeometry">
+        <rect x="-139.590256" y="-1.792620" width="65.750000" height="27.000000"/>
+      </data>
+    </edge>
+    <edge id="n8-n5::n1" source="n8" target="n5::n1">
+      <data key="dTargetPoint">
+        <point x="0.000000" y="12.999712"/>
+      </data>
+    </edge>
+  </graph>
+</graphml>
