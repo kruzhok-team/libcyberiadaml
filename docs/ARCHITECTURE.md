@@ -159,8 +159,11 @@ libhtgeom through `geometry.c`: the document is translated to an `HTDocument`
 tree, transformed, and written back. On import the *source* format is fixed by
 the detected dialect; the target formats come from the import flags (default:
 center-local nodes/edges/polylines, border edge points). Missing geometry can
-be reconstructed with the `CYBERIADA_FLAG_RECONSTRUCT_*` flags or the
-standalone `cyberiada_reconstruct_document_geometry()`.
+be reconstructed with the `CYBERIADA_FLAG_RECONSTRUCT_*` flags (the
+preserving fill-in of the missing geometry) or rebuilt from the structure
+by the standalone `cyberiada_reconstruct_document_geometry()`: the bridge
+passes the node roles (`HTNodeRole`) and the text-size estimates of the
+states and the transition labels to the libhtgeom layered layout.
 
 ## Isomorphism and diff
 

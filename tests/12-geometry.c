@@ -46,10 +46,25 @@ int main(void)
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
 	TEST_ASSERT(doc->node_coord_format == coordAbsolute);
 
-	/* reconstruction rebuilds the geometry from scratch */
+	/* reconstruction rebuilds the geometry from scratch: the layered layout
+	   runs the flow down from the initial pseudostate */
 	TEST_ASSERT(cyberiada_reconstruct_document_geometry(doc, 1) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_document_has_geometry(doc) == 1);
+	{
+		CyberiadaNode* init = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "init");
+		CyberiadaNode* off = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0");
+		CyberiadaNode* on = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n1");
+		TEST_ASSERT(init && init->geometry_point && off && off->geometry_rect && on && on->geometry_rect);
+		TEST_ASSERT(init->geometry_point->y < off->geometry_rect->y);
+		TEST_ASSERT(off->geometry_rect->y + off->geometry_rect->height <= on->geometry_rect->y);
+		TEST_ASSERT(off->geometry_rect->width >= 300.0 && off->geometry_rect->height >= 200.0);
+		for (edge = doc->state_machines->edges; edge; edge = edge->next) {
+			if (strcmp(edge->id, "n0-n1") == 0) {
+				TEST_ASSERT(edge->geometry_label_rect && edge->geometry_label_rect->width > 0.0);
+			}
+		}
+	}
 
 	/* cleaning removes the geometry */
 	TEST_ASSERT(cyberiada_clean_document_geometry(doc) == CYBERIADA_NO_ERROR);

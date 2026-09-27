@@ -269,9 +269,11 @@ int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 ```
 
 `has_geometry` returns 1 if any geometry object is present. `clean` removes
-all geometry; `reconstruct` builds it from scratch (optionally including the
-SM rectangle); `convert` changes the document coordinate/edge formats and
-transforms all geometry data accordingly.
+all geometry; `reconstruct` builds it from scratch with the layered layout
+of libhtgeom 1.1 (optionally including the SM rectangle) - the pseudostate
+roles pin the flow, the state blocks and the transition labels are sized
+by estimates from their texts; `convert` changes the document
+coordinate/edge formats and transforms all geometry data accordingly.
 
 ### Utilities
 

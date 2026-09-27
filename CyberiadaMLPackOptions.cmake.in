@@ -31,11 +31,11 @@ set(CPACK_DEBIAN_RUNTIME_PACKAGE_NAME "libcyberiadaml")
 set(CPACK_DEBIAN_RUNTIME_DESCRIPTION "The C library for processing the Cyberiada state machine graphs")
 # libxml2 bumped its soname on newer releases (libxml2.so.2 -> .so.16, package
 # renamed libxml2 -> libxml2-16); accept either so the package installs on both
-set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "libxml2 (>= 2.9) | libxml2-16, libhtreegeom (>= 1.0.6)")
+set(CPACK_DEBIAN_RUNTIME_PACKAGE_DEPENDS "libxml2 (>= 2.9) | libxml2-16, libhtreegeom (>= 1.1)")
 
 set(CPACK_DEBIAN_DEV_PACKAGE_NAME "libcyberiadaml-dev")
 set(CPACK_DEBIAN_DEV_DESCRIPTION "The Cyberiada state machine graphs library development files: the headers, the CMake configuration and the documentation")
-set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS "libcyberiadaml (= ${_selfver}), libhtreegeom-dev (>= 1.0.6)")
+set(CPACK_DEBIAN_DEV_PACKAGE_DEPENDS "libcyberiadaml (= ${_selfver}), libhtreegeom-dev (>= 1.1)")
 
 set(CPACK_DEBIAN_PARSER_PACKAGE_NAME "libcyberiadaml-parser")
 set(CPACK_DEBIAN_PARSER_DESCRIPTION "The cybparser tool reading, converting and comparing the Cyberiada state machine graphs")

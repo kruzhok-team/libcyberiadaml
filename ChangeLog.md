@@ -3,6 +3,8 @@
 ## Version 1.0.7 (unreleased)
 
 Added:
+- the full geometry reconstruction uses the libhtgeom 1.1 layered layout
+  (the node roles, the sizes estimated from the state and transition texts);
 - the strict mode checks of the final CyberiadaML-GraphML 1.0 text: one entry/exit/do
   block per state, reserved event names, `defer` only as the whole behavior of an
   internal transition, `propagate`/`block` only with an event name, the commented
@@ -12,6 +14,7 @@ Added:
   the `dRegion` key first in each of two or more regions.
 
 Fixed:
+- the geometry clean drops the transition label rects too;
 - the writer refused the composite states with two or more regions; now they are
   written with the `dRegion` key first in each region.
 
