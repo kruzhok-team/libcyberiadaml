@@ -56,8 +56,9 @@ int main(void)
 		CyberiadaNode* off = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n0");
 		CyberiadaNode* on = cyberiada_graph_find_node_by_id(doc->state_machines->nodes, "n1");
 		TEST_ASSERT(init && init->geometry_point && off && off->geometry_rect && on && on->geometry_rect);
-		TEST_ASSERT(init->geometry_point->y < off->geometry_rect->y);
-		TEST_ASSERT(off->geometry_rect->y + off->geometry_rect->height <= on->geometry_rect->y);
+		/* the machine level of a chain runs left-to-right (the wide target) */
+		TEST_ASSERT(init->geometry_point->x < off->geometry_rect->x);
+		TEST_ASSERT(off->geometry_rect->x + off->geometry_rect->width <= on->geometry_rect->x);
 		TEST_ASSERT(off->geometry_rect->width >= 300.0 && off->geometry_rect->height >= 200.0);
 		for (edge = doc->state_machines->edges; edge; edge = edge->next) {
 			if (strcmp(edge->id, "n0-n1") == 0) {

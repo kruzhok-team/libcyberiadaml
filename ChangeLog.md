@@ -4,6 +4,8 @@
 
 Added:
 - the full geometry reconstruction uses the libhtgeom 1.1 layered layout
+  (the node roles, the sizes estimated from the state and transition texts,
+  the adaptive direction: left-to-right at the machine level);
 - the strict mode checks of the final CyberiadaML-GraphML 1.0 text
 
 Fixed:
