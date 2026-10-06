@@ -2714,10 +2714,18 @@ static int cyberiada_check_submachine_points(CyberiadaDocument* doc, CyberiadaNo
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the dynamic component node: a formal comment named CGML_COMPONENT <id> (10.3) */
+static int cyberiada_node_is_component(const CyberiadaNode* n)
+{
+	size_t len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
+	return n->type == cybNodeFormalComment && n->title &&
+		strncmp(n->title, CYBERIADA_COMPONENT_NODE_TITLE, len) == 0 &&
+		(n->title[len] == 0 || n->title[len] == ' ');
+}
+
 static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_id, CyberiadaNode* nodes)
 {
 	CyberiadaNode* n;
-	size_t component_title_len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
 
 	for (n = nodes; n; n = n->next) {
 		/* the collapsed state keeps its regions (8.4) */
@@ -2761,9 +2769,7 @@ static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_i
 			return CYBERIADA_FORMAT_ERROR;
 		}
 		/* the dynamic component declares its type (10.3) */
-		if (n->type == cybNodeFormalComment && n->title &&
-			strncmp(n->title, CYBERIADA_COMPONENT_NODE_TITLE, component_title_len) == 0 &&
-			(n->title[component_title_len] == 0 || n->title[component_title_len] == ' ')) {
+		if (cyberiada_node_is_component(n)) {
 			if (!n->comment_data || !n->comment_data->body ||
 				cyberiada_check_component(n->comment_data->body) != CYBERIADA_NO_ERROR) {
 				ERROR("The component node %s has no type parameter\n", n->id);
@@ -2799,6 +2805,75 @@ static int cyberiada_check_submachine_nodes(CyberiadaNode* nodes)
 			int res = cyberiada_check_submachine_nodes(n->children);
 			if (res != CYBERIADA_NO_ERROR) {
 				return res;
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static CyberiadaNode* cyberiada_find_component(CyberiadaNode* nodes, const char* title, const CyberiadaNode* skip)
+{
+	CyberiadaNode *n, *found;
+
+	for (n = nodes; n; n = n->next) {
+		if (n != skip && cyberiada_node_is_component(n) && strcmp(n->title, title) == 0) {
+			return n;
+		}
+		if (n->children && (found = cyberiada_find_component(n->children, title, skip))) {
+			return found;
+		}
+	}
+	return NULL;
+}
+
+/* the component identifier is unique among the components of its state machine (10.3-1) */
+static int cyberiada_check_component_doubles(CyberiadaNode* root, CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if (cyberiada_node_is_component(n) && cyberiada_find_component(root, n->title, n)) {
+			ERROR("The component '%s' is defined twice in the state machine %s\n", n->title, root->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
+		if (n->children) {
+			int res = cyberiada_check_component_doubles(root, n->children);
+			if (res != CYBERIADA_NO_ERROR) {
+				return res;
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+/* the first node whose identifier is used in the other state machine too */
+static CyberiadaNode* cyberiada_find_shared_node_id(CyberiadaNode* nodes, CyberiadaNode* other)
+{
+	CyberiadaNode *n, *found;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->id && *(n->id) && cyberiada_graph_find_node_by_id(other, n->id)) {
+			return n;
+		}
+		if (n->children && (found = cyberiada_find_shared_node_id(n->children, other))) {
+			return found;
+		}
+	}
+	return NULL;
+}
+
+/* the node identifiers are unique in the whole document (5.9-4) */
+static int cyberiada_check_document_node_ids(CyberiadaDocument* doc)
+{
+	CyberiadaSM *sm, *prev;
+	CyberiadaNode* n;
+
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		for (prev = doc->state_machines; sm->nodes && prev != sm; prev = prev->next) {
+			if (prev->nodes && (n = cyberiada_find_shared_node_id(sm->nodes, prev->nodes))) {
+				ERROR("Two nodes of the document have the same id: %s (state machines %s and %s)\n",
+					  n->id, prev->nodes->id, sm->nodes->id);
+				return CYBERIADA_FORMAT_ERROR;
 			}
 		}
 	}
@@ -2852,8 +2927,15 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 					ERROR("error: state machine %s has wrong edges\n", sm->nodes->id);
 					break;
 				}
+				if ((res = cyberiada_check_component_doubles(sm->nodes, sm->nodes)) != CYBERIADA_NO_ERROR) {
+					ERROR("error: state machine %s has wrong components\n", sm->nodes->id);
+					break;
+				}
 			}
 		}
+	}
+	if (res == CYBERIADA_NO_ERROR && strict) {
+		res = cyberiada_check_document_node_ids(doc);
 	}
 	return res;
 }

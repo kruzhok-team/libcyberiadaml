@@ -191,6 +191,20 @@ int main(void)
 	TEST_ASSERT(read_document("diagrams/point-in-second-region.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_FORMAT_ERROR);
 
+	/* the component identifier is unique in its state machine (10.3-1) */
+	TEST_ASSERT(read_document("diagrams/duplicate-component.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/duplicate-component.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	/* the node identifiers are unique in the whole document (5.9-4) */
+	TEST_ASSERT(read_document("diagrams/duplicate-component-node.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/duplicate-component-node.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	/* the same component defined in two state machines by nodes with their own ids */
+	TEST_ASSERT(read_document("diagrams/component-two-machines.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+
 	/* each of two or more regions starts with the dRegion key (6.5-5) */
 	TEST_ASSERT(read_document("diagrams/no-region-marker.graphml", CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);

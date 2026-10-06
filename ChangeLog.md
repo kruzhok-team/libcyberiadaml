@@ -1,5 +1,11 @@
 # libcyberiadaml project changelog
 
+## Version 1.0.8 (unreleased)
+
+Added:
+- the strict mode checks of the node identifiers unique in the whole document and
+  of the component identifiers unique in their state machine.
+
 ## Version 1.0.7
 
 Added:
