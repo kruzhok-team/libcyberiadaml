@@ -19,6 +19,7 @@
  * along with this program. If not, see https://www.gnu.org/licenses/
  * ----------------------------------------------------------------------------- */
 
+#include <string.h>
 #include <cyberiadaml.h>
 #include "testutils.h"
 
@@ -95,6 +96,33 @@ int main(void)
 		TEST_ASSERT(node->actions->next->type == cybActionDo);
 		TEST_ASSERT(node->actions->next->next);
 		TEST_ASSERT(node->actions->next->next->type == cybActionExit);
+	}
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(reread) == CYBERIADA_NO_ERROR);
+
+	/* the markup of a formal comment survives the round trip */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/formal-markup.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_write_sm_document(doc, "10-out3.graphml",
+											cybxmlCyberiada10,
+											CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	reread = cyberiada_new_sm_document();
+	TEST_ASSERT(reread);
+	TEST_ASSERT(cyberiada_read_sm_document(reread, "10-out3.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_NO_ERROR);
+	{
+		CyberiadaNode* node =
+			cyberiada_graph_find_node_by_id(reread->state_machines->nodes, "prompt");
+		TEST_ASSERT(node);
+		TEST_ASSERT(node->type == cybNodeFormalComment);
+		TEST_ASSERT(node->comment_data);
+		TEST_ASSERT(node->comment_data->markup);
+		TEST_ASSERT(strcmp(node->comment_data->markup, "markdown") == 0);
 	}
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(cyberiada_destroy_sm_document(reread) == CYBERIADA_NO_ERROR);

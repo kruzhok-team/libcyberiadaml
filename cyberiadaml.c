@@ -1686,7 +1686,7 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 		}
 		current->collapsed_flag = 1;
 	} else if (strcmp(key_name, GRAPHML_CYB_KEY_MARKUP_NAME) == 0) {
-		if (current->type != cybNodeComment) {
+		if (current->type != cybNodeComment && current->type != cybNodeFormalComment) {
 			ERROR("Trying to set markup for non-comment node %s\n", current->id);
 			return gpsInvalid;
 		}
