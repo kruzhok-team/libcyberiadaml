@@ -65,6 +65,20 @@ int main(void)
 				TEST_ASSERT(edge->geometry_label_rect && edge->geometry_label_rect->width > 0.0);
 			}
 		}
+		/* the update keeps the drawn elements and lays out the cleared one */
+		{
+			CyberiadaRect off_rect = *off->geometry_rect;
+			CyberiadaPoint init_point = *init->geometry_point;
+			htree_destroy_rect(on->geometry_rect);
+			on->geometry_rect = NULL;
+			TEST_ASSERT(cyberiada_update_document_geometry(doc, 1) == CYBERIADA_NO_ERROR);
+			TEST_ASSERT(off->geometry_rect && on->geometry_rect && init->geometry_point);
+			TEST_ASSERT(fabs(off->geometry_rect->x - off_rect.x) < 0.001 &&
+						fabs(off->geometry_rect->y - off_rect.y) < 0.001);
+			TEST_ASSERT(fabs(init->geometry_point->x - init_point.x) < 0.001 &&
+						fabs(init->geometry_point->y - init_point.y) < 0.001);
+			TEST_ASSERT(on->geometry_rect->x > off->geometry_rect->x);
+		}
 	}
 
 	/* cleaning removes the geometry */

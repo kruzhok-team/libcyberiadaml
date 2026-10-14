@@ -261,6 +261,7 @@ requested arrays yourself.
 int cyberiada_document_has_geometry(CyberiadaDocument* doc);
 int cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
+int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
                                         CyberiadaGeometryCoordFormat new_node_coord_format,
                                         CyberiadaGeometryCoordFormat new_edge_coord_format,
@@ -272,7 +273,9 @@ int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 all geometry; `reconstruct` builds it from scratch with the layered layout
 of libhtgeom 1.1 (optionally including the SM rectangle) - the pseudostate
 roles pin the flow, the state blocks and the transition labels are sized
-by estimates from their texts; `convert` changes the document
+by estimates from their texts; `update` keeps the existing geometry and
+lays out only the geometry-less elements around it (the drawn ones keep
+their places, the containers only grow); `convert` changes the document
 coordinate/edge formats and transforms all geometry data accordingly.
 
 ### Utilities

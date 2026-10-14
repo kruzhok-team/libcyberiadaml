@@ -3,6 +3,8 @@
 ## Version 1.0.8 (unreleased)
 
 Added:
+- the geometry update `cyberiada_update_document_geometry` (libhtgeom 1.2): the
+  existing geometry is kept, the geometry-less elements are laid out around it;
 - the strict mode checks of the node identifiers unique in the whole document and
   of the component identifiers unique in their state machine.
 

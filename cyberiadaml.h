@@ -471,6 +471,8 @@ typedef enum {
 
 	/* Reconstruct the SM document geometry from scratch */
 	int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
+	/* the geometry update: the layout seeded by the existing geometry, which is kept */
+	int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 	
 	/* Change the SM document geometry format and convert the SMs geometry data */
 	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,

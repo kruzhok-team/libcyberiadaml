@@ -1001,6 +1001,51 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 	return CYBERIADA_NO_ERROR;
 }
 
+/* The geometry update: the layered layout seeded by the existing geometry,
+   which is kept - the geometry-less elements are inserted by the flow, the
+   drawn ones keep their places; the sizes are estimated for the new
+   elements only (the drawn ones keep theirs) */
+int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	int res;
+	HTDocument* htreegeom;
+	HTLayoutOptions layout;
+
+	if (!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	if (doc->node_coord_format == coordNone) {
+		doc->node_coord_format = coordLocalCenter;
+	}
+	if (doc->edge_coord_format == coordNone) {
+		doc->edge_coord_format = coordLocalCenter;
+	}
+	if (doc->edge_pl_coord_format == coordNone) {
+		doc->edge_pl_coord_format = coordLocalCenter;
+	}
+	if (doc->edge_geom_format == edgeNone) {
+		doc->edge_geom_format = edgeBorder;
+	}
+
+	htreegeom = cyberiada_to_htree_geometry(doc, 1);
+	if (!htreegeom) {
+		ERROR("Cannot convert document geometry to htree geometry\n");
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	htree_default_layout_options(&layout);
+	if ((res = htree_update_document_geometry(htreegeom, reconstruct_sm, &layout)) != HTREE_OK) {
+		ERROR("Error while updating htree geometry %d\n", res);
+		htree_destroy_document(htreegeom);
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	cyberiada_update_geometry(doc, htreegeom);
+	htree_destroy_document(htreegeom);
+
+	return CYBERIADA_NO_ERROR;
+}
+
 static int cyberiada_node_has_geometry(CyberiadaNode* node)
 {
 	while (node) {

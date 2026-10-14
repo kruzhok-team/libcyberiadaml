@@ -43,6 +43,7 @@ extern "C" {
 	int                cyberiada_document_no_geometry(CyberiadaDocument* doc);
 	int                cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 	int                cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
+	int                cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 	int                cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 														   CyberiadaGeometryCoordFormat new_node_coord_format,
 														   CyberiadaGeometryCoordFormat new_edge_coord_format,
