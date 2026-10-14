@@ -79,6 +79,15 @@ int main(void)
 						fabs(init->geometry_point->y - init_point.y) < 0.001);
 			TEST_ASSERT(on->geometry_rect->x > off->geometry_rect->x);
 		}
+		/* a drawn transition without a label rect gets none in the update */
+		for (edge = doc->state_machines->edges; edge; edge = edge->next) {
+			if (strcmp(edge->id, "n0-n1") == 0) break;
+		}
+		TEST_ASSERT(edge && edge->geometry_label_rect && edge->geometry_source_point);
+		htree_destroy_rect(edge->geometry_label_rect);
+		edge->geometry_label_rect = NULL;
+		TEST_ASSERT(cyberiada_update_document_geometry(doc, 1) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(edge->geometry_source_point && !edge->geometry_label_rect);
 	}
 
 	/* cleaning removes the geometry */

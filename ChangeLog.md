@@ -8,6 +8,10 @@ Added:
 - the strict mode checks of the node identifiers unique in the whole document and
   of the component identifiers unique in their state machine.
 
+Fixed:
+- the geometry update gave a drawn transition without a label rect the
+  estimated label size at the origin, written as its label rect.
+
 ## Version 1.0.7
 
 Added:

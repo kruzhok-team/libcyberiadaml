@@ -416,8 +416,11 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 	if (!t_edge) {
 		return NULL;
 	}
-	if (estimate && edge->type != cybEdgeComment && edge->action && !edge->geometry_label_rect) {
-		/* the label size preset from the action text */
+	if (estimate && edge->type != cybEdgeComment && edge->action && !edge->geometry_label_rect &&
+		!edge->geometry_source_point && !edge->geometry_target_point &&
+		!edge->geometry_polyline && !edge->geometry_label_point) {
+		/* the label size preset from the action text; a drawn transition
+		   without a label rect keeps none */
 		size_t max_chars = 0, lines = 0;
 		double w, h;
 		cyberiada_actions_metrics(edge->action, &max_chars, &lines);
