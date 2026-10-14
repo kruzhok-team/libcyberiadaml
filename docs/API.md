@@ -121,6 +121,9 @@ Non-geometry:
 * `CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR` — skip actions with empty behavior;
 * `CYBERIADA_FLAG_SIMPLIFY_IDS` — replace node/edge ids with simplified ones;
 * `CYBERIADA_FLAG_SKIP_META` — skip the metainformation node.
+* `CYBERIADA_FLAG_STRICT` — check the optional requirements of the standard;
+  without it the Arena and Lapki dialect deviations are repaired on import
+  (see `ARCHITECTURE.md`).
 
 ## Error codes
 

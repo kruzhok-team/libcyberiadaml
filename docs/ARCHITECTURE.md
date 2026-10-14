@@ -87,6 +87,7 @@ constructed programmatically.
  namespace check ── yWorks ns? ──► yEd family ── SchemeName? ──► Berloga (<1.6 / 1.6)
      |                                    └────────────────────► Ostranna / Orbita
      └─ otherwise ──► Cyberiada-GraphML-1.0 ── referenceGraphID key? ──► Arena dialect
+                                           └── non-strict repairs? ──────► Lapki dialect
      |
      v
  recursive DOM walk + pushdown automaton
@@ -117,13 +118,14 @@ constant, so concurrent document decoding is safe.
 
 ### Input dialects
 
-The public format enum has two values plus auto-detection; internally five
+The public format enum has two values plus auto-detection; internally six
 dialects are distinguished and reported via `CyberiadaDocument.format`:
 
 | `doc->format` string | Family | Detection |
 |---|---|---|
 | `Cyberiada-GraphML-1.0` | Cyberiada | default (no yWorks namespace) |
-| `Cyberiada-GraphML-Arena` | Cyberiada | non-standard `referenceGraphID` key; relaxed edge-id parsing |
+| `Cyberiada-GraphML-Arena` | Cyberiada | non-standard `referenceGraphID` key; relaxed edge-id parsing; non-strict: node points (centre, y up) read as rects, label points dropped |
+| `Cyberiada-GraphML-Lapki` | Cyberiada | non-strict only: `lapkiVisual` meta or a repair applied — region graph id = node id renamed `<id>::region`, point on a rect node read as a loose rect, `-1 x -1` rect read as a point, repeated `CGML_META` dropped |
 | `yEd Berloga` | yEd | `SchemeName` attribute, Berloga AD < 1.6 action syntax |
 | `yEd Berloga-1.6` | yEd | `SchemeName` attribute, Berloga AD 1.6 action syntax |
 | `yEd Ostranna` | yEd | yWorks namespace default (also the Orbita Simulator) |

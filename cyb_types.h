@@ -30,6 +30,8 @@ extern "C" {
 #endif
 
 	int cyberiada_update_complex_state(CyberiadaNode* node, CyberiadaNode* parent);
+	int cyberiada_destroy_node(CyberiadaNode* node);
+	int cyberiada_destroy_edge(CyberiadaEdge* e);
 	
 #ifdef __cplusplus
 }

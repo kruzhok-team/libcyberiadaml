@@ -99,14 +99,13 @@ static void cyberiada_text_block_size(size_t max_chars, size_t lines, double* w,
 	*h = lines * CYBERIADA_LAYOUT_LINE_HEIGHT + 2 * CYBERIADA_LAYOUT_TEXT_MARGIN;
 }
 
-/* the preset minimum size of a node for the layout: the title and the
-   actions of a state (the title block of a composite), the body of a comment;
-   a leaf takes at least the default state size */
-static void cyberiada_node_layout_size(const CyberiadaNode* node, HTreeNode* t_node)
+/* the minimum size of a node from its texts: the title and the actions of
+   a state (the title block of a composite), the body of a comment; a leaf
+   takes at least the default state size */
+static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOptions* opts,
+									double* w, double* h)
 {
 	size_t max_chars = 0, lines = 0;
-	double w, h;
-	HTLayoutOptions opts;
 
 	if (node->type & (cybNodeComment | cybNodeFormalComment)) {
 		if (node->comment_data) cyberiada_text_metrics(node->comment_data->body, &max_chars, &lines);
@@ -116,17 +115,28 @@ static void cyberiada_node_layout_size(const CyberiadaNode* node, HTreeNode* t_n
 		if (lines == 0) lines = 1;
 		cyberiada_actions_metrics(node->actions, &max_chars, &lines);
 	} else {
-		return;
+		return 0;
 	}
-	htree_default_layout_options(&opts);
-	cyberiada_text_block_size(max_chars, lines, &w, &h);
+	cyberiada_text_block_size(max_chars, lines, w, h);
 	if (node->type & (cybNodeSimpleState | cybNodeSubmachineState | cybNodeComment | cybNodeFormalComment)) {
-		if (w < opts.node_width) w = opts.node_width;
-		if (h < opts.node_height) h = opts.node_height;
-	} else if (node->type == cybNodeCompositeState && w < opts.node_width) {
-		w = opts.node_width;
+		if (*w < opts->node_width) *w = opts->node_width;
+		if (*h < opts->node_height) *h = opts->node_height;
+	} else if (node->type == cybNodeCompositeState && *w < opts->node_width) {
+		*w = opts->node_width;
 	}
-	htree_node_set_min_size(t_node, w, h);
+	return 1;
+}
+
+/* the preset minimum size of a node for the layout */
+static void cyberiada_node_layout_size(const CyberiadaNode* node, HTreeNode* t_node)
+{
+	double w, h;
+	HTLayoutOptions opts;
+
+	htree_default_layout_options(&opts);
+	if (cyberiada_node_text_size(node, &opts, &w, &h)) {
+		htree_node_set_min_size(t_node, w, h);
+	}
 }
 
 /* the layout role of a node */
@@ -1284,6 +1294,185 @@ int cyberiada_size_loose_document_geometry(CyberiadaDocument* doc)
 
 	for (sm = doc->state_machines; sm; sm = sm->next) {
 		cyberiada_size_loose_nodes(sm->nodes, sm->edges, HUGE_VAL, HUGE_VAL);
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
+/* -----------------------------------------------------------------------------
+ * The non-strict dialects geometry
+ * ----------------------------------------------------------------------------- */
+
+#define CYBERIADA_ARENA_RECT_NODES (cybNodeSimpleState | cybNodeCompositeState | cybNodeSubmachineState | \
+									cybNodeChoice | cybNodeComment | cybNodeFormalComment)
+
+/* the extent of the children around the centre of the node (Arena frame) */
+static void cyberiada_arena_extent(const CyberiadaNode* nodes, double point_size, double* w, double* h)
+{
+	const CyberiadaNode* c;
+
+	for (c = nodes; c; c = c->next) {
+		double cw, ch;
+		if (c->geometry_rect) {
+			cw = fabs(c->geometry_rect->x) + c->geometry_rect->width / 2.0;
+			ch = fabs(c->geometry_rect->y) + c->geometry_rect->height / 2.0;
+		} else if (c->geometry_point) {
+			cw = fabs(c->geometry_point->x) + point_size / 2.0;
+			ch = fabs(c->geometry_point->y) + point_size / 2.0;
+		} else {
+			if (c->children) cyberiada_arena_extent(c->children, point_size, w, h);
+			continue;
+		}
+		if (cw > *w) *w = cw;
+		if (ch > *h) *h = ch;
+	}
+}
+
+/* move the children from the Arena frame (centre of the parent, y up) to the
+   standard one (left top corner of the parent, y down, 7.2.1) */
+static void cyberiada_arena_place(CyberiadaNode* nodes, double pw, double ph)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if (n->geometry_rect) {
+			n->geometry_rect->x = n->geometry_rect->x - n->geometry_rect->width / 2.0 + pw / 2.0;
+			n->geometry_rect->y = -n->geometry_rect->y - n->geometry_rect->height / 2.0 + ph / 2.0;
+		} else if (n->geometry_point) {
+			n->geometry_point->x = n->geometry_point->x + pw / 2.0;
+			n->geometry_point->y = -n->geometry_point->y + ph / 2.0;
+		} else if (n->children) {
+			/* a region with no geometry of its own shares the parent frame */
+			cyberiada_arena_place(n->children, pw, ph);
+		}
+	}
+}
+
+/* size the node bottom up: the texts and the children around its centre */
+static void cyberiada_arena_node(CyberiadaNode* node, const HTLayoutOptions* opts)
+{
+	CyberiadaNode* c;
+	CyberiadaRect* r;
+	double w = 0.0, h = 0.0, ew = 0.0, eh = 0.0;
+
+	for (c = node->children; c; c = c->next) {
+		cyberiada_arena_node(c, opts);
+	}
+	if (!(node->type & CYBERIADA_ARENA_RECT_NODES) || !node->geometry_point || node->geometry_rect) {
+		return;
+	}
+	if (node->type == cybNodeChoice) {
+		w = h = opts->point_size;
+	} else {
+		cyberiada_node_text_size(node, opts, &w, &h);
+	}
+	if (node->children) {
+		cyberiada_arena_extent(node->children, opts->point_size, &ew, &eh);
+		/* the children keep their offsets, the title goes above them */
+		if (2.0 * (ew + opts->padding) > w) w = 2.0 * (ew + opts->padding);
+		h = 2.0 * (eh + opts->padding + h);
+	}
+	r = htree_new_rect();
+	if (!r) {
+		return;
+	}
+	r->x = node->geometry_point->x;
+	r->y = node->geometry_point->y;
+	r->width = w;
+	r->height = h;
+	htree_destroy_point(node->geometry_point);
+	node->geometry_point = NULL;
+	node->geometry_rect = r;
+	cyberiada_arena_place(node->children, w, h);
+}
+
+int cyberiada_arena_document_geometry(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+	CyberiadaEdge* e;
+	HTLayoutOptions opts;
+
+	if (!doc) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	htree_default_layout_options(&opts);
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (!sm->nodes) {
+			continue;
+		}
+		cyberiada_arena_node(sm->nodes, &opts);
+		if (!sm->nodes->geometry_rect) {
+			/* the top level nodes keep the Arena origin */
+			cyberiada_arena_place(sm->nodes->children, 0.0, 0.0);
+		}
+		for (e = sm->edges; e; e = e->next) {
+			/* the Arena label position has no defined frame */
+			if (e->geometry_label_point) {
+				ERROR("warning: dropping the label point of the Arena edge %s\n", e->id);
+				htree_destroy_point(e->geometry_label_point);
+				e->geometry_label_point = NULL;
+			}
+			if (e->geometry_label_rect) {
+				ERROR("warning: dropping the label rect of the Arena edge %s\n", e->id);
+				htree_destroy_rect(e->geometry_label_rect);
+				e->geometry_label_rect = NULL;
+			}
+		}
+	}
+
+	return CYBERIADA_NO_ERROR;
+}
+
+/* Lapki: a point on a rect node becomes a loose rect (7.2.2), the -1 x -1
+   rect cyberiadaml-js writes for a point becomes the point again */
+static void cyberiada_lapki_nodes(CyberiadaNode* nodes, int* changed)
+{
+	CyberiadaNode* n;
+
+	for (n = nodes; n; n = n->next) {
+		if ((n->type & NODE_GEOMETRY_RECT) && n->type != cybNodeRegion &&
+			n->geometry_point && !n->geometry_rect) {
+			CyberiadaRect* r = htree_new_rect();
+			if (r) {
+				ERROR("warning: the point geometry of the rect node %s read as a loose rect\n", n->id);
+				r->x = n->geometry_point->x;
+				r->y = n->geometry_point->y;
+				r->width = r->height = 0.0;
+				htree_destroy_point(n->geometry_point);
+				n->geometry_point = NULL;
+				n->geometry_rect = r;
+				*changed = 1;
+			}
+		} else if ((n->type & NODE_GEOMETRY_POINT) && n->geometry_rect && !n->geometry_point &&
+				   n->geometry_rect->width == -1.0 && n->geometry_rect->height == -1.0) {
+			CyberiadaPoint* p = htree_new_point();
+			if (p) {
+				ERROR("warning: the -1 x -1 rect of the point node %s read as a point\n", n->id);
+				p->x = n->geometry_rect->x;
+				p->y = n->geometry_rect->y;
+				htree_destroy_rect(n->geometry_rect);
+				n->geometry_rect = NULL;
+				n->geometry_point = p;
+				*changed = 1;
+			}
+		}
+		if (n->children) {
+			cyberiada_lapki_nodes(n->children, changed);
+		}
+	}
+}
+
+int cyberiada_lapki_document_geometry(CyberiadaDocument* doc, int* changed)
+{
+	CyberiadaSM* sm;
+
+	if (!doc || !changed) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		cyberiada_lapki_nodes(sm->nodes, changed);
 	}
 
 	return CYBERIADA_NO_ERROR;

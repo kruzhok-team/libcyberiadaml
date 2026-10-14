@@ -140,6 +140,8 @@
 #define CYBERIADA_FORMAT_OSTRANNA                "yEd Ostranna"                /* default yEd-based versions      */
 #define CYBERIADA_FORMAT_BERLOGA_16              "yEd Berloga-1.6"             /* hacked version of AD ver. >=1.6 */
 #define CYBERIADA_FORMAT_ARENA                   "Cyberiada-GraphML-Arena"     /* broken version of AD: Arena     */ 
+#define CYBERIADA_FORMAT_LAPKI                   "Cyberiada-GraphML-Lapki"     /* Lapki IDE / cyberiadaml-js      */
+#define CYBERIADA_META_LAPKI_VISUAL              "lapkiVisual"                 /* the Lapki IDE meta parameter    */
 
 /* CybediadaML metadata constants */
 
@@ -316,6 +318,8 @@ typedef struct {
 	CyberiadaNode*    data_node;  /* the node whose data keys are being read */
 	size_t            data_keys;  /* the data keys of the node read so far */
 	CyberiadaList*    unmarked_regions; /* the region nodes read without the dRegion key */
+	CyberiadaList*    dropped_nodes;    /* the repeated meta nodes dropped in the non-strict mode */
+	int               lapki;            /* a Lapki dialect repair was applied */
 } CyberiadaParserContext; 
 
 /* -----------------------------------------------------------------------------
@@ -558,6 +562,18 @@ static GraphProcessorState handle_new_graph(xmlNode* xml_node,
 		if (parent->type != cybNodeSimpleState && parent->type != cybNodeCompositeState) {
 			ERROR("Children graph for region is allowed only for states\n");
 			return gpsInvalid;
+		}
+		while (sm->next) sm = sm->next;
+		if (!ctx->strict && cyberiada_graph_find_node_by_id(sm->nodes, buffer)) {
+			/* Lapki names the region graph after its parent node */
+			char base[MAX_STR_LEN - 32];
+			unsigned int n = 2;
+			snprintf(base, sizeof(base), "%.*s::region", (int)(sizeof(base) - 16), parent->id);
+			snprintf(buffer, buffer_len, "%s", base);
+			while (cyberiada_graph_find_node_by_id(sm->nodes, buffer)) {
+				snprintf(buffer, buffer_len, "%s-%u", base, n++);
+			}
+			ctx->lapki = 1;
 		}
 		CyberiadaNode* region_node = cyberiada_new_node(buffer);
 		CyberiadaNode* first_region;
@@ -1405,6 +1421,7 @@ static void cyberiada_parser_free_key_map(CyberiadaParserContext* ctx)
 	}
 	cyberiada_list_free(&(ctx->key_map));
 	cyberiada_list_free(&(ctx->unmarked_regions));
+	cyberiada_list_free(&(ctx->dropped_nodes));
 }
 
 /* the node and edge identifiers of the state machine (5.9) */
@@ -1615,7 +1632,11 @@ static GraphProcessorState handle_node_data_value(const char* key_name, const ch
 			}
 			cyberiada_copy_string(&(current->comment_data->body),
 								  &(current->comment_data->body_len), buffer);
-			if (cyberiada_graph_node_is_meta(current)) {
+			if (cyberiada_graph_node_is_meta(current) && doc->meta_info && !ctx->strict) {
+				/* Lapki repeats the document meta in every state machine */
+				cyberiada_list_add(&(ctx->dropped_nodes), "", current);
+				ctx->lapki = 1;
+			} else if (cyberiada_graph_node_is_meta(current)) {
 				char* meta_copy = NULL;
 				cyberiada_copy_string(&meta_copy, NULL, buffer);
 				if (cyberiada_decode_meta(doc, meta_copy, ctx->regexps, ctx->strict) != CYBERIADA_NO_ERROR) {
@@ -2421,6 +2442,59 @@ static int cyberiada_check_graphml_ns(xmlNode* root, CyberiadaXMLFormat* format)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* drop the listed nodes with their edges (the repeated Lapki meta) */
+static void cyberiada_drop_nodes(CyberiadaDocument* doc, CyberiadaList* list)
+{
+	CyberiadaList* item;
+
+	for (item = list; item; item = item->next) {
+		CyberiadaNode *node = (CyberiadaNode*)item->data, *root = node, **n;
+		CyberiadaEdge **e, *edge;
+		CyberiadaSM* sm;
+
+		while (root->parent) root = root->parent;
+		for (sm = doc->state_machines; sm && sm->nodes != root; sm = sm->next);
+		if (!sm || !node->parent) {
+			continue;
+		}
+		ERROR("warning: dropping the repeated meta node %s\n", node->id);
+		for (n = &(node->parent->children); *n; n = &((*n)->next)) {
+			if (*n == node) {
+				*n = node->next;
+				break;
+			}
+		}
+		e = &(sm->edges);
+		while (*e) {
+			edge = *e;
+			if ((edge->source_id && strcmp(edge->source_id, node->id) == 0) ||
+				(edge->target_id && strcmp(edge->target_id, node->id) == 0)) {
+				*e = edge->next;
+				cyberiada_destroy_edge(edge);
+			} else {
+				e = &(edge->next);
+			}
+		}
+		node->next = NULL;
+		cyberiada_destroy_node(node);
+	}
+}
+
+/* the Lapki IDE marks its documents with the lapkiVisual meta parameter */
+static int cyberiada_lapki_meta(CyberiadaDocument* doc)
+{
+	CyberiadaMetaStringList* s;
+	if (!doc->meta_info) {
+		return 0;
+	}
+	for (s = doc->meta_info->strings; s; s = s->next) {
+		if (s->name && strcmp(s->name, CYBERIADA_META_LAPKI_VISUAL) == 0) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static int cyberiada_check_node_ids(CyberiadaNode* root, CyberiadaNode* nodes)
 {
 	CyberiadaNode *n;
@@ -3072,6 +3146,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	parser_ctx.data_node = NULL;
 	parser_ctx.data_keys = 0;
 	parser_ctx.unmarked_regions = NULL;
+	parser_ctx.dropped_nodes = NULL;
+	parser_ctx.lapki = 0;
 	
 	do {
 
@@ -3108,15 +3184,8 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
-		if (cyberiada_regexps.arena_legacy) {
-			if (cyb_doc->format) {
-				free(cyb_doc->format);
-			}
-			cyberiada_copy_string(&(cyb_doc->format),
-								  &(cyb_doc->format_len),
-								  CYBERIADA_FORMAT_ARENA);
-		}
-		
+		cyberiada_drop_nodes(cyb_doc, parser_ctx.dropped_nodes);
+
 		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
 			if ((res = cyberiada_graphs_reconstruct_node_identifiers(sm->nodes,
 																	 &nl,
@@ -3131,6 +3200,29 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 																 flags & CYBERIADA_FLAG_SIMPLIFY_IDS)) != CYBERIADA_NO_ERROR) {
 			ERROR("error: cannot reconstruct graph edges' identifier\n");
 			break;
+		}
+
+		if (format == cybxmlCyberiada10 && !(flags & CYBERIADA_FLAG_STRICT) &&
+			!(flags & CYBERIADA_FLAG_SKIP_GEOMETRY)) {
+			/* the non-strict mode reads the geometry of the Arena and Lapki dialects */
+			int changed = 0;
+			if (cyberiada_regexps.arena_legacy) {
+				cyberiada_arena_document_geometry(cyb_doc);
+			}
+			cyberiada_lapki_document_geometry(cyb_doc, &changed);
+			if (changed) {
+				parser_ctx.lapki = 1;
+			}
+		}
+
+		if (cyberiada_regexps.arena_legacy ||
+			(!(flags & CYBERIADA_FLAG_STRICT) && (parser_ctx.lapki || cyberiada_lapki_meta(cyb_doc)))) {
+			if (cyb_doc->format) {
+				free(cyb_doc->format);
+			}
+			cyberiada_copy_string(&(cyb_doc->format),
+								  &(cyb_doc->format_len),
+								  cyberiada_regexps.arena_legacy ? CYBERIADA_FORMAT_ARENA : CYBERIADA_FORMAT_LAPKI);
 		}
 
 		if (!(flags & CYBERIADA_FLAG_SKIP_GEOMETRY) &&

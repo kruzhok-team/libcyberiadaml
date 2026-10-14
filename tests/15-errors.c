@@ -59,12 +59,20 @@ int main(void)
 				CYBERIADA_BAD_PARAMETER);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
-	/* a comment with point geometry violates the standard */
+	/* a comment with point geometry violates the standard; the non-strict
+	   mode reads it as a loose rect (the Lapki dialect) */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/point-comment.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
 	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/point-comment.graphml",
 										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
-				CYBERIADA_FORMAT_ERROR);
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(strcmp(doc->format, "Cyberiada-GraphML-Lapki") == 0);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	/* the extended geometry format sizes every rect exactly (9.1) */

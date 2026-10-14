@@ -61,6 +61,8 @@ extern "C" {
 	int                cyberiada_check_edges_geometry(CyberiadaEdge* edges);
 	int                cyberiada_repair_nodes_geometry(CyberiadaNode* nodes);
 	int                cyberiada_repair_edges_geometry(CyberiadaEdge* edges);
+	int                cyberiada_arena_document_geometry(CyberiadaDocument* doc);
+	int                cyberiada_lapki_document_geometry(CyberiadaDocument* doc, int* changed);
 	
 #ifdef __cplusplus
 }

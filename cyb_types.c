@@ -189,7 +189,7 @@ int cyberiada_destroy_action(CyberiadaAction* action)
 
 static int cyberiada_destroy_all_nodes(CyberiadaNode* node);
 
-static int cyberiada_destroy_node(CyberiadaNode* node)
+int cyberiada_destroy_node(CyberiadaNode* node)
 {
 	if(node != NULL) {
 		if (node->id) free(node->id);
@@ -318,7 +318,7 @@ static CyberiadaEdge* cyberiada_copy_edge(CyberiadaEdge* src)
 	return dst;
 }
 
-static int cyberiada_destroy_edge(CyberiadaEdge* e)
+int cyberiada_destroy_edge(CyberiadaEdge* e)
 {
 	if (!e) {
 		return CYBERIADA_BAD_PARAMETER;
