@@ -236,6 +236,7 @@ typedef struct _CyberiadaSM {
 /* SM mandatory metainformation constants */
 #define CYBERIADA_META_STANDARD_VERSION          "standardVersion"
 #define CYBERIADA_META_NAME                      "name"
+#define CYBERIADA_META_PLATFORM                  "platform"
 #define CYBERIADA_META_TRANSITION_ORDER          "transitionOrder"
 #define CYBERIADA_META_AO_ACTION                 "actionFirst"
 #define CYBERIADA_META_AO_EXIT                   "exitFirst"
@@ -305,6 +306,8 @@ typedef enum {
 															  the Ostranna one is written */
     cybxmlYEDOstranna = 2,                                 /* Write the yEd Ostranna dialect */
     cybxmlYEDBerloga16 = 3,                                /* Write the yEd Berloga 1.6 dialect */
+    cybxmlLapki = 4,                                       /* Write the Lapki IDE dialect of Cyberiada 1.0
+															  (cyberiadaml-js/py 1.x), read as Cyberiada 1.0 */
     cybxmlUnknown = 99                                     /* Format is not specified */
 } CyberiadaXMLFormat;
 

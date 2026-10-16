@@ -125,7 +125,7 @@ dialects are distinguished and reported via `CyberiadaDocument.format`:
 |---|---|---|
 | `Cyberiada-GraphML-1.0` | Cyberiada | default (no yWorks namespace) |
 | `Cyberiada-GraphML-Arena` | Cyberiada | non-standard `referenceGraphID` key; relaxed edge-id parsing; non-strict: node points (centre, y up) read as rects, label points dropped |
-| `Cyberiada-GraphML-Lapki` | Cyberiada | non-strict only: `lapkiVisual` meta or a repair applied — region graph id = node id renamed `<id>::region`, point on a rect node read as a loose rect, `-1 x -1` rect read as a point, repeated `CGML_META` dropped |
+| `Cyberiada-GraphML-Lapki` | Cyberiada | non-strict only: `lapkiVisual` meta or a repair applied — region graph id = node id renamed `<id>::region`, point on a rect node read as a loose rect, `-1 x -1` rect read as a point, repeated `CGML_META` dropped (its parameters too), the first of repeated meta parameters kept and `undefined` ones dropped, `gFormat` without the version, `dLapki*` data skipped, `CGML_COMPONENT` + `id/` renamed `CGML_COMPONENT <id>`, meta edges dropped, repeated edge ids `<id>#N`, a nameless machine named by its graph id, the initial transition text without `/` read as its behavior |
 | `yEd Berloga` | yEd | `SchemeName` attribute, Berloga AD < 1.6 action syntax |
 | `yEd Berloga-1.6` | yEd | `SchemeName` attribute, Berloga AD 1.6 action syntax |
 | `yEd Ostranna` | yEd | yWorks namespace default (also the Orbita Simulator) |
@@ -140,7 +140,17 @@ Two writers built on libxml2 `xmlTextWriter`:
 * `cybxmlCyberiada10` — emits `Cyberiada-GraphML-1.0` documents (the standard
   key set, metainformation comment first, edges in one block);
 * `cybxmlYED` — emits the legacy yEd format; restricted to single-SM
-  documents.
+  documents;
+* `cybxmlLapki` — the Cyberiada writer over a copy turned into the Lapki IDE
+  dialect read by cyberiadaml-js/py 1.x (lapki-client, lapki-compiler):
+
+```
+ copy ─► layout of the absent geometry (states, choices, pseudostates, comments)
+      ─► CGML_META in every machine (the platform is per machine there)
+      ─► CGML_COMPONENT + id/ parameter, label and comment points
+      ─► the initial transition behavior without a slash
+      ─► refused: no platform, other formal comments, completion transitions
+```
 
 Geometry conversion flags are rejected on export: the target format dictates
 the output geometry. Export-only flags (skip / shrink / round) are applied by

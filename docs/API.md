@@ -74,6 +74,9 @@ parameters are provided as `CYBERIADA_META_*` constants.
 
 * `cybxmlCyberiada10` — Cyberiada-GraphML 1.0;
 * `cybxmlYED` — the legacy yEd-based Berloga/Ostranna format;
+* `cybxmlLapki` — the Lapki IDE dialect of Cyberiada-GraphML 1.0 for lapki-client
+  and lapki-compiler (write; read as `cybxmlCyberiada10`); needs the `platform`
+  meta parameter;
 * `cybxmlUnknown` — auto-detect on read (not valid for write).
 
 ### Geometry types

@@ -46,6 +46,24 @@ static CyberiadaNode* node(CyberiadaDocument* doc, const char* id)
 	return n;
 }
 
+static CyberiadaEdge* edge(CyberiadaDocument* doc, const char* id)
+{
+	CyberiadaEdge* e;
+	for (e = doc->state_machines->edges; e; e = e->next) {
+		if (strcmp(e->id, id) == 0) return e;
+	}
+	return NULL;
+}
+
+static const char* meta_value(CyberiadaDocument* doc, const char* name)
+{
+	CyberiadaMetaStringList* s;
+	for (s = doc->meta_info->strings; s; s = s->next) {
+		if (strcmp(s->name, name) == 0) return s->value;
+	}
+	return NULL;
+}
+
 static void lapki(const char* filename, const char* written, int strict_copy)
 {
 	CyberiadaDocument* doc;
@@ -105,6 +123,24 @@ int main(void)
 	TEST_ASSERT(metas == 1);
 	TEST_ASSERT(doc->state_machines->next && doc->state_machines->next->nodes->children &&
 				strcmp(doc->state_machines->next->nodes->children->id, "m2s") == 0);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the older Lapki patterns: the versionless format, the private keys, the old
+	   components and meta edges, repeated and undefined meta parameters, a nameless
+	   machine, repeated edge ids, the initial behavior alone, a rect on the initial */
+	lapki("diagrams/lapki-old.graphml", "30-out-old.graphml", 1);
+	doc = load("diagrams/lapki-old.graphml", CYBERIADA_FLAG_NO, CYBERIADA_NO_ERROR);
+	TEST_ASSERT(strcmp(doc->state_machines->nodes->title, "G") == 0);
+	n = node(doc, "cLED1");
+	TEST_ASSERT(strcmp(n->title, "CGML_COMPONENT LED1") == 0);
+	TEST_ASSERT(!strstr(n->comment_data->body, "id/") && strstr(n->comment_data->body, "type/ LED"));
+	TEST_ASSERT(meta_value(doc, "name") && strcmp(meta_value(doc, "name"), "Blinker") == 0);
+	TEST_ASSERT(!meta_value(doc, "author") && meta_value(doc, "lapkiVisual"));
+	TEST_ASSERT(edge(doc, "on-off") && edge(doc, "on-off#1") && !edge(doc, "coreMeta-cLED1"));
+	TEST_ASSERT(strcmp(edge(doc, "init-on")->action->behavior, "LED1.off()") == 0);
+	n = node(doc, "init");
+	TEST_ASSERT(n->geometry_point && fabs(n->geometry_point->x - 20.0) < EPS &&
+				fabs(n->geometry_point->y - 20.0) < EPS);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
 	return 0;

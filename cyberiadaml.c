@@ -142,6 +142,9 @@
 #define CYBERIADA_FORMAT_ARENA                   "Cyberiada-GraphML-Arena"     /* broken version of AD: Arena     */ 
 #define CYBERIADA_FORMAT_LAPKI                   "Cyberiada-GraphML-Lapki"     /* Lapki IDE / cyberiadaml-js      */
 #define CYBERIADA_META_LAPKI_VISUAL              "lapkiVisual"                 /* the Lapki IDE meta parameter    */
+#define CYBERIADA_LAPKI_KEY_PREFIX               "dLapki"                      /* the Lapki IDE private keys      */
+#define CYBERIADA_FORMAT_NO_VERSION              "Cyberiada-GraphML"           /* the Lapki IDE format label      */
+#define CYBERIADA_COMPONENT_ID_PARAM             "id/"                         /* the Lapki component id          */
 
 /* CybediadaML metadata constants */
 
@@ -372,6 +375,8 @@ typedef enum {
 	gpsNodeAction,
 	gpsNodeStart,
 	gpsMeta,
+	/* The element skipped with its content */
+	gpsSkip,
 	/* The invalid states */
 	gpsInvalid,
 	gpsInvalidMeta
@@ -679,6 +684,15 @@ static GraphProcessorState handle_new_edge(xmlNode* xml_node,
 				n++;
 			} while (cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL);
 		}
+	} else if (!ctx->strict && *buffer && cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL) {
+		/* Lapki repeats edge ids: the later edge gets <id>#N (5.8.1) */
+		char base[MAX_STR_LEN - 32];
+		unsigned int n = 1;
+		snprintf(base, sizeof(base), "%.*s", (int)(sizeof(base) - 1), buffer);
+		do {
+			snprintf(buffer, buffer_len, "%s#%u", base, n++);
+		} while (cyberiada_graph_find_edge_by_id(sm->edges, buffer) != NULL);
+		ctx->lapki = 1;
 	}
 	/*DEBUG("add edge '%s' '%s' -> '%s'\n", buffer, source_buffer, target_buffer);*/
 	if (cyberiada_graph_add_edge(sm, buffer, source_buffer, target_buffer, 0) != CYBERIADA_NO_ERROR) {
@@ -1354,6 +1368,17 @@ static int cyberiada_check_color(const char* color)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the private keys of the Lapki IDE are skipped in the non-strict mode */
+static int cyberiada_lapki_key(const char* id, CyberiadaParserContext* ctx)
+{
+	if (ctx->strict || strncmp(id, CYBERIADA_LAPKI_KEY_PREFIX, strlen(CYBERIADA_LAPKI_KEY_PREFIX)) != 0) {
+		return 0;
+	}
+	ERROR("warning: skipping the data of the Lapki key %s\n", id);
+	ctx->lapki = 1;
+	return 1;
+}
+
 static const char* cyberiada_parser_find_key_name(CyberiadaParserContext* ctx, const char* id)
 {
 	const char* name = (const char*)cyberiada_list_find(&(ctx->key_map), id);
@@ -1491,7 +1516,12 @@ static GraphProcessorState handle_new_init_data(xmlNode* xml_node,
 		}
 		{
 			char* text = cyberiada_get_element_text(xml_node);
-			if (text && strcmp(text, CYBERIADA_FORMAT_CYBERIADAML) == 0) {
+			if (text && (strcmp(text, CYBERIADA_FORMAT_CYBERIADAML) == 0 ||
+						 (!ctx->strict && strcmp(text, CYBERIADA_FORMAT_NO_VERSION) == 0))) {
+				/* Lapki writes the format without the version */
+				if (strcmp(text, CYBERIADA_FORMAT_CYBERIADAML) != 0) {
+					ctx->lapki = 1;
+				}
 				cyberiada_copy_string(&(doc->format), &(doc->format_len),
 									  CYBERIADA_FORMAT_CYBERIADAML);
 				free(text);
@@ -1763,6 +1793,9 @@ static GraphProcessorState handle_node_data(xmlNode* xml_node,
 		ERROR("no data node key attribute\n");
 		return gpsInvalid;
 	}
+	if (cyberiada_lapki_key(buffer, ctx)) {
+		return gpsSkip;
+	}
 	key_name = cyberiada_parser_find_key_name(ctx, buffer);
 	if (key_name == NULL) {
 		ERROR("cannot find key with id %s\n", buffer);
@@ -1942,6 +1975,9 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 		ERROR("no data node key attribute\n");
 		return gpsInvalid;
 	}
+	if (cyberiada_lapki_key(buffer, ctx)) {
+		return gpsSkip;
+	}
 	key_name = cyberiada_parser_find_key_name(ctx, buffer);
 	if (key_name == NULL) {
 		ERROR("cannot find key with id %s\n", buffer);
@@ -1950,6 +1986,20 @@ static GraphProcessorState handle_edge_data(xmlNode* xml_node,
 	{
 		GraphProcessorState next;
 		char* text = cyberiada_get_element_text(xml_node);
+		CyberiadaNode* source = current->source_id ?
+			cyberiada_graph_find_node_by_id(sm->nodes, current->source_id) : NULL;
+		if (!ctx->strict && text && !strchr(text, '/') && !cyberiada_string_is_empty(text) &&
+			source && source->type == cybNodeInitial &&
+			strcmp(key_name, GRAPHML_CYB_KEY_DATA_NAME) == 0) {
+			/* the initial transition has no trigger: Lapki writes its behavior alone */
+			char* behavior = (char*)malloc(strlen(text) + 3);
+			if (behavior) {
+				sprintf(behavior, "/\n%s", text);
+				free(text);
+				text = behavior;
+				ctx->lapki = 1;
+			}
+		}
 		next = handle_edge_data_value(key_name, text ? text : "", current, ctx);
 		free(text);
 		return next;
@@ -2183,7 +2233,7 @@ static int cyberiada_build_graphs(xmlNode* xml_root,
 		if (*gps == gpsInvalidMeta) {
 			return CYBERIADA_METADATA_FORMAT_ERROR;
 		}
-		if (cur_xml_node->children) {
+		if (cur_xml_node->children && *gps != gpsSkip) {
 			res = cyberiada_build_graphs(cur_xml_node->children, doc, stack, gps,
 										 processor_state_table, processor_state_table_size,
 										 ctx);
@@ -2477,6 +2527,111 @@ static void cyberiada_drop_nodes(CyberiadaDocument* doc, CyberiadaList* list)
 		}
 		node->next = NULL;
 		cyberiada_destroy_node(node);
+	}
+}
+
+/* take the id/ parameter out of a Lapki component body */
+static char* cyberiada_lapki_take_id(char* body)
+{
+	char *line = body, *eol, *s, *end, *id = NULL;
+
+	while (line && *line) {
+		eol = strchr(line, '\n');
+		for (s = line; *s == ' ' || *s == '\t'; s++);
+		if ((line - body < 2 || line[-2] == '\n') &&
+			strncmp(s, CYBERIADA_COMPONENT_ID_PARAM, strlen(CYBERIADA_COMPONENT_ID_PARAM)) == 0) {
+			s += strlen(CYBERIADA_COMPONENT_ID_PARAM);
+			end = eol ? eol : s + strlen(s);
+			while (s < end && isspace((unsigned char)*s)) s++;
+			while (end > s && isspace((unsigned char)end[-1])) end--;
+			id = (char*)malloc(end - s + 1);
+			if (!id) return NULL;
+			memcpy(id, s, end - s);
+			id[end - s] = 0;
+			/* the parameter goes with the blank lines after it */
+			end = eol ? eol + 1 : line + strlen(line);
+			while (*end == '\n' || *end == '\r') end++;
+			memmove(line, end, strlen(end) + 1);
+			return id;
+		}
+		line = eol ? eol + 1 : NULL;
+	}
+	return NULL;
+}
+
+static int cyberiada_title_is(const char* title, const char* name)
+{
+	size_t len = strlen(name);
+	if (!title) return 0;
+	while (*title == ' ' || *title == '\t') title++;
+	if (strncmp(title, name, len) != 0) return 0;
+	for (title += len; *title; title++) {
+		if (!isspace((unsigned char)*title)) return 0;
+	}
+	return 1;
+}
+
+/* Lapki names a component CGML_COMPONENT with the id/ parameter in the body and
+   links it to the meta node; a machine may come without a name */
+static void cyberiada_lapki_document(CyberiadaDocument* doc, CyberiadaParserContext* ctx)
+{
+	CyberiadaSM *sm, *s;
+	CyberiadaNode* n;
+	CyberiadaEdge **e, *edge;
+
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (!sm->nodes) {
+			continue;
+		}
+		if (!sm->nodes->title || !*(sm->nodes->title)) {
+			ERROR("warning: the state machine %s named after its graph\n", sm->nodes->id);
+			if (sm->nodes->title) free(sm->nodes->title);
+			cyberiada_copy_string(&(sm->nodes->title), &(sm->nodes->title_len), sm->nodes->id);
+			ctx->lapki = 1;
+		}
+		for (n = sm->nodes->children; n; n = n->next) {
+			char *id, *title;
+			if (n->type != cybNodeFormalComment ||
+				!cyberiada_title_is(n->title, CYBERIADA_COMPONENT_NODE_TITLE) ||
+				!n->comment_data || !n->comment_data->body ||
+				!(id = cyberiada_lapki_take_id(n->comment_data->body))) {
+				continue;
+			}
+			title = (char*)malloc(strlen(CYBERIADA_COMPONENT_NODE_TITLE) + strlen(id) + 2);
+			if (title) {
+				ERROR("warning: the component %s named %s %s\n", n->id, CYBERIADA_COMPONENT_NODE_TITLE, id);
+				sprintf(title, "%s %s", CYBERIADA_COMPONENT_NODE_TITLE, id);
+				free(n->title);
+				n->title = title;
+				n->title_len = strlen(title);
+				n->comment_data->body_len = strlen(n->comment_data->body);
+				ctx->lapki = 1;
+			}
+			free(id);
+		}
+		/* the meta node of any machine is not a comment subject */
+		e = &(sm->edges);
+		while (*e) {
+			int meta_source = 0;
+			edge = *e;
+			for (s = doc->state_machines; s && !meta_source; s = s->next) {
+				for (n = s->nodes ? s->nodes->children : NULL; n; n = n->next) {
+					if (cyberiada_graph_node_is_meta(n) && edge->source_id &&
+						strcmp(edge->source_id, n->id) == 0) {
+						meta_source = 1;
+						break;
+					}
+				}
+			}
+			if (meta_source) {
+				ERROR("warning: dropping the meta edge %s\n", edge->id);
+				*e = edge->next;
+				cyberiada_destroy_edge(edge);
+				ctx->lapki = 1;
+			} else {
+				e = &(edge->next);
+			}
+		}
 	}
 }
 
@@ -3075,6 +3230,10 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 	int geom_flags;
 	CyberiadaRegexps cyberiada_regexps;
 	CyberiadaParserContext parser_ctx;
+
+	if (format == cybxmlLapki) {
+		format = cybxmlCyberiada10;
+	}
 	
 	if (flags & CYBERIADA_FLAG_ROUND_GEOMETRY) {
 		ERROR("Round geometry flag is not supported on import\n");
@@ -3184,6 +3343,9 @@ static int cyberiada_process_decode_sm_document(CyberiadaDocument* cyb_doc, xmlD
 			break;
 		}
 
+		if (format == cybxmlCyberiada10 && !(flags & CYBERIADA_FLAG_STRICT)) {
+			cyberiada_lapki_document(cyb_doc, &parser_ctx);
+		}
 		cyberiada_drop_nodes(cyb_doc, parser_ctx.dropped_nodes);
 
 		for (sm = cyb_doc->state_machines; sm; sm = sm->next) {
@@ -3751,7 +3913,7 @@ static int cyberiada_write_node_cyberiada(xmlTextWriterPtr writer, CyberiadaNode
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent)
+static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge* edge, int indent, int lapki)
 {
 	int res;
 /*	char buffer[MAX_STR_LEN];
@@ -3771,7 +3933,14 @@ static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge
 	if (edge->action) {
 		XML_WRITE_OPEN_E_I(writer, GRAPHML_DATA_ELEMENT, indent + 1);
 		XML_WRITE_ATTR(writer, GRAPHML_KEY_ATTRIBUTE, GRAPHML_CYB_KEY_DATA);
-		if ((res = cyberiada_write_action_text(writer, edge->action)) != CYBERIADA_NO_ERROR) {
+		if (lapki && edge->source && edge->source->type == cybNodeInitial && !edge->action->next &&
+			!*(edge->action->trigger) && !*(edge->action->guard)) {
+			/* Lapki writes the behavior of the initial transition alone */
+			if (*(edge->action->behavior)) {
+				XML_WRITE_TEXT(writer, edge->action->behavior);
+				XML_WRITE_TEXT(writer, "\n");
+			}
+		} else if ((res = cyberiada_write_action_text(writer, edge->action)) != CYBERIADA_NO_ERROR) {
 			return res;
 		}
 		XML_WRITE_CLOSE_E(writer);
@@ -3863,7 +4032,7 @@ static int cyberiada_write_edge_cyberiada(xmlTextWriterPtr writer, CyberiadaEdge
 	return CYBERIADA_NO_ERROR;	
 }
 
-static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer)
+static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer, int lapki)
 {
 	int res;
 	CyberiadaNode* cur_node;
@@ -3925,7 +4094,7 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 		
 	/* write edges */
 	for (cur_edge = sm->edges; cur_edge; cur_edge = cur_edge->next) {
-		res = cyberiada_write_edge_cyberiada(writer, cur_edge, 2);
+		res = cyberiada_write_edge_cyberiada(writer, cur_edge, 2, lapki);
 		if (res != CYBERIADA_NO_ERROR) {
 			ERROR("error while writing edge %s\n", cur_edge->id);
 			return CYBERIADA_XML_ERROR;
@@ -3937,7 +4106,121 @@ static int cyberiada_write_sm_cyberiada(CyberiadaSM* sm, xmlTextWriterPtr writer
 	return CYBERIADA_NO_ERROR;
 }
 
-static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlTextWriterPtr writer)
+/* the Lapki IDE dialect read by cyberiadaml-js 1.x (lapki-client) and cyberiadaml-py 1.x
+   (lapki-compiler): components named CGML_COMPONENT with the id/ parameter, label and
+   comment points, the meta node in every machine */
+static int cyberiada_lapki_export_nodes(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+	size_t len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
+
+	for (n = nodes; n; n = n->next) {
+		if (n->type == cybNodeFormalComment && !cyberiada_graph_node_is_meta(n)) {
+			const char* id;
+			char *body, *title;
+			if (!cyberiada_node_is_component(n)) {
+				ERROR("The Lapki format has no formal comment %s\n", n->title ? n->title : n->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			for (id = n->title + len; *id == ' '; id++);
+			if (*id) {
+				const char* old_body = n->comment_data && n->comment_data->body ? n->comment_data->body : "";
+				body = (char*)malloc(strlen(CYBERIADA_COMPONENT_ID_PARAM) + strlen(id) + strlen(old_body) + 4);
+				title = (char*)malloc(len + 1);
+				if (!body || !title) {
+					free(body);
+					free(title);
+					return CYBERIADA_MEMORY_ERROR;
+				}
+				sprintf(body, "%s %s\n\n%s", CYBERIADA_COMPONENT_ID_PARAM, id, old_body);
+				strcpy(title, CYBERIADA_COMPONENT_NODE_TITLE);
+				if (!n->comment_data) n->comment_data = cyberiada_new_comment_data();
+				free(n->comment_data->body);
+				n->comment_data->body = body;
+				n->comment_data->body_len = strlen(body);
+				free(n->title);
+				n->title = title;
+				n->title_len = len;
+			}
+		} else if (n->type == cybNodeComment && n->geometry_rect) {
+			CyberiadaPoint* p = htree_new_point();
+			if (!p) return CYBERIADA_MEMORY_ERROR;
+			p->x = n->geometry_rect->x;
+			p->y = n->geometry_rect->y;
+			htree_destroy_rect(n->geometry_rect);
+			n->geometry_rect = NULL;
+			n->geometry_point = p;
+		}
+		if (n->children) {
+			int res = cyberiada_lapki_export_nodes(n->children);
+			if (res != CYBERIADA_NO_ERROR) return res;
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_lapki_export(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+	CyberiadaNode *meta = NULL, *n;
+	CyberiadaEdge* e;
+	CyberiadaAction* a;
+	int res;
+
+	if (!doc->meta_info || !cyberiada_find_meta_string(doc->meta_info, CYBERIADA_META_PLATFORM)) {
+		ERROR("The Lapki format requires the %s meta parameter\n", CYBERIADA_META_PLATFORM);
+		return CYBERIADA_FORMAT_ERROR;
+	}
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (!sm->nodes) continue;
+		for (n = sm->nodes->children; n; n = n->next) {
+			if (cyberiada_graph_node_is_meta(n)) {
+				if (!meta) meta = n;
+				break;
+			}
+		}
+		if (!n && meta) {
+			/* lapki-client takes the platform of a machine from its own meta node */
+			CyberiadaNode* copy = cyberiada_new_node(meta->id);
+			if (!copy) return CYBERIADA_MEMORY_ERROR;
+			copy->type = cybNodeFormalComment;
+			cyberiada_copy_string(&(copy->title), &(copy->title_len), meta->title);
+			copy->comment_data = cyberiada_new_comment_data();
+			cyberiada_copy_string(&(copy->comment_data->body), &(copy->comment_data->body_len),
+								  meta->comment_data ? meta->comment_data->body : "");
+			copy->parent = sm->nodes;
+			copy->next = sm->nodes->children;
+			sm->nodes->children = copy;
+		}
+		if ((res = cyberiada_lapki_export_nodes(sm->nodes->children)) != CYBERIADA_NO_ERROR) {
+			return res;
+		}
+		for (e = sm->edges; e; e = e->next) {
+			if (e->geometry_label_rect) {
+				CyberiadaPoint* p = htree_new_point();
+				if (!p) return CYBERIADA_MEMORY_ERROR;
+				p->x = e->geometry_label_rect->x;
+				p->y = e->geometry_label_rect->y;
+				htree_destroy_rect(e->geometry_label_rect);
+				e->geometry_label_rect = NULL;
+				e->geometry_label_point = p;
+			}
+			if (e->type == cybEdgeComment || (e->source && e->source->type == cybNodeInitial)) {
+				continue;
+			}
+			for (a = e->action; a; a = a->next) {
+				if (a->type == cybActionTransition && !*(a->trigger) && !*(a->guard) &&
+					(*(a->behavior) || a->propagation != cybEventPropagationNone)) {
+					ERROR("The Lapki format has no transition without a trigger: %s\n", e->id);
+					return CYBERIADA_FORMAT_ERROR;
+				}
+			}
+		}
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlTextWriterPtr writer, int lapki)
 {
 	int res;
 	size_t i;
@@ -3950,6 +4233,9 @@ static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlText
 	}
 	res = cyberiada_update_metainfo_comment(doc);
 	if (res != CYBERIADA_NO_ERROR) {
+		return res;
+	}
+	if (lapki && (res = cyberiada_lapki_export(doc)) != CYBERIADA_NO_ERROR) {
 		return res;
 	}
 
@@ -3978,7 +4264,7 @@ static int cyberiada_write_sm_document_cyberiada(CyberiadaDocument* doc, xmlText
 	}
 
 	for (sm = doc->state_machines; sm; sm = sm->next) {
-		if ((res = cyberiada_write_sm_cyberiada(sm, writer)) != CYBERIADA_NO_ERROR) {
+		if ((res = cyberiada_write_sm_cyberiada(sm, writer, lapki)) != CYBERIADA_NO_ERROR) {
 			ERROR("Error while writing SM: %d\n", res);
 			return res;
 		}
@@ -4681,6 +4967,34 @@ static int cyberiada_write_sm_document_yed(CyberiadaDocument* doc, xmlTextWriter
  * GraphML writer interface
  * ----------------------------------------------------------------------------- */
 
+/* a displayed element of the Lapki tools without geometry (the components and
+   the meta node have none there) */
+static int cyberiada_lapki_nodes_need_layout(CyberiadaNode* nodes)
+{
+	CyberiadaNode* n;
+	for (n = nodes; n; n = n->next) {
+		if (n->type != cybNodeFormalComment && n->type != cybNodeRegion &&
+			!n->geometry_rect && !n->geometry_point) {
+			return 1;
+		}
+		if (n->children && cyberiada_lapki_nodes_need_layout(n->children)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+static int cyberiada_lapki_needs_layout(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		if (sm->nodes && cyberiada_lapki_nodes_need_layout(sm->nodes->children)) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextWriterPtr writer,
 												CyberiadaXMLFormat format, int flags)
 {
@@ -4708,7 +5022,7 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	
-	if (format != cybxmlCyberiada10 && !CYBERIADA_FORMAT_IS_YED(format)) {
+	if (format != cybxmlCyberiada10 && format != cybxmlLapki && !CYBERIADA_FORMAT_IS_YED(format)) {
 		ERROR("unsupported SM format for write: %d\n", format);
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -4747,13 +5061,18 @@ static int cyberiada_process_encode_sm_document(CyberiadaDocument* doc, xmlTextW
 		if (flags & CYBERIADA_FLAG_SKIP_GEOMETRY) {
 			cyberiada_clean_document_geometry(copy_doc);
 		} else {
-			cyberiada_export_document_geometry(copy_doc, flags, format);
+			if (format == cybxmlLapki && cyberiada_lapki_needs_layout(copy_doc)) {
+				/* the Lapki tools place every element: the absent geometry is laid out */
+				cyberiada_update_document_geometry(copy_doc, 0);
+			}
+			cyberiada_export_document_geometry(copy_doc, flags,
+											   format == cybxmlLapki ? cybxmlCyberiada10 : format);
 		}
 		
 		if (CYBERIADA_FORMAT_IS_YED(format)) {
 			res = cyberiada_write_sm_document_yed(copy_doc, writer, format);
-		} else if (format == cybxmlCyberiada10) {
-			res = cyberiada_write_sm_document_cyberiada(copy_doc, writer);
+		} else if (format == cybxmlCyberiada10 || format == cybxmlLapki) {
+			res = cyberiada_write_sm_document_cyberiada(copy_doc, writer, format == cybxmlLapki);
 		} else {
 			ERROR("unsupported SM format for write: %d\n", format);
 			res = CYBERIADA_BAD_PARAMETER;

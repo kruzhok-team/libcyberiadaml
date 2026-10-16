@@ -1425,7 +1425,8 @@ int cyberiada_arena_document_geometry(CyberiadaDocument* doc)
 }
 
 /* Lapki: a point on a rect node becomes a loose rect (7.2.2), the -1 x -1
-   rect cyberiadaml-js writes for a point becomes the point again */
+   rect cyberiadaml-js writes for a point becomes the point again; a sized
+   rect on a point node (7.2.1 SHOULD) becomes its centre */
 static void cyberiada_lapki_nodes(CyberiadaNode* nodes, int* changed)
 {
 	CyberiadaNode* n;
@@ -1444,17 +1445,21 @@ static void cyberiada_lapki_nodes(CyberiadaNode* nodes, int* changed)
 				n->geometry_rect = r;
 				*changed = 1;
 			}
-		} else if ((n->type & NODE_GEOMETRY_POINT) && n->geometry_rect && !n->geometry_point &&
-				   n->geometry_rect->width == -1.0 && n->geometry_rect->height == -1.0) {
+		} else if ((n->type & NODE_GEOMETRY_POINT) && n->geometry_rect && !n->geometry_point) {
+			/* the -1 x -1 rect is the cyberiadaml-js point, a sized rect gives its centre */
 			CyberiadaPoint* p = htree_new_point();
 			if (p) {
-				ERROR("warning: the -1 x -1 rect of the point node %s read as a point\n", n->id);
-				p->x = n->geometry_rect->x;
-				p->y = n->geometry_rect->y;
-				htree_destroy_rect(n->geometry_rect);
+				CyberiadaRect* r = n->geometry_rect;
+				int js_point = (r->width == -1.0 && r->height == -1.0);
+				ERROR("warning: the rect of the point node %s read as a point\n", n->id);
+				p->x = js_point ? r->x : r->x + r->width / 2.0;
+				p->y = js_point ? r->y : r->y + r->height / 2.0;
+				htree_destroy_rect(r);
 				n->geometry_rect = NULL;
 				n->geometry_point = p;
-				*changed = 1;
+				if (js_point) {
+					*changed = 1;
+				}
 			}
 		}
 		if (n->children) {

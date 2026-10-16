@@ -59,14 +59,16 @@ const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
 	"yed",          /* cybxmlYED */
 	"yed-ostranna", /* cybxmlYEDOstranna */
-	"yed-berloga"   /* cybxmlYEDBerloga16 */
+	"yed-berloga",  /* cybxmlYEDBerloga16 */
+	"lapki"         /* cybxmlLapki */
 };
 
 const char* format_descr[] = {
 	"Cyberiada-GraphML 1.0 format",
 	"yEd editor format (the Ostranna dialect is written)",
 	"yEd editor format used by Ostranna projects and the Orbita Simulator",
-	"yEd editor format of the Berloga 1.6 tool"
+	"yEd editor format of the Berloga 1.6 tool",
+	"Cyberiada-GraphML 1.0 dialect of the Lapki IDE (lapki-client, lapki-compiler)"
 };
 
 size_t format_count = sizeof(formats) / sizeof(char*);

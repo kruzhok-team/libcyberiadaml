@@ -314,6 +314,8 @@ int cyberiada_check_component(const char* body)
 	return found ? CYBERIADA_NO_ERROR : CYBERIADA_FORMAT_ERROR;
 }
 
+#define CYBERIADA_META_UNDEFINED_VALUE "undefined"
+
 int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegexps* regexps,
 						  int strict)
 {
@@ -333,15 +335,21 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 
 	next = metadata;	
 	while ((res = cyberiada_meta_next_param(&next, &start, &parts, regexps)) == CYBERIADA_NO_ERROR) {
-		/* the parameter is declared once (6.9) */
-		if (strict &&
-			((strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0 && meta->standard_version) ||
-			 (strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0 && meta->transition_order_flag) ||
-			 (strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0 && meta->event_propagation_flag) ||
-			 cyberiada_find_meta_string(meta, start))) {
+		/* the parameter is declared once (6.9); the non-strict mode keeps the first one
+		   and drops the undefined values Lapki writes */
+		if ((strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0 && meta->standard_version) ||
+			(strcmp(start, CYBERIADA_META_TRANSITION_ORDER) == 0 && meta->transition_order_flag) ||
+			(strcmp(start, CYBERIADA_META_EVENT_PROPAGATION) == 0 && meta->event_propagation_flag) ||
+			cyberiada_find_meta_string(meta, start)) {
+			if (!strict) {
+				continue;
+			}
 			ERROR("Error decoding SM metainformation: parameter %s is repeated\n", start);
 			cyberiada_destroy_meta(meta);
 			return CYBERIADA_METADATA_FORMAT_ERROR;
+		}
+		if (!strict && parts && strcmp(parts, CYBERIADA_META_UNDEFINED_VALUE) == 0) {
+			continue;
 		}
 
 		if (strcmp(start, CYBERIADA_META_STANDARD_VERSION) == 0) {
@@ -389,6 +397,12 @@ int cyberiada_decode_meta(CyberiadaDocument* doc, char* metadata, CyberiadaRegex
 		return CYBERIADA_METADATA_FORMAT_ERROR;
 	}
 	
+	if (!strict && (!meta->standard_version || !*(meta->standard_version))) {
+		/* Lapki may leave the version empty */
+		if (meta->standard_version) free(meta->standard_version);
+		cyberiada_copy_string(&(meta->standard_version), &(meta->standard_version_len),
+							  CYBERIADA_STANDARD_VERSION_CYBERIADAML);
+	}
 	if (!meta->standard_version) {
 		ERROR("Error decoding SM metainformation: standard version is not set\n");
 		cyberiada_destroy_meta(meta);
