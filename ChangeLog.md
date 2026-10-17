@@ -1,6 +1,6 @@
 # libcyberiadaml project changelog
 
-## Version 1.0.8 (unreleased)
+## Version 1.0.8
 
 Added:
 - the geometry update `cyberiada_update_document_geometry` (libhtgeom 1.2): the
@@ -8,14 +8,8 @@ Added:
 - the strict mode checks of the node identifiers unique in the whole document and
   of the component identifiers unique in their state machine;
 - the non-strict mode reads the Arena node points as rects (centre, y up);
-- the non-strict Lapki dialect (Lapki IDE, cyberiadaml-js/py 1.x): the region graph
-  named after its node, points on rect nodes, -1 x -1 point rects, the repeated meta
-  and its parameters, the versionless format, the dLapki keys, the old components,
-  repeated edge ids, nameless machines, the initial behavior without a slash;
-- the `cybxmlLapki` format: writes the Lapki dialect read by lapki-client and
-  lapki-compiler (`cybparser -t lapki`).
-
-Changed:
+- the non-strict Lapki dialect (Lapki IDE, cyberiadaml-js/py 1.x), the `cybxmlLapki`
+  format: writes the Lapki dialect read by lapki-client and lapki-compiler (`cybparser -t lapki`).
 - the non-strict mode reads a rect on a pseudostate as its centre point.
 
 Fixed:
