@@ -151,6 +151,14 @@ install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/ChangeLog.md
 	DESTINATION share/doc/libcyberiadaml
 	COMPONENT runtime)
 
+# the machine-readable (DEP-5) copyright, where the Debian policy wants it
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/debian-copyright
+	DESTINATION share/doc/libcyberiadaml RENAME copyright COMPONENT runtime)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/debian-copyright
+	DESTINATION share/doc/libcyberiadaml-dev RENAME copyright COMPONENT dev)
+install(FILES ${CMAKE_CURRENT_SOURCE_DIR}/debian-copyright
+	DESTINATION share/doc/libcyberiadaml-parser RENAME copyright COMPONENT parser)
+
 # optional per-release suffix (e.g. ubuntu2604) for the package version, set when
 # this lib is rebuilt for a release whose libxml2 soname differs from the shared set
 set(DISTRO_TAG "" CACHE STRING "distribution suffix appended to the package version")
