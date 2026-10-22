@@ -422,7 +422,9 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 	if (!edge) {
 		return NULL;
 	}
-	t_edge = htree_new_edge(edge->id, edge->source_id, edge->target_edge ? edge->target_edge->target_id : edge->target_id);
+	/* a link to a transition takes the transition's source node as its target
+	   point frame (PNST 1044 9.1.1) */
+	t_edge = htree_new_edge(edge->id, edge->source_id, edge->target_edge ? edge->target_edge->source_id : edge->target_id);
 	if (!t_edge) {
 		return NULL;
 	}

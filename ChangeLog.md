@@ -1,5 +1,11 @@
 # libcyberiadaml project changelog
 
+## Version 1.0.9 (unreleased)
+
+Fixed:
+- the target point of a comment link to a transition is relative to the
+  transition's source node (PNST 1044 9.1.1), not to its target node.
+
 ## Version 1.0.8
 
 Added:
