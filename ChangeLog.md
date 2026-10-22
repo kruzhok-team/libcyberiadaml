@@ -2,6 +2,11 @@
 
 ## Version 1.0.9 (unreleased)
 
+Added:
+- the geometry reconstruction and update give the comment links their ends
+  (libhtgeom 1.3): the links to the elements and to the transitions both ends,
+  the links to the fragments the source point only.
+
 Fixed:
 - the target point of a comment link to a transition is relative to the
   transition's source node (PNST 1044 9.1.1), not to its target node.

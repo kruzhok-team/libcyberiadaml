@@ -39,10 +39,22 @@ static CyberiadaEdge* find_edge(CyberiadaEdge* edges, const char* id)
 	return NULL;
 }
 
+static void clear_points(CyberiadaEdge* e)
+{
+	if (e->geometry_source_point) {
+		htree_destroy_point(e->geometry_source_point);
+		e->geometry_source_point = NULL;
+	}
+	if (e->geometry_target_point) {
+		htree_destroy_point(e->geometry_target_point);
+		e->geometry_target_point = NULL;
+	}
+}
+
 int main(void)
 {
 	CyberiadaDocument* doc;
-	CyberiadaEdge *to_transition, *to_state;
+	CyberiadaEdge *to_transition, *to_state, *chunk;
 
 	doc = cyberiada_new_sm_document();
 	TEST_ASSERT(doc);
@@ -79,6 +91,49 @@ int main(void)
 	TEST_ASSERT(point_is(to_transition->geometry_target_point, 200.0, 25.0));
 	TEST_ASSERT(point_is(to_state->geometry_target_point, 50.0, 50.0));
 
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the update fills the cleared link ends: on the borders, on the
+	   transition path off its arrow, no target point on a fragment */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/link-geometry.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	to_transition = find_edge(doc->state_machines->edges, "c-a-b");
+	to_state = find_edge(doc->state_machines->edges, "c-b");
+	chunk = find_edge(doc->state_machines->edges, "c-b#1");
+	TEST_ASSERT(to_transition && to_state && chunk);
+	clear_points(to_transition);
+	clear_points(to_state);
+	clear_points(chunk);
+	TEST_ASSERT(cyberiada_update_document_geometry(doc, 0) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_convert_document_geometry(doc, coordAbsolute, coordAbsolute,
+													coordAbsolute, edgeBorder) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(to_transition->geometry_source_point && to_transition->geometry_target_point);
+	TEST_ASSERT(fabs(to_transition->geometry_target_point->y - 25.0) < EPS &&
+				to_transition->geometry_target_point->x >= 150.0 - EPS &&
+				to_transition->geometry_target_point->x <= 250.0 + EPS);
+	TEST_ASSERT(fabs(to_transition->geometry_source_point->y - 150.0) < EPS);
+	TEST_ASSERT(to_state->geometry_target_point &&
+				fabs(to_state->geometry_target_point->y - 50.0) < EPS);
+	TEST_ASSERT(chunk->geometry_source_point && !chunk->geometry_target_point);
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the full reconstruction attaches every link */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/link-geometry.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_reconstruct_document_geometry(doc, 0) == CYBERIADA_NO_ERROR);
+	to_transition = find_edge(doc->state_machines->edges, "c-a-b");
+	to_state = find_edge(doc->state_machines->edges, "c-b");
+	chunk = find_edge(doc->state_machines->edges, "c-b#1");
+	TEST_ASSERT(to_transition->geometry_source_point && to_transition->geometry_target_point);
+	TEST_ASSERT(to_state->geometry_source_point && to_state->geometry_target_point);
+	TEST_ASSERT(chunk->geometry_source_point && !chunk->geometry_target_point);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 	return 0;
 }

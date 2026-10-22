@@ -428,6 +428,12 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 	if (!t_edge) {
 		return NULL;
 	}
+	if (edge->type == cybEdgeComment) {
+		htree_edge_set_link(t_edge,
+							edge->comment_subject && edge->comment_subject->type != cybCommentSubjectNode ?
+							htEdgeChunkLink : htEdgeLink,
+							edge->target_edge ? edge->target_edge->id : NULL);
+	}
 	if (estimate && edge->type != cybEdgeComment && edge->action && !edge->geometry_label_rect &&
 		!edge->geometry_source_point && !edge->geometry_target_point &&
 		!edge->geometry_polyline && !edge->geometry_label_point) {
@@ -509,6 +515,7 @@ static HTree* cyberiada_sm_to_htree(CyberiadaSM* sm, int estimate)
 		}
 		t_edge->source = source;
 		t_edge->target = target;
+		t_edge->target_edge = htree_find_edge_by_id(tree->edges, t_edge->target_edge_id);
 		t_edge = t_edge->next;
 	}
 	
