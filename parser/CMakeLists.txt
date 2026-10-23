@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(cybparser VERSION 1.0.8)
+project(cybparser VERSION 1.0.9)
 add_executable(cybparser parser.c)
 target_include_directories(cybparser PUBLIC
 			   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

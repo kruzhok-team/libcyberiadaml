@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(cyberiadaml VERSION 1.0.8 LANGUAGES C)
+project(cyberiadaml VERSION 1.0.9 LANGUAGES C)
 
 find_package(LibXml2 2.9 REQUIRED)
 if(NOT LibXml2_FOUND)
