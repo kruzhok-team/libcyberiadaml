@@ -105,6 +105,18 @@ int main(void)
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/chunk-target-point.graphml", CYBERIADA_FLAG_STRICT) ==
 				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-to-graph.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-to-graph.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-to-region.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-to-region.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-name-on-transition.graphml", CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(read_document("diagrams/link-name-on-transition.graphml", CYBERIADA_FLAG_STRICT) ==
+				CYBERIADA_FORMAT_ERROR);
 	TEST_ASSERT(read_document("diagrams/collapsed-no-regions.graphml", CYBERIADA_FLAG_NO) ==
 				CYBERIADA_NO_ERROR);
 	TEST_ASSERT(read_document("diagrams/collapsed-no-regions.graphml", CYBERIADA_FLAG_STRICT) ==

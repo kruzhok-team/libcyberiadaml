@@ -2808,6 +2808,11 @@ static int cyberiada_check_comment_fragment(CyberiadaEdge* e)
 {
 	const char* fragment = e->comment_subject->fragment;
 	if (e->comment_subject->type == cybCommentSubjectNameFragment) {
+		if (e->target_edge) {
+			ERROR("The comment link %s names a fragment of the transition %s, which has no name\n",
+				  e->id, e->target_edge->id);
+			return CYBERIADA_FORMAT_ERROR;
+		}
 		if (e->target && (!e->target->title || !strstr(e->target->title, fragment))) {
 			ERROR("The comment link %s names the fragment '%s' absent from the name of %s\n",
 				  e->id, fragment, e->target_id);
@@ -2852,6 +2857,11 @@ static int cyberiada_check_strict_edges(CyberiadaSM* sm)
 			}
 			if (strcmp(e->source_id, e->target_id) == 0) {
 				ERROR("The comment link %s is a self-loop\n", e->id);
+				return CYBERIADA_FORMAT_ERROR;
+			}
+			/* the link targets a node of the diagram, never a graph (6.7) */
+			if (e->target && (e->target->type == cybNodeSM || e->target->type == cybNodeRegion)) {
+				ERROR("The comment link %s targets the graph %s\n", e->id, e->target_id);
 				return CYBERIADA_FORMAT_ERROR;
 			}
 			/* the commented transition is not a comment link itself (8.5) */

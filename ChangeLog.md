@@ -10,6 +10,8 @@ Added:
 Fixed:
 - the target point of a comment link to a transition is relative to the
   transition's source node (PNST 1044 9.1.1), not to its target node.
+- the strict mode refuses a comment link targeting a state machine or a region
+  graph and a `dName` link to a transition (PNST 1044 6.7, compat-tests spec 1.10).
 
 ## Version 1.0.8
 
