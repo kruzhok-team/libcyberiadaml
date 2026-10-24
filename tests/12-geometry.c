@@ -205,5 +205,40 @@ int main(void)
 	TEST_ASSERT(node->geometry_rect != NULL);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
 
+	/* the comment sizes: the default comment box for a short note, the body
+	   wrapped at 40 characters for a long one, the hidden component comment
+	   left without geometry, every comment inside the machine border */
+	doc = cyberiada_new_sm_document();
+	TEST_ASSERT(doc);
+	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/comment-sizes.graphml",
+										   cybxmlUnknown, CYBERIADA_FLAG_NO) ==
+				CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_reconstruct_document_geometry(doc, 1) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_convert_document_geometry(doc, coordAbsolute, coordAbsolute,
+													coordAbsolute, edgeBorder) == CYBERIADA_NO_ERROR);
+	{
+		CyberiadaNode* sm = doc->state_machines->nodes;
+		CyberiadaNode* short_note = cyberiada_graph_find_node_by_id(sm, "short");
+		CyberiadaNode* long_note = cyberiada_graph_find_node_by_id(sm, "long");
+		CyberiadaNode* component = cyberiada_graph_find_node_by_id(sm, "comp");
+		TEST_ASSERT(sm && sm->geometry_rect && short_note && long_note && component);
+		TEST_ASSERT(short_note->geometry_rect && short_note->geometry_rect->width == 200.0 &&
+					short_note->geometry_rect->height == 100.0);
+		TEST_ASSERT(long_note->geometry_rect && long_note->geometry_rect->width <= 40 * 10.0 + 16.0 &&
+					long_note->geometry_rect->width > 300.0 && long_note->geometry_rect->height > 100.0);
+		TEST_ASSERT(component->geometry_rect == NULL && component->geometry_point == NULL);
+		TEST_ASSERT(short_note->geometry_rect->x >= sm->geometry_rect->x &&
+					short_note->geometry_rect->x + short_note->geometry_rect->width <=
+					sm->geometry_rect->x + sm->geometry_rect->width &&
+					long_note->geometry_rect->y + long_note->geometry_rect->height <=
+					sm->geometry_rect->y + sm->geometry_rect->height);
+		for (edge = doc->state_machines->edges; edge; edge = edge->next) {
+			if (strcmp(edge->id, "comp-n1") == 0) {
+				TEST_ASSERT(edge->geometry_source_point == NULL && edge->geometry_target_point == NULL);
+			}
+		}
+	}
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
 	return 0;
 }

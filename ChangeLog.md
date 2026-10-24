@@ -7,6 +7,13 @@ Added:
   (libhtgeom 1.3): the links to the elements and to the transitions both ends,
   the links to the fragments the source point only.
 
+Changed:
+- the comment size estimate of the reconstruction wraps the body at 40
+  characters, counts the name line and floors the box to 200x100 (the editor's
+  default comment) instead of the state size; the hidden `CGML_COMPONENT`
+  comments without geometry are skipped like the meta node (libhtgeom 1.3 lays
+  the comments out inside their containers).
+
 Fixed:
 - the target point of a comment link to a transition is relative to the
   transition's source node (PNST 1044 9.1.1), not to its target node.

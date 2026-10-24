@@ -32,6 +32,15 @@ int cyberiada_graph_node_is_meta(const CyberiadaNode* node)
 			strcmp(node->title, CYBERIADA_META_NODE_TITLE) == 0);
 }
 
+/* the dynamic component node: a formal comment named CGML_COMPONENT <id> (10.3) */
+int cyberiada_graph_node_is_component(const CyberiadaNode* node)
+{
+	size_t len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
+	return (node && node->type == cybNodeFormalComment && node->title &&
+			strncmp(node->title, CYBERIADA_COMPONENT_NODE_TITLE, len) == 0 &&
+			(node->title[len] == 0 || node->title[len] == ' '));
+}
+
 CyberiadaNode* cyberiada_graph_find_node_by_id(CyberiadaNode* root, const char* id)
 {
 	CyberiadaNode* node;

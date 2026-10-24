@@ -176,7 +176,12 @@ preserving fill-in of the missing geometry) or rebuilt from the structure
 by the standalone `cyberiada_reconstruct_document_geometry()`, or completed
 around the existing geometry by `cyberiada_update_document_geometry()`: the bridge
 passes the node roles (`HTNodeRole`) and the text-size estimates of the
-states and the transition labels to the libhtgeom layered layout.
+states, the comments and the transition labels to the libhtgeom layered
+layout (10 px per character, 20 px per line, 8 px margins: a state at least
+300x200; a comment's body wrapped at 40 characters plus its name line, at
+least 200x100 - the editor's default box). The meta node and the component
+comments (`CGML_COMPONENT`, hidden in the editors) without geometry take no
+part in the layout.
 
 ## Isomorphism and diff
 

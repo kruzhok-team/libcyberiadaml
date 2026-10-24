@@ -2953,15 +2953,6 @@ static int cyberiada_check_submachine_points(CyberiadaDocument* doc, CyberiadaNo
 	return CYBERIADA_NO_ERROR;
 }
 
-/* the dynamic component node: a formal comment named CGML_COMPONENT <id> (10.3) */
-static int cyberiada_node_is_component(const CyberiadaNode* n)
-{
-	size_t len = strlen(CYBERIADA_COMPONENT_NODE_TITLE);
-	return n->type == cybNodeFormalComment && n->title &&
-		strncmp(n->title, CYBERIADA_COMPONENT_NODE_TITLE, len) == 0 &&
-		(n->title[len] == 0 || n->title[len] == ' ');
-}
-
 static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_id, CyberiadaNode* nodes)
 {
 	CyberiadaNode* n;
@@ -3008,7 +2999,7 @@ static int cyberiada_check_strict_nodes(CyberiadaDocument* doc, const char* sm_i
 			return CYBERIADA_FORMAT_ERROR;
 		}
 		/* the dynamic component declares its type (10.3) */
-		if (cyberiada_node_is_component(n)) {
+		if (cyberiada_graph_node_is_component(n)) {
 			if (!n->comment_data || !n->comment_data->body ||
 				cyberiada_check_component(n->comment_data->body) != CYBERIADA_NO_ERROR) {
 				ERROR("The component node %s has no type parameter\n", n->id);
@@ -3055,7 +3046,7 @@ static CyberiadaNode* cyberiada_find_component(CyberiadaNode* nodes, const char*
 	CyberiadaNode *n, *found;
 
 	for (n = nodes; n; n = n->next) {
-		if (n != skip && cyberiada_node_is_component(n) && strcmp(n->title, title) == 0) {
+		if (n != skip && cyberiada_graph_node_is_component(n) && strcmp(n->title, title) == 0) {
 			return n;
 		}
 		if (n->children && (found = cyberiada_find_component(n->children, title, skip))) {
@@ -3071,7 +3062,7 @@ static int cyberiada_check_component_doubles(CyberiadaNode* root, CyberiadaNode*
 	CyberiadaNode* n;
 
 	for (n = nodes; n; n = n->next) {
-		if (cyberiada_node_is_component(n) && cyberiada_find_component(root, n->title, n)) {
+		if (cyberiada_graph_node_is_component(n) && cyberiada_find_component(root, n->title, n)) {
 			ERROR("The component '%s' is defined twice in the state machine %s\n", n->title, root->id);
 			return CYBERIADA_FORMAT_ERROR;
 		}
@@ -4128,7 +4119,7 @@ static int cyberiada_lapki_export_nodes(CyberiadaNode* nodes)
 		if (n->type == cybNodeFormalComment && !cyberiada_graph_node_is_meta(n)) {
 			const char* id;
 			char *body, *title;
-			if (!cyberiada_node_is_component(n)) {
+			if (!cyberiada_graph_node_is_component(n)) {
 				ERROR("The Lapki format has no formal comment %s\n", n->title ? n->title : n->id);
 				return CYBERIADA_FORMAT_ERROR;
 			}

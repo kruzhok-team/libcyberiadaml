@@ -44,6 +44,11 @@
 #define CYBERIADA_LAYOUT_TEXT_MARGIN   8.0
 #define CYBERIADA_LAYOUT_ACTION_HEAD   6     /* "entry/" */
 #define CYBERIADA_LAYOUT_GUARD_EXTRA   3     /* " [" and "]" */
+/* a comment body wraps at this width like in the editor's box; the floor is
+   the editor's default comment box */
+#define CYBERIADA_LAYOUT_COMMENT_WRAP   40
+#define CYBERIADA_LAYOUT_COMMENT_WIDTH  200.0
+#define CYBERIADA_LAYOUT_COMMENT_HEIGHT 100.0
 
 /* the longest line (in UTF-8 characters) and the lines of a text */
 static void cyberiada_text_metrics(const char* text, size_t* max_chars, size_t* lines)
@@ -93,6 +98,36 @@ static void cyberiada_actions_metrics(const CyberiadaAction* action, size_t* max
 	}
 }
 
+/* the metrics of a text word-wrapped at the cap: a line holds whole words up
+   to the cap, a longer word takes a line of its own (and overflows) */
+static void cyberiada_wrapped_text_metrics(const char* text, size_t cap, size_t* max_chars, size_t* lines)
+{
+	size_t line = 0, word = 0;
+	const char* p;
+	if (!text || !*text) return;
+	for (p = text; ; p++) {
+		if (*p == ' ' || *p == '\n' || *p == 0) {
+			if (word) {
+				if (line && line + 1 + word > cap) {
+					if (line > *max_chars) *max_chars = line;
+					(*lines)++;
+					line = 0;
+				}
+				line += (line ? 1 : 0) + word;
+				word = 0;
+			}
+			if (*p == '\n' || *p == 0) {
+				if (line > *max_chars) *max_chars = line;
+				(*lines)++;
+				line = 0;
+				if (*p == 0) break;
+			}
+		} else if ((*p & 0xC0) != 0x80) {
+			word++;
+		}
+	}
+}
+
 static void cyberiada_text_block_size(size_t max_chars, size_t lines, double* w, double* h)
 {
 	*w = max_chars * CYBERIADA_LAYOUT_CHAR_WIDTH + 2 * CYBERIADA_LAYOUT_TEXT_MARGIN;
@@ -100,15 +135,29 @@ static void cyberiada_text_block_size(size_t max_chars, size_t lines, double* w,
 }
 
 /* the minimum size of a node from its texts: the title and the actions of
-   a state (the title block of a composite), the body of a comment; a leaf
-   takes at least the default state size */
+   a state (the title block of a composite), the name and the wrapped body
+   of a comment; a leaf takes at least the default state size, a comment at
+   least the default comment box */
 static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOptions* opts,
 									double* w, double* h)
 {
 	size_t max_chars = 0, lines = 0;
 
 	if (node->type & (cybNodeComment | cybNodeFormalComment)) {
-		if (node->comment_data) cyberiada_text_metrics(node->comment_data->body, &max_chars, &lines);
+		if (node->comment_data) {
+			cyberiada_wrapped_text_metrics(node->comment_data->body, CYBERIADA_LAYOUT_COMMENT_WRAP,
+										   &max_chars, &lines);
+		}
+		if (node->title && *node->title) {
+			size_t name_chars = 0, name_lines = 0;
+			cyberiada_text_metrics(node->title, &name_chars, &name_lines);
+			if (name_chars > max_chars) max_chars = name_chars;
+			lines += name_lines;
+		}
+		cyberiada_text_block_size(max_chars, lines, w, h);
+		if (*w < CYBERIADA_LAYOUT_COMMENT_WIDTH) *w = CYBERIADA_LAYOUT_COMMENT_WIDTH;
+		if (*h < CYBERIADA_LAYOUT_COMMENT_HEIGHT) *h = CYBERIADA_LAYOUT_COMMENT_HEIGHT;
+		return 1;
 	} else if (node->type & (cybNodeSM | cybNodeSimpleState | cybNodeCompositeState |
 							 cybNodeSubmachineState)) {
 		cyberiada_text_metrics(node->title, &max_chars, &lines);
@@ -118,7 +167,7 @@ static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOpt
 		return 0;
 	}
 	cyberiada_text_block_size(max_chars, lines, w, h);
-	if (node->type & (cybNodeSimpleState | cybNodeSubmachineState | cybNodeComment | cybNodeFormalComment)) {
+	if (node->type & (cybNodeSimpleState | cybNodeSubmachineState)) {
 		if (*w < opts->node_width) *w = opts->node_width;
 		if (*h < opts->node_height) *h = opts->node_height;
 	} else if (node->type == cybNodeCompositeState && *w < opts->node_width) {
@@ -180,9 +229,11 @@ static void cyberiada_round_geometry_rect(CyberiadaRect* r)
 
 /* the metainformation node is not a displayed element (6.9), so it takes no
    part in the layout unless the document gives it geometry of its own */
+/* the meta node and the component nodes (hidden in the editors) take no
+   part in the layout while they have no geometry */
 static int cyberiada_geometry_skip_node(const CyberiadaNode* node)
 {
-	return (cyberiada_graph_node_is_meta(node) &&
+	return ((cyberiada_graph_node_is_meta(node) || cyberiada_graph_node_is_component(node)) &&
 			!node->geometry_rect && !node->geometry_point);
 }
 
