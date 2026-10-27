@@ -33,8 +33,8 @@
 /* The version of the library itself */
 
 #define CYBERIADA_LIB_VERSION_MAJOR 1
-#define CYBERIADA_LIB_VERSION_MINOR 0
-#define CYBERIADA_LIB_VERSION_PATCH 9
+#define CYBERIADA_LIB_VERSION_MINOR 1
+#define CYBERIADA_LIB_VERSION_PATCH 0
 
 #ifdef __cplusplus
 extern "C" {
@@ -253,6 +253,15 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_COMPONENT_NODE_TITLE           "CGML_COMPONENT"
 #define CYBERIADA_COMPONENT_TYPE                 "type"
 #define CYBERIADA_STANDARD_VERSION_CYBERIADAML   "1.0"
+
+/* The EXT-FA extension: a deterministic finite automaton document (ПРИМС:КА) */
+#define CYBERIADA_META_TYPE                      "type"
+#define CYBERIADA_META_TYPE_FA                   "fa"
+#define CYBERIADA_FA_INPUT_TITLE                 "FA_INPUT"
+#define CYBERIADA_FA_INPUT_RE_TITLE              "FA_INPUT_RE"
+#define CYBERIADA_FA_OUTPUT_TITLE                "FA_OUTPUT"
+#define CYBERIADA_FA_OUTPUT_RE_TITLE             "FA_OUTPUT_RE"
+#define CYBERIADA_FA_EOF                         "EOF"
 	
 typedef struct _CyberiadaMetaStringList {
 	char*                            name;
@@ -392,6 +401,7 @@ typedef enum {
 #define CYBERIADA_ASSERT                  -7
 #define CYBERIADA_NOT_IMPLEMENTED         -8
 #define CYBERIADA_MEMORY_ERROR            -9
+#define CYBERIADA_FA_ERROR                -10 /* a type/ fa document breaks the EXT-FA rules */
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library functions
@@ -498,6 +508,9 @@ typedef enum {
 	
     /* Free metainformation struct */
 	int cyberiada_destroy_meta(CyberiadaMetainformation* meta);
+
+	/* Check the document is a finite automaton diagram (the metainformation parameter type/ fa) */
+	int cyberiada_document_is_fa(const CyberiadaDocument* doc);
 
 	/* Free the list of actions */
 	int cyberiada_destroy_action(CyberiadaAction* action);

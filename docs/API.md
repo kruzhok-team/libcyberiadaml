@@ -70,6 +70,25 @@ optional event handling keyword before the slash — `propagate`, `block` or
 `strings` name/value list for everything else. The names of the standard
 parameters are provided as `CYBERIADA_META_*` constants.
 
+### Finite automaton documents (EXT-FA)
+
+A document whose metainformation carries `type/ fa` (`CYBERIADA_META_TYPE`,
+`CYBERIADA_META_TYPE_FA`) is a deterministic finite automaton diagram of the
+ПРИМС:КА extension (compat-tests testing spec 2.9). `cyberiada_document_is_fa`
+tells. Such a document is checked against the EXT-FA rules on every read and
+write, whatever the flags: one state machine, `eventPropagation` absent or
+`block`, states / one-region composites / initial / final / transitions /
+comments only, one `entry/` output symbol per simple state, one symbol per
+transition without guard or event parameter and at most one output symbol as
+the action, `EOF` (`CYBERIADA_FA_EOF`) transitions into the final states only,
+one own transition per symbol, the alphabets `FA_INPUT`/`FA_INPUT_RE` and
+`FA_OUTPUT`/`FA_OUTPUT_RE` (`CYBERIADA_FA_*_TITLE`) as top-level formal
+comments, one symbol or restricted regular expression per line. A violation
+returns `CYBERIADA_FA_ERROR`. A symbol has the shape of an event name of the
+library, `\w((\w| |\.)*\w)?`; the `_RE` lines use the constructs `.`, `[a-z]`,
+`{n}`, `{n,m}`, `?`, `(a|b)` and the `\` escapes, translated to POSIX ERE (`.`
+matches one UTF-8 character).
+
 ### File formats (`CyberiadaXMLFormat`)
 
 * `cybxmlCyberiada10` — Cyberiada-GraphML 1.0;
@@ -142,6 +161,7 @@ Non-geometry:
 | `CYBERIADA_ASSERT` | -7 | internal assertion |
 | `CYBERIADA_NOT_IMPLEMENTED` | -8 | unsupported feature |
 | `CYBERIADA_MEMORY_ERROR` | -9 | allocation failure or string too long |
+| `CYBERIADA_FA_ERROR` | -10 | a finite automaton document (`type/ fa`) breaks the EXT-FA rules |
 
 ## Functions
 

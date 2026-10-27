@@ -1,8 +1,16 @@
 # libcyberiadaml project changelog
 
-## Version 1.0.9 (unreleased)
+## Version 1.1.0 (unreleased)
 
 Added:
+- the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
+  `type/ fa` in its metainformation is a deterministic finite automaton
+  diagram; the reader and the writer refuse it with the new code
+  `CYBERIADA_FA_ERROR` when it breaks the `CGML-FA-*` requirements, in any
+  mode; `cyberiada_document_is_fa`, the `CYBERIADA_META_TYPE` and
+  `CYBERIADA_FA_*` constants; the alphabet comments `FA_INPUT`/`FA_OUTPUT`
+  with their restricted regular expressions (cyb_fa.c); the 27 EXT-FA
+  diagrams of compat-tests 374e6d0 in the tests.
 - the geometry reconstruction and update give the comment links their ends
   (libhtgeom 1.3): the links to the elements and to the transitions both ends,
   the links to the fragments the source point only.

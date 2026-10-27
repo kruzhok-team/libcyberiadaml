@@ -102,6 +102,9 @@ constructed programmatically.
  geometry import (geometry.c): fix source coord format by dialect,
  convert to the caller-requested formats, optional reconstruction
      |
+     +──► graph checks (pseudostates, geometry, ids; the strict rows with the flag)
+     +──► EXT-FA checks (cyb_fa.c) when the metadata says type/ fa, in any mode
+     |
      v
  CyberiadaDocument
 ```

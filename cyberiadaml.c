@@ -35,6 +35,7 @@
 #include "cyb_graph.h"
 #include "cyb_graph_recon.h"
 #include "cyb_meta.h"
+#include "cyb_fa.h"
 #include "cyb_node_stack.h"
 #include "cyb_regexps.h"
 #include "cyb_string.h"
@@ -3167,6 +3168,10 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 	if (res == CYBERIADA_NO_ERROR && strict) {
 		res = cyberiada_check_document_node_ids(doc);
 	}
+	/* the EXT-FA rules of a type/ fa document apply in every mode */
+	if (res == CYBERIADA_NO_ERROR && cyberiada_document_is_fa(doc)) {
+		res = cyberiada_check_fa(doc);
+	}
 	return res;
 }
 
@@ -5180,6 +5185,7 @@ const char* cyberiada_error_str(int error_code)
 	case CYBERIADA_ASSERT:                return "Assertion Fault";
 	case CYBERIADA_NOT_IMPLEMENTED:       return "Not Implemented";
 	case CYBERIADA_MEMORY_ERROR:          return "Insufficient Memory";
+	case CYBERIADA_FA_ERROR:              return "Cyberiada Finite Automaton Error";
 	default:                              return "Unknown error code";
 	}
 }

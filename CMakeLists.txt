@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.12)
 
-project(cyberiadaml VERSION 1.0.9 LANGUAGES C)
+project(cyberiadaml VERSION 1.1.0 LANGUAGES C)
 
 find_package(LibXml2 2.9 REQUIRED)
 if(NOT LibXml2_FOUND)
@@ -56,7 +56,8 @@ add_library(cyberiadaml SHARED
 			cyb_actions.c
 			cyb_error.h
 			cyb_regex.h
-			cyb_graph.c		
+			cyb_fa.c
+			cyb_graph.c
 			cyb_graph_recon.c	
 			cyb_node_stack.c
 			cyb_meta.c
