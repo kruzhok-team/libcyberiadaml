@@ -75,21 +75,24 @@ parameters are provided as `CYBERIADA_META_*` constants.
 A document whose metainformation carries `type/ fa` (`CYBERIADA_META_TYPE`,
 `CYBERIADA_META_TYPE_FA`) is a deterministic finite automaton diagram of the
 ПРИМС:КА extension (compat-tests testing spec 2.9). `cyberiada_document_is_fa`
-tells. Such a document is checked against the EXT-FA rules on every read and
-write, whatever the flags: one state machine, `eventPropagation` absent or
-`block`, states / one-region composites / initial / final / transitions /
-comments only, one `entry/` output symbol per simple state, one symbol per
-transition without guard or event parameter and at most one output symbol as
-the action, `EOF` (`CYBERIADA_FA_EOF`) transitions into the final states only,
-one own transition per symbol, the alphabets `FA_INPUT`/`FA_INPUT_RE` and
-`FA_OUTPUT`/`FA_OUTPUT_RE` (`CYBERIADA_FA_*_TITLE`) as top-level formal
-comments, one symbol or restricted regular expression per line. A violation
-returns `CYBERIADA_FA_ERROR`. An input symbol has the shape of an event name of
-the library, `\w((\w| |\.)*\w)?`; an output symbol is one line of any
-characters (`.-`, `/`), not an event name with a slash (a second event block);
-the `_RE` lines use the constructs `.`, `[a-z]`,
-`{n}`, `{n,m}`, `?`, `(a|b)` and the `\` escapes, translated to POSIX ERE (`.`
-matches one UTF-8 character).
+tells. With `CYBERIADA_FLAG_STRICT` such a document is checked against the
+EXT-FA rules on every read and write; without it an improper automaton (an
+editor's draft, FA-extension 0.4 §5) is read and written as it is, and
+`cyberiada_check_fa_document` lists its violations. Executors and code
+generators read with `CYBERIADA_FLAG_STRICT`. The rules: one state machine,
+`eventPropagation` absent or `block`, states / one-region composites / initial
+/ final / transitions / comments only, one `entry/` output symbol per simple
+state, one symbol per transition without guard or event parameter and at most
+one output symbol as the action, `EOF` (`CYBERIADA_FA_EOF`) transitions into
+the final states only, one own transition per symbol, the alphabets
+`FA_INPUT`/`FA_INPUT_RE` and `FA_OUTPUT`/`FA_OUTPUT_RE`
+(`CYBERIADA_FA_*_TITLE`) as top-level formal comments, one symbol or restricted
+regular expression per line. A violation of a strict read or write returns
+`CYBERIADA_FA_ERROR`. An input symbol has the shape of an event name of the
+library, `\w((\w| |\.)*\w)?`; an output symbol is one line of any characters
+(`.-`, `/`), not an event name with a slash (a second event block); the `_RE`
+lines use the constructs `.`, `[a-z]`, `{n}`, `{n,m}`, `?`, `(a|b)` and the `\`
+escapes, translated to POSIX ERE (`.` matches one UTF-8 character).
 
 ### File formats (`CyberiadaXMLFormat`)
 
@@ -145,9 +148,10 @@ Non-geometry:
 * `CYBERIADA_FLAG_SKIP_EMPTY_BEHAVIOR` — skip actions with empty behavior;
 * `CYBERIADA_FLAG_SIMPLIFY_IDS` — replace node/edge ids with simplified ones;
 * `CYBERIADA_FLAG_SKIP_META` — skip the metainformation node.
-* `CYBERIADA_FLAG_STRICT` — check the optional requirements of the standard;
-  without it the Arena and Lapki dialect deviations are repaired on import
-  (see `ARCHITECTURE.md`).
+* `CYBERIADA_FLAG_STRICT` — check the optional requirements of the standard
+  and the EXT-FA rules of a `type/ fa` document; without it the Arena and Lapki
+  dialect deviations are repaired on import (see `ARCHITECTURE.md`) and an
+  improper automaton is accepted.
 
 ## Error codes
 
@@ -242,6 +246,27 @@ CyberiadaNode* cyberiada_graph_find_node_by_type(CyberiadaNode* root,
 
 The find functions search the subtree under `root` and return `NULL` when
 nothing matches; the type search accepts an OR-ed mask of node types.
+
+### Finite automaton check
+
+```c
+typedef struct _CyberiadaFAFinding {
+    char*                       requirement; /* the testing spec row, "CGML-FA-3.4-1" */
+    char*                       element_id;  /* the node/edge, NULL for the document */
+    char*                       message;     /* "transition t3 carries no symbol" */
+    struct _CyberiadaFAFinding* next;
+} CyberiadaFAFinding;
+
+int cyberiada_check_fa_document(const CyberiadaDocument* doc,
+                                CyberiadaFAFinding** findings);
+int cyberiada_destroy_fa_findings(CyberiadaFAFinding* findings);
+```
+
+The check collects every EXT-FA violation of a `type/ fa` document, whatever
+the flags it was read with, and prints nothing. It returns `CYBERIADA_NO_ERROR`
+with `*findings == NULL` for a compliant automaton or a document without
+`type/ fa`, `CYBERIADA_FA_ERROR` with the list otherwise; the caller frees the
+list. The strict read/write runs the same rules and stops at the first one.
 
 ### Isomorphism and diff
 
