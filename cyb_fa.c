@@ -87,10 +87,10 @@ static int fa_word_char(unsigned char c)
 	return c == '_' || isalnum(c) || c >= 0x80;
 }
 
-/* the shape of a symbol: the event name pattern of the library, \w((\w| |\.)*\w)? */
-static int fa_symbol_ok(const char* symbol)
+/* the shape of the first n bytes: the event name pattern of the library, \w((\w| |\.)*\w)? */
+static int fa_name_ok(const char* symbol, size_t n)
 {
-	size_t i, n = strlen(symbol);
+	size_t i;
 	if (n == 0 || !fa_word_char((unsigned char)symbol[0]) ||
 		!fa_word_char((unsigned char)symbol[n - 1])) {
 		return 0;
@@ -100,6 +100,30 @@ static int fa_symbol_ok(const char* symbol)
 		if (!fa_word_char(c) && c != ' ' && c != '.') {
 			return 0;
 		}
+	}
+	return 1;
+}
+
+static int fa_symbol_ok(const char* symbol)
+{
+	return fa_name_ok(symbol, strlen(symbol));
+}
+
+/* an output symbol is one line of any characters (FA 3.4); FA 4 escapes . and - for them.
+   The action grammar reads a second event block (b/, then c/) as the output c/, so an
+   event name with a slash is no output; a lone / is one. */
+static int fa_output_ok(const char* symbol)
+{
+	size_t n = strlen(symbol);
+	if (n == 0 || strpbrk(symbol, "\r\n")) {
+		return 0;
+	}
+	if (symbol[n - 1] == '/') {
+		n--;
+		while (n > 0 && isspace((unsigned char)symbol[n - 1])) {
+			n--;
+		}
+		return !fa_name_ok(symbol, n);
 	}
 	return 1;
 }
@@ -658,7 +682,7 @@ static int fa_check_state_actions(const CyberiadaNode* state, const FaAlphabet* 
 		if (!symbol) {
 			return CYBERIADA_MEMORY_ERROR;
 		}
-		if (!fa_symbol_ok(symbol)) {
+		if (!fa_output_ok(symbol)) {
 			ERROR("FA: the entry/ block of state %s is not one output symbol\n", state->id);
 			free(symbol);
 			return CYBERIADA_FA_ERROR;
@@ -846,7 +870,7 @@ static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const
 				free(trigger);
 				return CYBERIADA_MEMORY_ERROR;
 			}
-			if (!fa_symbol_ok(symbol)) {
+			if (!fa_output_ok(symbol)) {
 				ERROR("FA: the action of transition %s is not one output symbol\n", e->id);
 				res = CYBERIADA_FA_ERROR;
 			} else if (fa_symbol_reserved(symbol)) {

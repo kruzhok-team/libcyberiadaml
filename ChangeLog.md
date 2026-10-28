@@ -16,6 +16,8 @@ Added:
   the links to the fragments the source point only.
 
 Changed:
+- an FA output symbol is one line of any characters, as the escapes of FA 4
+  allow (`.-`, `/`): only the input symbols keep the shape of an event name.
 - the comment size estimate of the reconstruction wraps the body at 40
   characters, counts the name line and floors the box to 200x100 (the editor's
   default comment) instead of the state size; the hidden `CGML_COMPONENT`

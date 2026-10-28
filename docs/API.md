@@ -84,8 +84,10 @@ the action, `EOF` (`CYBERIADA_FA_EOF`) transitions into the final states only,
 one own transition per symbol, the alphabets `FA_INPUT`/`FA_INPUT_RE` and
 `FA_OUTPUT`/`FA_OUTPUT_RE` (`CYBERIADA_FA_*_TITLE`) as top-level formal
 comments, one symbol or restricted regular expression per line. A violation
-returns `CYBERIADA_FA_ERROR`. A symbol has the shape of an event name of the
-library, `\w((\w| |\.)*\w)?`; the `_RE` lines use the constructs `.`, `[a-z]`,
+returns `CYBERIADA_FA_ERROR`. An input symbol has the shape of an event name of
+the library, `\w((\w| |\.)*\w)?`; an output symbol is one line of any
+characters (`.-`, `/`), not an event name with a slash (a second event block);
+the `_RE` lines use the constructs `.`, `[a-z]`,
 `{n}`, `{n,m}`, `?`, `(a|b)` and the `\` escapes, translated to POSIX ERE (`.`
 matches one UTF-8 character).
 

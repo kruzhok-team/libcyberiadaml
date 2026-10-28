@@ -28,7 +28,13 @@
 #define ROUNDTRIP "33-fa-roundtrip.graphml"
 
 static const char* positives[] = {
-	"F-FA-EXAMPLE", "F-FA-MEALY", "F-FA-MOORE", "F-FA-ALPHABET", "F-FA-NESTED"
+	"F-FA-EXAMPLE", "F-FA-MEALY", "F-FA-MOORE", "F-FA-ALPHABET", "F-FA-NESTED",
+	"codes-output"
+};
+
+/* the automata written and read back */
+static const char* roundtrips[] = {
+	"F-FA-ALPHABET", "codes-output"
 };
 
 static const char* negatives[] = {
@@ -87,20 +93,24 @@ int main(void)
 	TEST_ASSERT(!is_fa);
 	TEST_ASSERT(read_document("not-fa-guard", CYBERIADA_FLAG_STRICT, NULL) == CYBERIADA_NO_ERROR);
 
-	/* the writer checks the rules too and the written automaton reads back */
-	doc = cyberiada_new_sm_document();
-	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, "diagrams/fa/F-FA-ALPHABET.graphml",
-										   cybxmlCyberiada10, CYBERIADA_FLAG_NO) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(cyberiada_write_sm_document(doc, ROUNDTRIP, cybxmlCyberiada10,
-											CYBERIADA_FLAG_NO) == CYBERIADA_NO_ERROR);
-	cyberiada_destroy_sm_document(doc);
-	doc = cyberiada_new_sm_document();
-	TEST_ASSERT(doc);
-	TEST_ASSERT(cyberiada_read_sm_document(doc, ROUNDTRIP, cybxmlCyberiada10,
-										   CYBERIADA_FLAG_STRICT) == CYBERIADA_NO_ERROR);
-	TEST_ASSERT(cyberiada_document_is_fa(doc));
-	cyberiada_destroy_sm_document(doc);
+	/* the writer checks the rules too and the written automata read back */
+	for (i = 0; i < sizeof(roundtrips) / sizeof(const char*); i++) {
+		char path[256];
+		snprintf(path, sizeof(path), "diagrams/fa/%s.graphml", roundtrips[i]);
+		doc = cyberiada_new_sm_document();
+		TEST_ASSERT(doc);
+		TEST_ASSERT(cyberiada_read_sm_document(doc, path, cybxmlCyberiada10,
+											   CYBERIADA_FLAG_NO) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(cyberiada_write_sm_document(doc, ROUNDTRIP, cybxmlCyberiada10,
+												CYBERIADA_FLAG_NO) == CYBERIADA_NO_ERROR);
+		cyberiada_destroy_sm_document(doc);
+		doc = cyberiada_new_sm_document();
+		TEST_ASSERT(doc);
+		TEST_ASSERT(cyberiada_read_sm_document(doc, ROUNDTRIP, cybxmlCyberiada10,
+											   CYBERIADA_FLAG_STRICT) == CYBERIADA_NO_ERROR);
+		TEST_ASSERT(cyberiada_document_is_fa(doc));
+		cyberiada_destroy_sm_document(doc);
+	}
 
 	TEST_ASSERT(strcmp(cyberiada_error_str(CYBERIADA_FA_ERROR), "Unknown error code") != 0);
 	return 0;
