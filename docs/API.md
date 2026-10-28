@@ -254,6 +254,7 @@ typedef struct _CyberiadaFAFinding {
     char*                       requirement; /* the testing spec row, "CGML-FA-3.4-1" */
     char*                       element_id;  /* the node/edge, NULL for the document */
     char*                       message;     /* "transition t3 carries no symbol" */
+    int                         foreign;     /* 1: not an automaton construct */
     struct _CyberiadaFAFinding* next;
 } CyberiadaFAFinding;
 
@@ -267,6 +268,15 @@ the flags it was read with, and prints nothing. It returns `CYBERIADA_NO_ERROR`
 with `*findings == NULL` for a compliant automaton or a document without
 `type/ fa`, `CYBERIADA_FA_ERROR` with the list otherwise; the caller frees the
 list. The strict read/write runs the same rules and stops at the first one.
+
+`foreign` marks a construct outside the FA element set, which no draft of an
+automaton has: a node kind other than the states, initial, final and comments,
+a collapsed state, a behaviour other than `entry/`, a composite with several
+regions or an `entry/`, a nested final state, a guard or an event keyword on a
+transition, several state machines, `eventPropagation/ propagate`. The other
+violations are the faults of a draft (a missing or repeated symbol, the
+initial, `EOF`, the alphabets). An editor refuses to turn a document with a
+foreign construct into an automaton.
 
 ### Isomorphism and diff
 

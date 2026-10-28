@@ -3168,8 +3168,9 @@ static int cyberiada_check_graphs(CyberiadaDocument* doc, int skip_geometry, int
 	if (res == CYBERIADA_NO_ERROR && strict) {
 		res = cyberiada_check_document_node_ids(doc);
 	}
-	/* the EXT-FA rules of a type/ fa document apply in every mode */
-	if (res == CYBERIADA_NO_ERROR && cyberiada_document_is_fa(doc)) {
+	/* the EXT-FA rules belong to the strict mode: a lenient reader takes an improper
+	   automaton as a draft (FA 5), cyberiada_check_fa_document lists its violations */
+	if (res == CYBERIADA_NO_ERROR && strict && cyberiada_document_is_fa(doc)) {
 		res = cyberiada_check_fa(doc);
 	}
 	return res;

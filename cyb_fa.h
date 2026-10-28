@@ -31,7 +31,7 @@ extern "C" {
 
 	/* Check the EXT-FA rules of a finite automaton document (compat-tests testing
 	   spec 2.9, docs/FA-extension.md 3-5); the caller checks cyberiada_document_is_fa.
-	   Returns CYBERIADA_FA_ERROR at the first violation. */
+	   Returns CYBERIADA_FA_ERROR at the first violation (the strict mode). */
 	int cyberiada_check_fa(const CyberiadaDocument* doc);
 
 #ifdef __cplusplus

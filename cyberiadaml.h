@@ -262,6 +262,15 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_FA_OUTPUT_TITLE                "FA_OUTPUT"
 #define CYBERIADA_FA_OUTPUT_RE_TITLE             "FA_OUTPUT_RE"
 #define CYBERIADA_FA_EOF                         "EOF"
+
+/* An EXT-FA violation of a finite automaton document */
+typedef struct _CyberiadaFAFinding {
+	char*                       requirement;   /* the testing spec row, "CGML-FA-3.4-1" */
+	char*                       element_id;    /* the node or edge, NULL for the document */
+	char*                       message;
+	int                         foreign;       /* a construct outside the FA element set, not a draft fault */
+	struct _CyberiadaFAFinding* next;
+} CyberiadaFAFinding;
 	
 typedef struct _CyberiadaMetaStringList {
 	char*                            name;
@@ -511,6 +520,13 @@ typedef enum {
 
 	/* Check the document is a finite automaton diagram (the metainformation parameter type/ fa) */
 	int cyberiada_document_is_fa(const CyberiadaDocument* doc);
+
+	/* List every EXT-FA violation of a type/ fa document, whatever the flags it was read with;
+	   CYBERIADA_FA_ERROR with the list, CYBERIADA_NO_ERROR and NULL without violations */
+	int cyberiada_check_fa_document(const CyberiadaDocument* doc, CyberiadaFAFinding** findings);
+
+	/* Free the list of the EXT-FA violations */
+	int cyberiada_destroy_fa_findings(CyberiadaFAFinding* findings);
 
 	/* Free the list of actions */
 	int cyberiada_destroy_action(CyberiadaAction* action);

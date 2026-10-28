@@ -5,9 +5,13 @@
 Added:
 - the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
   `type/ fa` in its metainformation is a deterministic finite automaton
-  diagram; the reader and the writer refuse it with the new code
-  `CYBERIADA_FA_ERROR` when it breaks the `CGML-FA-*` requirements, in any
-  mode; `cyberiada_document_is_fa`, the `CYBERIADA_META_TYPE` and
+  diagram; the strict reader and writer (`CYBERIADA_FLAG_STRICT`) refuse it
+  with the new code `CYBERIADA_FA_ERROR` when it breaks the `CGML-FA-*`
+  requirements, the lenient ones take it as a draft (FA-extension 0.4, 5);
+  `cyberiada_check_fa_document` lists every violation (`CyberiadaFAFinding`:
+  the requirement, the element, the message, a construct foreign to the FA or
+  a fault of a draft) whatever the flags;
+  `cyberiada_document_is_fa`, the `CYBERIADA_META_TYPE` and
   `CYBERIADA_FA_*` constants; the alphabet comments `FA_INPUT`/`FA_OUTPUT`
   with their restricted regular expressions (cyb_fa.c); the 27 EXT-FA
   diagrams of compat-tests 374e6d0 in the tests.

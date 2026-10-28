@@ -21,6 +21,7 @@
  * ----------------------------------------------------------------------------- */
 
 #include <ctype.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -109,23 +110,25 @@ static int fa_symbol_ok(const char* symbol)
 	return fa_name_ok(symbol, strlen(symbol));
 }
 
-/* an output symbol is one line of any characters (FA 3.4); FA 4 escapes . and - for them.
-   The action grammar reads a second event block (b/, then c/) as the output c/, so an
-   event name with a slash is no output; a lone / is one. */
-static int fa_output_ok(const char* symbol)
+/* the action grammar reads a second event block (b/, then c/) as the output c/: an event
+   name with a slash is that block; a lone / is no event */
+static int fa_folded_event(const char* symbol)
 {
 	size_t n = strlen(symbol);
-	if (n == 0 || strpbrk(symbol, "\r\n")) {
+	if (n == 0 || symbol[n - 1] != '/') {
 		return 0;
 	}
-	if (symbol[n - 1] == '/') {
+	n--;
+	while (n > 0 && isspace((unsigned char)symbol[n - 1])) {
 		n--;
-		while (n > 0 && isspace((unsigned char)symbol[n - 1])) {
-			n--;
-		}
-		return !fa_name_ok(symbol, n);
 	}
-	return 1;
+	return fa_name_ok(symbol, n);
+}
+
+/* an output symbol is one line of any characters (FA 3.4); FA 4 escapes . and - for them */
+static int fa_output_ok(const char* symbol)
+{
+	return *symbol && !strpbrk(symbol, "\r\n") && !fa_folded_event(symbol);
 }
 
 /* trim both ends in place, return the start */
@@ -473,12 +476,78 @@ static int fa_translate(const char* expr, char* out, const char** error, size_t*
 }
 
 /* -----------------------------------------------------------------------------
+ * The violations
+ * ----------------------------------------------------------------------------- */
+
+/* the requirements of compat-tests testing spec 2.9 the violations name */
+#define FA_REQ_ELEMENT_SET     "CGML-FA-3-1"
+#define FA_REQ_BEHAVIOUR       "CGML-FA-3.1-1"
+#define FA_REQ_COMPOSITE       "CGML-FA-3.1.1-1"
+#define FA_REQ_COMPOSITE_INIT  "CGML-FA-3.1.1-2"
+#define FA_REQ_DETERMINISTIC   "CGML-FA-3.1.1-3"
+#define FA_REQ_TOP_INITIAL     "CGML-FA-3.2-1"
+#define FA_REQ_INITIAL_EDGE    "CGML-FA-3.2-2"
+#define FA_REQ_FINAL_TOP       "CGML-FA-3.3-1"
+#define FA_REQ_EOF_FINAL       "CGML-FA-3.3-2"
+#define FA_REQ_LABEL           "CGML-FA-3.4-1"
+#define FA_REQ_ACTION          "CGML-FA-3.4-2"
+#define FA_REQ_RESERVED        "CGML-FA-3.4-3"
+#define FA_REQ_ALPHABET_NODES  "CGML-FA-4-1"
+#define FA_REQ_ALPHABET_SYNTAX "CGML-FA-4-2"
+#define FA_REQ_MEMBERSHIP      "CGML-FA-4-3"
+#define FA_REQ_SINGLE_MACHINE  "CGML-FA-5-2"
+#define FA_REQ_PROPAGATION     "CGML-FA-5-3"
+#define FA_MESSAGE_MAX         512
+
+/* a strict check stops at the first violation, a listing collects them all */
+typedef struct {
+	int                  collect;
+	CyberiadaFAFinding*  first;
+	CyberiadaFAFinding** last;
+} FaCheck;
+
+/* the class of a violation: a construct outside the FA element set, or a fault of a draft */
+#define FA_FOREIGN             1
+#define FA_DRAFT               0
+
+/* returns CYBERIADA_FA_ERROR to stop a strict check, CYBERIADA_NO_ERROR to go on listing */
+static int fa_report(FaCheck* c, int foreign, const char* requirement, const char* element_id,
+					 const char* format, ...)
+{
+	char message[FA_MESSAGE_MAX];
+	CyberiadaFAFinding* f;
+	va_list args;
+
+	va_start(args, format);
+	vsnprintf(message, sizeof(message), format, args);
+	va_end(args);
+	if (!c->collect) {
+		ERROR("FA: %s\n", message);
+		return CYBERIADA_FA_ERROR;
+	}
+	f = (CyberiadaFAFinding*)calloc(1, sizeof(CyberiadaFAFinding));
+	if (!f) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
+	f->foreign = foreign;
+	*(c->last) = f;
+	c->last = &(f->next);
+	if (cyberiada_copy_string(&(f->requirement), NULL, requirement) != CYBERIADA_NO_ERROR ||
+		cyberiada_copy_string(&(f->element_id), NULL, element_id) != CYBERIADA_NO_ERROR ||
+		cyberiada_copy_string(&(f->message), NULL, message) != CYBERIADA_NO_ERROR) {
+		return CYBERIADA_MEMORY_ERROR;
+	}
+	return CYBERIADA_NO_ERROR;
+}
+
+/* -----------------------------------------------------------------------------
  * The alphabets (FA 4)
  * ----------------------------------------------------------------------------- */
 
 typedef struct {
 	const CyberiadaNode* node;
 	int                  regex;
+	int                  broken;     /* a listing goes on without the membership checks */
 	size_t               count;
 	char**               symbols;    /* the plain lines */
 	regex_t*             patterns;   /* the compiled lines of a _RE comment */
@@ -503,7 +572,7 @@ static void fa_alphabet_free(FaAlphabet* a)
 }
 
 /* parse the body: one symbol or pattern per line, no blank line inside */
-static int fa_alphabet_parse(FaAlphabet* a, const CyberiadaNode* node)
+static int fa_alphabet_parse(FaCheck* c, FaAlphabet* a, const CyberiadaNode* node)
 {
 	const char* title = node->title;
 	const char* body = node->comment_data ? node->comment_data->body : NULL;
@@ -515,6 +584,7 @@ static int fa_alphabet_parse(FaAlphabet* a, const CyberiadaNode* node)
 	char pattern[FA_PATTERN_MAX];
 	const char* error;
 	size_t error_pos;
+	int res = CYBERIADA_NO_ERROR;
 
 	memset(a, 0, sizeof(FaAlphabet));
 	a->node = node;
@@ -542,10 +612,11 @@ static int fa_alphabet_parse(FaAlphabet* a, const CyberiadaNode* node)
 	}
 	/* the body was trimmed, so the first and the last lines are filled */
 	if (n == 0 || !*lines[0]) {
-		ERROR("FA: the alphabet %s is empty\n", title);
+		a->broken = 1;
+		res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_SYNTAX, node->id, "the alphabet %s is empty", title);
 		free(lines);
 		free(copy);
-		return CYBERIADA_FA_ERROR;
+		return res;
 	}
 	last = n - 1;
 	a->count = last - first + 1;
@@ -558,47 +629,43 @@ static int fa_alphabet_parse(FaAlphabet* a, const CyberiadaNode* node)
 		free(copy);
 		return CYBERIADA_MEMORY_ERROR;
 	}
-	for (i = first; i <= last; i++) {
+	for (i = first; i <= last && res == CYBERIADA_NO_ERROR && !a->broken; i++) {
 		if (!*lines[i]) {
-			ERROR("FA: empty line %lu in the alphabet %s\n", (unsigned long)(i + 1), title);
-			free(lines);
-			free(copy);
-			return CYBERIADA_FA_ERROR;
+			a->broken = 1;
+			res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_SYNTAX, node->id, "empty line %lu in the alphabet %s",
+							(unsigned long)(i + 1), title);
+			break;
 		}
 		a->symbols[i - first] = (char*)malloc(strlen(lines[i]) + 1);
 		if (!a->symbols[i - first]) {
-			free(lines);
-			free(copy);
-			return CYBERIADA_MEMORY_ERROR;
+			res = CYBERIADA_MEMORY_ERROR;
+			break;
 		}
 		strcpy(a->symbols[i - first], lines[i]);
 		if (a->regex) {
 			if (!fa_translate(lines[i], pattern, &error, &error_pos)) {
-				ERROR("FA: alphabet %s line %lu: %s (column %lu)\n", title,
-					  (unsigned long)(i + 1), error, (unsigned long)(error_pos + 1));
-				free(lines);
-				free(copy);
-				return CYBERIADA_FA_ERROR;
+				a->broken = 1;
+				res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_SYNTAX, node->id, "alphabet %s line %lu: %s (column %lu)",
+								title, (unsigned long)(i + 1), error, (unsigned long)(error_pos + 1));
+				break;
 			}
 			if (cyb_regcomp(a->patterns + (i - first), pattern)) {
-				ERROR("FA: alphabet %s line %lu: the pattern cannot be compiled\n", title,
-					  (unsigned long)(i + 1));
 				/* the failed slot must not be freed */
 				a->count = i - first;
-				free(lines);
-				free(copy);
-				return CYBERIADA_FA_ERROR;
+				a->broken = 1;
+				res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_SYNTAX, node->id,
+								"alphabet %s line %lu: the pattern cannot be compiled",
+								title, (unsigned long)(i + 1));
+				break;
 			}
 		} else if (fa_symbol_reserved(lines[i])) {
-			ERROR("FA: the reserved name %s is a symbol of the alphabet %s\n", lines[i], title);
-			free(lines);
-			free(copy);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_RESERVED, node->id, "the reserved name %s is a symbol of the alphabet %s",
+							lines[i], title);
 		}
 	}
 	free(lines);
 	free(copy);
-	return CYBERIADA_NO_ERROR;
+	return res;
 }
 
 static int fa_alphabet_contains(const FaAlphabet* a, const char* symbol)
@@ -620,13 +687,12 @@ static int fa_alphabet_contains(const FaAlphabet* a, const char* symbol)
 }
 
 /* a symbol belongs to the alphabet when one is declared */
-static int fa_check_member(const FaAlphabet* a, const char* symbol, const char* where,
+static int fa_check_member(FaCheck* c, const FaAlphabet* a, const char* symbol, const char* where,
 						   const char* id)
 {
-	if (a->node && !fa_alphabet_contains(a, symbol)) {
-		ERROR("FA: the %s %s of %s is not in the alphabet %s\n", where, symbol, id,
-			  a->node->title);
-		return CYBERIADA_FA_ERROR;
+	if (a->node && !a->broken && !fa_alphabet_contains(a, symbol)) {
+		return fa_report(c, FA_DRAFT, FA_REQ_MEMBERSHIP, id, "the %s %s of %s is not in the alphabet %s",
+						 where, symbol, id, a->node->title);
 	}
 	return CYBERIADA_NO_ERROR;
 }
@@ -664,91 +730,88 @@ static int fa_composite_has_initial(const CyberiadaNode* state)
 }
 
 /* the output symbol of a state: at most one one-line entry action (FA 3.1) */
-static int fa_check_state_actions(const CyberiadaNode* state, const FaAlphabet* outputs)
+static int fa_check_state_actions(FaCheck* c, const CyberiadaNode* state, const FaAlphabet* outputs)
 {
 	const CyberiadaAction* a;
 	char* symbol;
-	int res;
-	for (a = state->actions; a; a = a->next) {
+	int res = CYBERIADA_NO_ERROR;
+	for (a = state->actions; a && res == CYBERIADA_NO_ERROR; a = a->next) {
 		if (a->type != cybActionEntry) {
-			ERROR("FA: state %s has a behaviour block other than entry/\n", state->id);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_BEHAVIOUR, state->id, "state %s has a behaviour block other than entry/",
+							state->id);
+			continue;
 		}
 		if (state->type == cybNodeCompositeState) {
-			ERROR("FA: composite state %s has an entry/ block\n", state->id);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_COMPOSITE, state->id, "composite state %s has an entry/ block", state->id);
+			continue;
 		}
 		symbol = fa_trimmed_copy(a->behavior);
 		if (!symbol) {
 			return CYBERIADA_MEMORY_ERROR;
 		}
 		if (!fa_output_ok(symbol)) {
-			ERROR("FA: the entry/ block of state %s is not one output symbol\n", state->id);
-			free(symbol);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_BEHAVIOUR, state->id, "the entry/ block of state %s is not one output symbol",
+							state->id);
+		} else if (fa_symbol_reserved(symbol)) {
+			res = fa_report(c, FA_DRAFT, FA_REQ_RESERVED, state->id, "the reserved name %s is the output symbol of state %s",
+							symbol, state->id);
+		} else {
+			res = fa_check_member(c, outputs, symbol, "output symbol", state->id);
 		}
-		if (fa_symbol_reserved(symbol)) {
-			ERROR("FA: the reserved name %s is the output symbol of state %s\n", symbol, state->id);
-			free(symbol);
-			return CYBERIADA_FA_ERROR;
-		}
-		res = fa_check_member(outputs, symbol, "output symbol", state->id);
 		free(symbol);
-		if (res != CYBERIADA_NO_ERROR) {
-			return res;
-		}
 	}
-	return CYBERIADA_NO_ERROR;
+	return res;
 }
 
 /* walk the sibling list; parent is the enclosing state, NULL at the top level */
-static int fa_check_nodes(const CyberiadaNode* nodes, const CyberiadaNode* parent,
+static int fa_check_nodes(FaCheck* c, const CyberiadaNode* nodes, const CyberiadaNode* parent,
 						  const FaAlphabet* outputs)
 {
 	const CyberiadaNode* n;
-	int res;
-	for (n = nodes; n; n = n->next) {
+	int res = CYBERIADA_NO_ERROR;
+	for (n = nodes; n && res == CYBERIADA_NO_ERROR; n = n->next) {
 		if (!(n->type & FA_NODE_TYPES)) {
-			ERROR("FA: node %s of type %d is not admissible in an FA diagram\n", n->id, (int)n->type);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_ELEMENT_SET, n->id, "node %s of type %d is not admissible in an FA diagram",
+							n->id, (int)n->type);
+			continue;
 		}
 		if (n->type == cybNodeRegion) {
-			if ((res = fa_check_nodes(n->children, parent, outputs)) != CYBERIADA_NO_ERROR) {
-				return res;
-			}
+			res = fa_check_nodes(c, n->children, parent, outputs);
 			continue;
 		}
 		if (n->type == cybNodeFinal && parent) {
-			ERROR("FA: final state %s inside composite state %s\n", n->id, parent->id);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_FINAL_TOP, n->id, "final state %s inside composite state %s",
+							n->id, parent->id);
+			continue;
 		}
 		if (n->type == cybNodeFormalComment && parent &&
 			(fa_title_in(n->title, fa_input_titles, 2) || fa_title_in(n->title, fa_output_titles, 2))) {
-			ERROR("FA: alphabet comment %s inside state %s, the top level expected\n", n->id, parent->id);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_NODES, n->id,
+							"alphabet comment %s inside state %s, the top level expected", n->id, parent->id);
+			continue;
 		}
 		if (n->type & FA_STATE_TYPES) {
 			if (n->collapsed_flag) {
-				ERROR("FA: state %s has a collapsed decomposition block\n", n->id);
-				return CYBERIADA_FA_ERROR;
+				res = fa_report(c, FA_FOREIGN, FA_REQ_ELEMENT_SET, n->id, "state %s has a collapsed decomposition block",
+								n->id);
 			}
-			if (n->type == cybNodeCompositeState && fa_region_count(n) != 1) {
-				ERROR("FA: composite state %s has %d regions\n", n->id, fa_region_count(n));
-				return CYBERIADA_FA_ERROR;
+			if (res == CYBERIADA_NO_ERROR && n->type == cybNodeCompositeState && fa_region_count(n) != 1) {
+				res = fa_report(c, FA_FOREIGN, FA_REQ_COMPOSITE, n->id, "composite state %s has %d regions",
+								n->id, fa_region_count(n));
 			}
-			if ((res = fa_check_state_actions(n, outputs)) != CYBERIADA_NO_ERROR) {
-				return res;
+			if (res == CYBERIADA_NO_ERROR) {
+				res = fa_check_state_actions(c, n, outputs);
 			}
-			if ((res = fa_check_nodes(n->children, n, outputs)) != CYBERIADA_NO_ERROR) {
-				return res;
+			if (res == CYBERIADA_NO_ERROR) {
+				res = fa_check_nodes(c, n->children, n, outputs);
 			}
 		}
 	}
-	return CYBERIADA_NO_ERROR;
+	return res;
 }
 
 /* one initial pseudostate at the top level (FA 3.2) */
-static int fa_check_top_initial(const CyberiadaSM* sm)
+static int fa_check_top_initial(FaCheck* c, const CyberiadaSM* sm)
 {
 	const CyberiadaNode* n;
 	int count = 0;
@@ -758,19 +821,19 @@ static int fa_check_top_initial(const CyberiadaSM* sm)
 		}
 	}
 	if (count != 1) {
-		ERROR("FA: state machine %s has %d top-level initial pseudostates\n", sm->nodes->id, count);
-		return CYBERIADA_FA_ERROR;
+		return fa_report(c, FA_DRAFT, FA_REQ_TOP_INITIAL, sm->nodes->id,
+						 "state machine %s has %d top-level initial pseudostates", sm->nodes->id, count);
 	}
 	return CYBERIADA_NO_ERROR;
 }
 
 /* the alphabet comments: at most one of each kind at the top level (FA 4) */
-static int fa_find_alphabets(const CyberiadaSM* sm, FaAlphabet* inputs, FaAlphabet* outputs)
+static int fa_find_alphabets(FaCheck* c, const CyberiadaSM* sm, FaAlphabet* inputs, FaAlphabet* outputs)
 {
 	const CyberiadaNode* n;
 	FaAlphabet* target;
-	int res;
-	for (n = sm->nodes->children; n; n = n->next) {
+	int res = CYBERIADA_NO_ERROR;
+	for (n = sm->nodes->children; n && res == CYBERIADA_NO_ERROR; n = n->next) {
 		if (n->type != cybNodeFormalComment) {
 			continue;
 		}
@@ -782,30 +845,29 @@ static int fa_find_alphabets(const CyberiadaSM* sm, FaAlphabet* inputs, FaAlphab
 			continue;
 		}
 		if (target->node) {
-			ERROR("FA: second alphabet comment %s (%s) after %s (%s)\n", n->id, n->title,
-				  target->node->id, target->node->title);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_ALPHABET_NODES, n->id, "second alphabet comment %s (%s) after %s (%s)",
+							n->id, n->title, target->node->id, target->node->title);
+			continue;
 		}
-		if ((res = fa_alphabet_parse(target, n)) != CYBERIADA_NO_ERROR) {
-			return res;
-		}
+		res = fa_alphabet_parse(c, target, n);
 	}
-	return CYBERIADA_NO_ERROR;
+	return res;
 }
 
 /* -----------------------------------------------------------------------------
  * The transitions (FA 3.2-3.4)
  * ----------------------------------------------------------------------------- */
 
-static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const FaAlphabet* outputs)
+static int fa_check_edges(FaCheck* c, const CyberiadaSM* sm, const FaAlphabet* inputs,
+						  const FaAlphabet* outputs)
 {
 	const CyberiadaEdge *e, *e2;
 	const CyberiadaNode *src, *dst;
 	char* trigger;
 	char* symbol;
-	int is_eof, to_final, res;
+	int is_eof, to_final, duplicate, res = CYBERIADA_NO_ERROR;
 
-	for (e = sm->edges; e; e = e->next) {
+	for (e = sm->edges; e && res == CYBERIADA_NO_ERROR; e = e->next) {
 		if (e->type == cybEdgeComment) {
 			continue;
 		}
@@ -817,12 +879,11 @@ static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const
 		to_final = dst->type == cybNodeFinal;
 		if (src->type == cybNodeInitial) {
 			if (e->action) {
-				ERROR("FA: transition %s from the initial pseudostate carries a label\n", e->id);
-				return CYBERIADA_FA_ERROR;
-			}
-			if (to_final) {
-				ERROR("FA: transition %s into the final state %s carries no EOF\n", e->id, dst->id);
-				return CYBERIADA_FA_ERROR;
+				res = fa_report(c, FA_DRAFT, FA_REQ_INITIAL_EDGE, e->id,
+								"transition %s from the initial pseudostate carries a label", e->id);
+			} else if (to_final) {
+				res = fa_report(c, FA_DRAFT, FA_REQ_EOF_FINAL, e->id,
+								"transition %s into the final state %s carries no EOF", e->id, dst->id);
 			}
 			continue;
 		}
@@ -830,39 +891,35 @@ static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const
 			continue;   /* the node kinds are checked by fa_check_nodes */
 		}
 		if (!e->action) {
-			ERROR("FA: transition %s carries no symbol\n", e->id);
-			return CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_LABEL, e->id, "transition %s carries no symbol", e->id);
+			continue;
 		}
 		trigger = fa_trimmed_copy(e->action->trigger);
 		if (!trigger) {
 			return CYBERIADA_MEMORY_ERROR;
 		}
-		res = CYBERIADA_NO_ERROR;
 		is_eof = strcmp(trigger, CYBERIADA_FA_EOF) == 0;
+		/* one finding for the symbol; a listing goes on to the action and the target */
 		if (!*trigger) {
-			ERROR("FA: transition %s carries no symbol\n", e->id);
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_LABEL, e->id, "transition %s carries no symbol", e->id);
 		} else if (e->action->guard && *e->action->guard) {
-			ERROR("FA: transition %s carries a guard\n", e->id);
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_LABEL, e->id, "transition %s carries a guard", e->id);
 		} else if (e->action->propagation != cybEventPropagationNone) {
-			ERROR("FA: transition %s carries an event parameter\n", e->id);
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_FOREIGN, FA_REQ_LABEL, e->id, "transition %s carries an event parameter", e->id);
 		} else if (!is_eof && !fa_symbol_ok(trigger)) {
-			ERROR("FA: the event %s of transition %s is not a symbol\n", trigger, e->id);
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_LABEL, e->id, "the event %s of transition %s is not a symbol",
+							trigger, e->id);
 		} else if (!is_eof && fa_symbol_reserved(trigger)) {
-			ERROR("FA: the reserved name %s is the symbol of transition %s\n", trigger, e->id);
-			res = CYBERIADA_FA_ERROR;
-		} else if (is_eof != to_final) {
-			if (is_eof) {
-				ERROR("FA: EOF transition %s targets %s, not a final state\n", e->id, dst->id);
-			} else {
-				ERROR("FA: transition %s into the final state %s carries no EOF\n", e->id, dst->id);
-			}
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_RESERVED, e->id, "the reserved name %s is the symbol of transition %s",
+							trigger, e->id);
+		} else if (is_eof && !to_final) {
+			res = fa_report(c, FA_DRAFT, FA_REQ_EOF_FINAL, e->id, "EOF transition %s targets %s, not a final state",
+							e->id, dst->id);
+		} else if (!is_eof && to_final) {
+			res = fa_report(c, FA_DRAFT, FA_REQ_EOF_FINAL, e->id, "transition %s into the final state %s carries no EOF",
+							e->id, dst->id);
 		} else if (!is_eof) {
-			res = fa_check_member(inputs, trigger, "symbol", e->id);
+			res = fa_check_member(c, inputs, trigger, "symbol", e->id);
 		}
 		if (res == CYBERIADA_NO_ERROR && e->action->behavior && *e->action->behavior) {
 			symbol = fa_trimmed_copy(e->action->behavior);
@@ -870,25 +927,29 @@ static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const
 				free(trigger);
 				return CYBERIADA_MEMORY_ERROR;
 			}
-			if (!fa_output_ok(symbol)) {
-				ERROR("FA: the action of transition %s is not one output symbol\n", e->id);
-				res = CYBERIADA_FA_ERROR;
+			if (fa_folded_event(symbol)) {
+				res = fa_report(c, FA_DRAFT, FA_REQ_LABEL, e->id, "transition %s carries a second event %s",
+								e->id, symbol);
+			} else if (!fa_output_ok(symbol)) {
+				res = fa_report(c, FA_DRAFT, FA_REQ_ACTION, e->id, "the action of transition %s is not one output symbol",
+								e->id);
 			} else if (fa_symbol_reserved(symbol)) {
-				ERROR("FA: the reserved name %s is the output symbol of transition %s\n", symbol, e->id);
-				res = CYBERIADA_FA_ERROR;
+				res = fa_report(c, FA_DRAFT, FA_REQ_RESERVED, e->id,
+								"the reserved name %s is the output symbol of transition %s", symbol, e->id);
 			} else {
-				res = fa_check_member(outputs, symbol, "output symbol", e->id);
+				res = fa_check_member(c, outputs, symbol, "output symbol", e->id);
 			}
 			free(symbol);
 		}
 		if (res == CYBERIADA_NO_ERROR && dst->type == cybNodeCompositeState &&
 			!fa_composite_has_initial(dst)) {
-			ERROR("FA: composite state %s is entered by transition %s but contains no initial pseudostate\n",
-				  dst->id, e->id);
-			res = CYBERIADA_FA_ERROR;
+			res = fa_report(c, FA_DRAFT, FA_REQ_COMPOSITE_INIT, e->id,
+							"composite state %s is entered by transition %s but contains no initial pseudostate",
+							dst->id, e->id);
 		}
-		/* determinism: one own transition per symbol (FA 3.1.1) */
-		for (e2 = e->next; res == CYBERIADA_NO_ERROR && e2; e2 = e2->next) {
+		/* determinism: one own transition per symbol (FA 3.1.1), each pair once */
+		duplicate = 0;
+		for (e2 = e->next; res == CYBERIADA_NO_ERROR && *trigger && !duplicate && e2; e2 = e2->next) {
 			if (e2->type == cybEdgeComment || e2->source != src || !e2->action) {
 				continue;
 			}
@@ -898,18 +959,16 @@ static int fa_check_edges(const CyberiadaSM* sm, const FaAlphabet* inputs, const
 				return CYBERIADA_MEMORY_ERROR;
 			}
 			if (strcmp(symbol, trigger) == 0) {
-				ERROR("FA: transitions %s and %s leave state %s by the same symbol %s\n",
-					  e->id, e2->id, src->id, trigger);
-				res = CYBERIADA_FA_ERROR;
+				duplicate = 1;
+				res = fa_report(c, FA_DRAFT, FA_REQ_DETERMINISTIC, e2->id,
+								"transitions %s and %s leave state %s by the same symbol %s",
+								e->id, e2->id, src->id, trigger);
 			}
 			free(symbol);
 		}
 		free(trigger);
-		if (res != CYBERIADA_NO_ERROR) {
-			return res;
-		}
 	}
-	return CYBERIADA_NO_ERROR;
+	return res;
 }
 
 /* -----------------------------------------------------------------------------
@@ -937,35 +996,87 @@ int cyberiada_document_is_fa(const CyberiadaDocument* doc)
 	return result;
 }
 
-int cyberiada_check_fa(const CyberiadaDocument* doc)
+static int fa_check_machine(FaCheck* c, const CyberiadaSM* sm)
+{
+	FaAlphabet inputs, outputs;
+	int res;
+
+	if (!sm->nodes) {
+		return CYBERIADA_NO_ERROR;
+	}
+	memset(&inputs, 0, sizeof(FaAlphabet));
+	memset(&outputs, 0, sizeof(FaAlphabet));
+	if ((res = fa_find_alphabets(c, sm, &inputs, &outputs)) == CYBERIADA_NO_ERROR &&
+		(res = fa_check_nodes(c, sm->nodes->children, NULL, &outputs)) == CYBERIADA_NO_ERROR &&
+		(res = fa_check_top_initial(c, sm)) == CYBERIADA_NO_ERROR) {
+		res = fa_check_edges(c, sm, &inputs, &outputs);
+	}
+	fa_alphabet_free(&inputs);
+	fa_alphabet_free(&outputs);
+	return res;
+}
+
+static int fa_check_document(FaCheck* c, const CyberiadaDocument* doc)
 {
 	const CyberiadaSM* sm;
-	FaAlphabet inputs, outputs;
 	int res = CYBERIADA_NO_ERROR;
 
 	if (!doc || !doc->state_machines) {
 		return CYBERIADA_BAD_PARAMETER;
 	}
 	if (doc->state_machines->next) {
-		ERROR("FA: the document contains more than one state machine\n");
-		return CYBERIADA_FA_ERROR;
+		res = fa_report(c, FA_FOREIGN, FA_REQ_SINGLE_MACHINE, NULL, "the document contains more than one state machine");
 	}
-	if (doc->meta_info->event_propagation_flag == cybEventPropagationPropagate) {
-		ERROR("FA: eventPropagation is propagate, block expected\n");
-		return CYBERIADA_FA_ERROR;
+	if (res == CYBERIADA_NO_ERROR && doc->meta_info->event_propagation_flag == cybEventPropagationPropagate) {
+		res = fa_report(c, FA_FOREIGN, FA_REQ_PROPAGATION, NULL, "eventPropagation is propagate, block expected");
 	}
-	sm = doc->state_machines;
-	if (!sm->nodes) {
+	for (sm = doc->state_machines; sm && res == CYBERIADA_NO_ERROR; sm = sm->next) {
+		res = fa_check_machine(c, sm);
+	}
+	return res;
+}
+
+int cyberiada_check_fa(const CyberiadaDocument* doc)
+{
+	FaCheck c;
+	memset(&c, 0, sizeof(FaCheck));
+	return fa_check_document(&c, doc);
+}
+
+int cyberiada_check_fa_document(const CyberiadaDocument* doc, CyberiadaFAFinding** findings)
+{
+	FaCheck c;
+	int res;
+
+	if (!doc || !findings) {
+		return CYBERIADA_BAD_PARAMETER;
+	}
+	*findings = NULL;
+	if (!cyberiada_document_is_fa(doc)) {
 		return CYBERIADA_NO_ERROR;
 	}
-	memset(&inputs, 0, sizeof(FaAlphabet));
-	memset(&outputs, 0, sizeof(FaAlphabet));
-	if ((res = fa_find_alphabets(sm, &inputs, &outputs)) == CYBERIADA_NO_ERROR &&
-		(res = fa_check_nodes(sm->nodes->children, NULL, &outputs)) == CYBERIADA_NO_ERROR &&
-		(res = fa_check_top_initial(sm)) == CYBERIADA_NO_ERROR) {
-		res = fa_check_edges(sm, &inputs, &outputs);
+	c.collect = 1;
+	c.first = NULL;
+	c.last = &(c.first);
+	res = fa_check_document(&c, doc);
+	if (res != CYBERIADA_NO_ERROR) {
+		cyberiada_destroy_fa_findings(c.first);
+		return res;
 	}
-	fa_alphabet_free(&inputs);
-	fa_alphabet_free(&outputs);
-	return res;
+	*findings = c.first;
+	return c.first ? CYBERIADA_FA_ERROR : CYBERIADA_NO_ERROR;
+}
+
+int cyberiada_destroy_fa_findings(CyberiadaFAFinding* findings)
+{
+	CyberiadaFAFinding* next;
+	while (findings) {
+		next = findings->next;
+		free(findings->requirement);
+		free(findings->element_id);
+		free(findings->message);
+		free(findings);
+		findings = next;
+	}
+	return CYBERIADA_NO_ERROR;
 }
