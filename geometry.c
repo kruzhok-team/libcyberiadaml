@@ -1074,11 +1074,9 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 	return CYBERIADA_NO_ERROR;
 }
 
-/* The geometry update: the layered layout seeded by the existing geometry,
-   which is kept - the geometry-less elements are inserted by the flow, the
-   drawn ones keep their places; the sizes are estimated for the new
-   elements only (the drawn ones keep theirs) */
-int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+/* the layouts seeded by the existing geometry: the update keeps it, the
+   arrange reads it and lays the document out anew */
+static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int reconstruct_sm, int arrange)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -1099,6 +1097,14 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
 	if (doc->edge_geom_format == edgeNone) {
 		doc->edge_geom_format = edgeBorder;
 	}
+	if (arrange) {
+		/* the arrange routes every transition anew: the label sizes are
+		   estimated as for the full layout */
+		CyberiadaSM* sm;
+		for (sm = doc->state_machines; sm; sm = sm->next) {
+			cyberiada_clean_edges_geometry(sm->edges);
+		}
+	}
 
 	htreegeom = cyberiada_to_htree_geometry(doc, 1);
 	if (!htreegeom) {
@@ -1107,8 +1113,10 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
 	}
 
 	htree_default_layout_options(&layout);
-	if ((res = htree_update_document_geometry(htreegeom, reconstruct_sm, &layout)) != HTREE_OK) {
-		ERROR("Error while updating htree geometry %d\n", res);
+	res = arrange ? htree_arrange_document_geometry(htreegeom, reconstruct_sm, &layout) :
+		htree_update_document_geometry(htreegeom, reconstruct_sm, &layout);
+	if (res != HTREE_OK) {
+		ERROR("Error while %s htree geometry %d\n", arrange ? "arranging" : "updating", res);
 		htree_destroy_document(htreegeom);
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -1117,6 +1125,24 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
 	htree_destroy_document(htreegeom);
 
 	return CYBERIADA_NO_ERROR;
+}
+
+/* The geometry update: the layered layout seeded by the existing geometry,
+   which is kept - the geometry-less elements are inserted by the flow, the
+   drawn ones keep their places; the sizes are estimated for the new
+   elements only (the drawn ones keep theirs) */
+int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0);
+}
+
+/* The geometry arrange: the layered layout anew, seeded by the existing
+   geometry - its bands, the order in a layer, the flow directions and the
+   seed rects as the minimum sizes; the places, the routes and the comments
+   of the full layout, the text sizes estimated for every element */
+int cyberiada_arrange_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1);
 }
 
 static int cyberiada_node_has_geometry(CyberiadaNode* node)

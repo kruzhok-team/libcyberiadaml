@@ -3,6 +3,10 @@
 ## Version 1.1.0 (unreleased)
 
 Added:
+- the geometry arrange `cyberiada_arrange_document_geometry`: the layered
+  layout of libhtgeom anew, seeded by the existing geometry - its bands, the
+  order in a layer, the flow directions and the minimum sizes kept, the
+  routes and the comments of the full layout (libhtgeom 1.3.0);
 - the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
   `type/ fa` in its metainformation is a deterministic finite automaton
   diagram; the reader and the writer refuse it with the new code

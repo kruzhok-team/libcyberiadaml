@@ -486,6 +486,9 @@ typedef enum {
 	int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 	/* the geometry update: the layout seeded by the existing geometry, which is kept */
 	int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
+	/* the geometry arrange: the layout anew, seeded by the existing geometry
+	   (its bands, order, directions and minimum sizes), nothing kept */
+	int cyberiada_arrange_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 	
 	/* Change the SM document geometry format and convert the SMs geometry data */
 	int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
