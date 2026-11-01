@@ -179,7 +179,8 @@ preserving fill-in of the missing geometry) or rebuilt from the structure
 by the standalone `cyberiada_reconstruct_document_geometry()`, or completed
 around the existing geometry by `cyberiada_update_document_geometry()`, or laid
 out anew as the existing geometry is arranged - its bands, order, directions and
-minimum sizes - by `cyberiada_arrange_document_geometry()`: the bridge
+minimum sizes - by `cyberiada_arrange_document_geometry()`; the `_with` calls
+take the layout options (the orthogonal routes); the bridge
 passes the node roles (`HTNodeRole`) and the text-size estimates of the
 states, the comments and the transition labels to the libhtgeom layered
 layout (10 px per character, 20 px per line, 8 px margins: a state at least

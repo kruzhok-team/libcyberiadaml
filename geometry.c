@@ -1014,7 +1014,29 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 }
 
 
+void cyberiada_default_layout_options(CyberiadaLayoutOptions* options)
+{
+	if (options) {
+		options->routing = htRoutingPolyline;
+	}
+}
+
+/* the layered layout options of the library options */
+static void cyberiada_htree_layout_options(HTLayoutOptions* layout, const CyberiadaLayoutOptions* options)
+{
+	htree_default_layout_options(layout);
+	if (options) {
+		layout->routing = options->routing;
+	}
+}
+
 int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_reconstruct_document_geometry_with(doc, reconstruct_sm, NULL);
+}
+
+int cyberiada_reconstruct_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+												 const CyberiadaLayoutOptions* options)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -1061,7 +1083,7 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htree_default_layout_options(&layout);
+	cyberiada_htree_layout_options(&layout, options);
 	if ((res = htree_reconstruct_document_geometry(htreegeom, reconstruct_sm, &layout)) != HTREE_OK) {
 		ERROR("Error while reconstructing htree geometry %d\n", res);
 		htree_destroy_document(htreegeom);
@@ -1076,7 +1098,8 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 
 /* the layouts seeded by the existing geometry: the update keeps it, the
    arrange reads it and lays the document out anew */
-static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int reconstruct_sm, int arrange)
+static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int reconstruct_sm, int arrange,
+											  const CyberiadaLayoutOptions* options)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -1112,7 +1135,7 @@ static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int recons
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htree_default_layout_options(&layout);
+	cyberiada_htree_layout_options(&layout, options);
 	res = arrange ? htree_arrange_document_geometry(htreegeom, reconstruct_sm, &layout) :
 		htree_update_document_geometry(htreegeom, reconstruct_sm, &layout);
 	if (res != HTREE_OK) {
@@ -1133,7 +1156,13 @@ static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int recons
    elements only (the drawn ones keep theirs) */
 int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
 {
-	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0);
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0, NULL);
+}
+
+int cyberiada_update_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+											const CyberiadaLayoutOptions* options)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0, options);
 }
 
 /* The geometry arrange: the layered layout anew, seeded by the existing
@@ -1142,7 +1171,13 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
    of the full layout, the text sizes estimated for every element */
 int cyberiada_arrange_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
 {
-	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1);
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1, NULL);
+}
+
+int cyberiada_arrange_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+											 const CyberiadaLayoutOptions* options)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1, options);
 }
 
 static int cyberiada_node_has_geometry(CyberiadaNode* node)

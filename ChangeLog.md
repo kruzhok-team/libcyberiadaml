@@ -7,6 +7,10 @@ Added:
   layout of libhtgeom anew, seeded by the existing geometry - its bands, the
   order in a layer, the flow directions and the minimum sizes kept, the
   routes and the comments of the full layout (libhtgeom 1.3.0);
+- the layout options `CyberiadaLayoutOptions` (`cyberiada_default_layout_options`)
+  and the calls `cyberiada_{reconstruct,update,arrange}_document_geometry_with`:
+  the routing `CyberiadaLayoutRouting`, the polylines by default or the
+  orthogonal routes (libhtgeom 1.3.0, test 34);
 - the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
   `type/ fa` in its metainformation is a deterministic finite automaton
   diagram; the reader and the writer refuse it with the new code

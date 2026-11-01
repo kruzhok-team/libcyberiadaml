@@ -289,6 +289,13 @@ int cyberiada_clean_document_geometry(CyberiadaDocument* doc);
 int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
 int cyberiada_arrange_document_geometry(CyberiadaDocument* doc, int reconstruct_sm);
+void cyberiada_default_layout_options(CyberiadaLayoutOptions* options);
+int cyberiada_reconstruct_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+                                                 const CyberiadaLayoutOptions* options);
+int cyberiada_update_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+                                            const CyberiadaLayoutOptions* options);
+int cyberiada_arrange_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+                                             const CyberiadaLayoutOptions* options);
 int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
                                         CyberiadaGeometryCoordFormat new_node_coord_format,
                                         CyberiadaGeometryCoordFormat new_edge_coord_format,
@@ -302,8 +309,15 @@ of libhtgeom 1.1 (optionally including the SM rectangle) - the pseudostate
 roles pin the flow, the state blocks and the transition labels are sized
 by estimates from their texts; `update` keeps the existing geometry and
 lays out only the geometry-less elements around it (the drawn ones keep
-their places, the containers only grow); `convert` changes the document
+their places, the containers only grow); `arrange` lays the document out
+anew, seeded by its geometry; `convert` changes the document
 coordinate/edge formats and transforms all geometry data accordingly.
+
+The `_with` calls take the layout options (`NULL` the defaults, as the
+calls without options): `CyberiadaLayoutOptions::routing`, a
+`CyberiadaLayoutRouting` (the libhtgeom `HTRouting`) - `htRoutingPolyline`
+(the default) or `htRoutingOrthogonal`, the routes in runs along and across
+the flow (libhtgeom 1.3.0).
 
 ### Utilities
 
