@@ -248,6 +248,13 @@ typedef struct _CyberiadaSM {
 #define CYBERIADA_META_GEOM_NONE                 "none"
 #define CYBERIADA_META_GEOM_SHORT                "short"
 #define CYBERIADA_META_GEOM_FULL                 "full"
+/* the region rects of the document are the frames of their nested elements
+   as drawn (PNST 1044 7.2.1): set by a producer whose regions are the ones it
+   draws - an editor that stores its regions, a tool after the layout; a
+   document without it may come from an editor that computed its regions and
+   never stored them */
+#define CYBERIADA_META_REGION_GEOMETRY           "regionGeometry"
+#define CYBERIADA_META_REGION_GEOMETRY_STORED    "stored"
 #define CYBERIADA_META_NODE_DEFAULT_ID           "nMeta"
 #define CYBERIADA_META_NODE_TITLE                "CGML_META"
 #define CYBERIADA_COMPONENT_NODE_TITLE           "CGML_COMPONENT"

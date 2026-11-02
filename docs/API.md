@@ -313,6 +313,13 @@ their places, the containers only grow); `arrange` lays the document out
 anew, seeded by its geometry; `convert` changes the document
 coordinate/edge formats and transforms all geometry data accordingly.
 
+The meta parameter `regionGeometry/ stored` (`CYBERIADA_META_REGION_GEOMETRY`,
+`CYBERIADA_META_REGION_GEOMETRY_STORED`) says that the region rects of the
+document are the frames of their nested elements as drawn (PNST 1044 7.2.1).
+A producer whose regions are the ones it draws sets it: an editor that stores
+its regions, a tool after the layout. The library neither sets nor needs it:
+it always reads the nested elements from the region rects.
+
 The `_with` calls take the layout options (`NULL` the defaults, as the
 calls without options): `CyberiadaLayoutOptions::routing`, a
 `CyberiadaLayoutRouting` (the libhtgeom `HTRouting`) - `htRoutingPolyline`
