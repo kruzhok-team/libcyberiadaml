@@ -410,6 +410,13 @@ static int cyberiada_round_document_geometry(CyberiadaDocument* doc)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the text-size estimates of the layout: none, of the elements without
+   geometry (the reconstruction, the update), of every transition label too
+   (the arrange keeps the drawn ends of the transitions) */
+#define CYBERIADA_ESTIMATE_NONE      0
+#define CYBERIADA_ESTIMATE_NEW       1
+#define CYBERIADA_ESTIMATE_LABELS    2
+
 /* the estimate flag presets the layout sizes from the texts (the full
    reconstruction); the preserving fill-in passes no presets */
 static HTreeNode* cyberiada_node_to_htree(CyberiadaNode* node, int estimate)
@@ -503,8 +510,9 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 							edge->target_edge ? edge->target_edge->id : NULL);
 	}
 	if (estimate && edge->type != cybEdgeComment && edge->action && !edge->geometry_label_rect &&
-		!edge->geometry_source_point && !edge->geometry_target_point &&
-		!edge->geometry_polyline && !edge->geometry_label_point) {
+		!edge->geometry_polyline && !edge->geometry_label_point &&
+		(estimate == CYBERIADA_ESTIMATE_LABELS ||
+		 (!edge->geometry_source_point && !edge->geometry_target_point))) {
 		/* the label size preset from the action text; a drawn transition
 		   without a label rect keeps none */
 		size_t max_chars = 0, lines = 0;
@@ -820,7 +828,7 @@ int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 										CyberiadaGeometryEdgeFormat new_edge_format)
 {
 	int res;
-	HTDocument* htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	HTDocument* htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
@@ -941,7 +949,7 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 	doc->edge_pl_coord_format = old_edge_pl_coord_format;
 	doc->edge_geom_format = old_edge_format;
 	
-	htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
@@ -1004,7 +1012,7 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
@@ -1094,7 +1102,7 @@ int cyberiada_reconstruct_document_geometry_with(CyberiadaDocument* doc, int rec
 	doc->edge_pl_coord_format = edge_pl_format;
 	doc->edge_geom_format = edge_geom_format;
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 1);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NEW);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
@@ -1152,7 +1160,7 @@ static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int recons
 		}
 	}
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 1);
+	htreegeom = cyberiada_to_htree_geometry(doc, arrange ? CYBERIADA_ESTIMATE_LABELS : CYBERIADA_ESTIMATE_NEW);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
