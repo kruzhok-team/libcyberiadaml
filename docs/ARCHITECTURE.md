@@ -184,8 +184,10 @@ take the layout options (the orthogonal routes); the bridge
 passes the node roles (`HTNodeRole`) and the text-size estimates of the
 states, the comments and the transition labels to the libhtgeom layered
 layout (10 px per character, 20 px per line, 8 px margins: a state at least
-300x200; a comment's body wrapped at 40 characters plus its name line, at
-least 200x100 - the editor's default box). The meta node and the component
+300x200; a composite's title, entry and internal actions as its header and
+its exit block as the footer band at the bottom, as the editor draws it, the
+region between them; a comment's body wrapped at 40 characters plus its name
+line, at least 200x100 - the editor's default box). The meta node and the component
 comments (`CGML_COMPONENT`, hidden in the editors) without geometry take no
 part in the layout.
 

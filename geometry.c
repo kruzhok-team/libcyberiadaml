@@ -76,12 +76,19 @@ static size_t cyberiada_text_chars(const char* text)
 	return chars;
 }
 
-/* the lines of an action list as the writer formats them: the head line
-   ("entry/", "trigger [guard]/") and the behavior lines */
-static void cyberiada_actions_metrics(const CyberiadaAction* action, size_t* max_chars, size_t* lines)
+/* the action types of the text blocks: all of them, the header of a
+   composite (the editor draws its exit block at the bottom) */
+#define CYBERIADA_LAYOUT_ACTIONS_ALL    (cybActionTransition | cybActionEntry | cybActionExit | cybActionDo)
+#define CYBERIADA_LAYOUT_ACTIONS_HEADER (CYBERIADA_LAYOUT_ACTIONS_ALL & ~cybActionExit)
+
+/* the lines of the actions of the types as the writer formats them: the
+   head line ("entry/", "trigger [guard]/") and the behavior lines */
+static void cyberiada_actions_metrics(const CyberiadaAction* action, unsigned int types,
+									  size_t* max_chars, size_t* lines)
 {
 	for (; action; action = action->next) {
 		size_t head;
+		if (!(action->type & types)) continue;
 		if (action->type == cybActionTransition) {
 			if (!cyberiada_text_chars(action->trigger) && !cyberiada_text_chars(action->guard) &&
 				!cyberiada_text_chars(action->behavior)) continue;
@@ -139,9 +146,11 @@ static void cyberiada_text_block_size(size_t max_chars, size_t lines, double* w,
    of a comment; a leaf takes at least the default state size, a comment at
    least the default comment box */
 static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOptions* opts,
-									double* w, double* h)
+									double* w, double* h, double* footer)
 {
 	size_t max_chars = 0, lines = 0;
+
+	*footer = 0.0;
 
 	if (node->type & (cybNodeComment | cybNodeFormalComment)) {
 		if (node->comment_data) {
@@ -162,7 +171,21 @@ static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOpt
 							 cybNodeSubmachineState)) {
 		cyberiada_text_metrics(node->title, &max_chars, &lines);
 		if (lines == 0) lines = 1;
-		cyberiada_actions_metrics(node->actions, &max_chars, &lines);
+		if (node->type == cybNodeCompositeState) {
+			/* a composite as the editor draws it: the title, the entry and
+			   the internal actions in the header, the exit block in the
+			   footer at the bottom */
+			size_t exit_chars = 0, exit_lines = 0;
+			cyberiada_actions_metrics(node->actions, CYBERIADA_LAYOUT_ACTIONS_HEADER, &max_chars, &lines);
+			cyberiada_actions_metrics(node->actions, cybActionExit, &exit_chars, &exit_lines);
+			if (exit_lines > 0) {
+				double exit_w;
+				cyberiada_text_block_size(exit_chars, exit_lines, &exit_w, footer);
+				if (exit_chars > max_chars) max_chars = exit_chars;
+			}
+		} else {
+			cyberiada_actions_metrics(node->actions, CYBERIADA_LAYOUT_ACTIONS_ALL, &max_chars, &lines);
+		}
 	} else {
 		return 0;
 	}
@@ -179,12 +202,14 @@ static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOpt
 /* the preset minimum size of a node for the layout */
 static void cyberiada_node_layout_size(const CyberiadaNode* node, HTreeNode* t_node)
 {
-	double w, h;
+	double w, h, footer;
 	HTLayoutOptions opts;
 
 	htree_default_layout_options(&opts);
-	if (cyberiada_node_text_size(node, &opts, &w, &h)) {
+	if (cyberiada_node_text_size(node, &opts, &w, &h, &footer)) {
+		/* a composite: the header as its min height, the footer apart */
 		htree_node_set_min_size(t_node, w, h);
+		htree_node_set_footer(t_node, footer);
 	}
 }
 
@@ -517,7 +542,7 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 		   without a label rect keeps none */
 		size_t max_chars = 0, lines = 0;
 		double w, h;
-		cyberiada_actions_metrics(edge->action, &max_chars, &lines);
+		cyberiada_actions_metrics(edge->action, CYBERIADA_LAYOUT_ACTIONS_ALL, &max_chars, &lines);
 		if (lines > 0) {
 			cyberiada_text_block_size(max_chars, lines, &w, &h);
 			t_edge->label_rect = htree_new_rect();
@@ -1516,7 +1541,9 @@ static void cyberiada_arena_node(CyberiadaNode* node, const HTLayoutOptions* opt
 	if (node->type == cybNodeChoice) {
 		w = h = opts->point_size;
 	} else {
-		cyberiada_node_text_size(node, opts, &w, &h);
+		double footer;
+		cyberiada_node_text_size(node, opts, &w, &h, &footer);
+		h += footer;
 	}
 	if (node->children) {
 		cyberiada_arena_extent(node->children, opts->point_size, &ew, &eh);
