@@ -305,6 +305,23 @@ static int cyberiada_clean_edge_geometry(CyberiadaEdge* edge)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the route of an edge: its polyline and its label geometry; the ends stay */
+static void cyberiada_clean_edge_route(CyberiadaEdge* edge)
+{
+	if (edge->geometry_polyline) {
+		htree_destroy_polyline(edge->geometry_polyline);
+		edge->geometry_polyline = NULL;
+	}
+	if (edge->geometry_label_point) {
+		htree_destroy_point(edge->geometry_label_point);
+		edge->geometry_label_point = NULL;
+	}
+	if (edge->geometry_label_rect) {
+		htree_destroy_rect(edge->geometry_label_rect);
+		edge->geometry_label_rect = NULL;
+	}
+}
+
 static int cyberiada_clean_edges_geometry(CyberiadaEdge* edge)
 {
 	while (edge) {
@@ -1122,10 +1139,16 @@ static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int recons
 	}
 	if (arrange) {
 		/* the arrange routes every transition anew: the label sizes are
-		   estimated as for the full layout */
+		   estimated as for the full layout; the orthogonal routes keep the
+		   drawn ends, the sides they are drawn on */
 		CyberiadaSM* sm;
+		CyberiadaEdge* edge;
 		for (sm = doc->state_machines; sm; sm = sm->next) {
-			cyberiada_clean_edges_geometry(sm->edges);
+			if (options && options->routing == htRoutingOrthogonal) {
+				for (edge = sm->edges; edge; edge = edge->next) cyberiada_clean_edge_route(edge);
+			} else {
+				cyberiada_clean_edges_geometry(sm->edges);
+			}
 		}
 	}
 

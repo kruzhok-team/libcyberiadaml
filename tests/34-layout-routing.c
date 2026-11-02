@@ -58,6 +58,52 @@ static int oblique(CyberiadaDocument* doc)
 	return n;
 }
 
+static CyberiadaDocument* sample(void);
+
+/* the first transition between two simple states of the top level */
+static CyberiadaEdge* plain_transition(CyberiadaDocument* doc)
+{
+	CyberiadaSM* sm;
+	CyberiadaEdge* edge;
+	for (sm = doc->state_machines; sm; sm = sm->next) {
+		for (edge = sm->edges; edge; edge = edge->next) {
+			if (edge->type != cybEdgeComment && edge->source != edge->target &&
+				edge->source && edge->target && edge->source->type == cybNodeSimpleState &&
+				edge->target->type == cybNodeSimpleState && edge->source->geometry_rect &&
+				edge->source->parent == edge->target->parent) return edge;
+		}
+	}
+	return NULL;
+}
+
+/* the source end of the transition drawn on a side (0 left, 2 top) of its
+   source, arranged; whether the arranged end lies on that side */
+static int drawn_side_kept(int side)
+{
+	CyberiadaDocument* doc = sample();
+	CyberiadaLayoutOptions options;
+	CyberiadaEdge* edge;
+	const CyberiadaRect* r;
+	int kept;
+	cyberiada_default_layout_options(&options);
+	options.routing = htRoutingOrthogonal;
+	TEST_ASSERT(cyberiada_reconstruct_document_geometry_with(doc, 1, &options) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(cyberiada_convert_document_geometry(doc, coordAbsolute, coordAbsolute, coordAbsolute,
+													edgeBorder) == CYBERIADA_NO_ERROR);
+	edge = plain_transition(doc);
+	TEST_ASSERT(edge && edge->geometry_source_point);
+	r = edge->source->geometry_rect;
+	edge->geometry_source_point->x = side == 0 ? r->x : r->x + r->width / 2.0;
+	edge->geometry_source_point->y = side == 0 ? r->y + r->height / 2.0 : r->y;
+	TEST_ASSERT(cyberiada_arrange_document_geometry_with(doc, 1, &options) == CYBERIADA_NO_ERROR);
+	TEST_ASSERT(oblique(doc) == 0);
+	r = edge->source->geometry_rect;
+	kept = side == 0 ? fabs(edge->geometry_source_point->x - r->x) < ALIGNED :
+		fabs(edge->geometry_source_point->y - r->y) < ALIGNED;
+	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+	return kept;
+}
+
 static CyberiadaDocument* sample(void)
 {
 	CyberiadaDocument* doc = cyberiada_new_sm_document();
@@ -91,6 +137,10 @@ int main(void)
 	TEST_ASSERT(cyberiada_arrange_document_geometry_with(doc, 1, &options) == CYBERIADA_NO_ERROR);
 	TEST_ASSERT(oblique(doc) == 0);
 	TEST_ASSERT(cyberiada_destroy_sm_document(doc) == CYBERIADA_NO_ERROR);
+
+	/* the orthogonal arrange keeps a drawn side along the flow: of the left
+	   and the top sides one lies along the flow of the container */
+	TEST_ASSERT(drawn_side_kept(0) || drawn_side_kept(2));
 
 	/* NULL options are the defaults */
 	doc = sample();

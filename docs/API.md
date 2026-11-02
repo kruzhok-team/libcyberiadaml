@@ -317,7 +317,8 @@ The `_with` calls take the layout options (`NULL` the defaults, as the
 calls without options): `CyberiadaLayoutOptions::routing`, a
 `CyberiadaLayoutRouting` (the libhtgeom `HTRouting`) - `htRoutingPolyline`
 (the default) or `htRoutingOrthogonal`, the routes in runs along and across
-the flow (libhtgeom 1.3.0).
+the flow (libhtgeom 1.3.0). The orthogonal arrange keeps the drawn ends of
+the transitions: an end drawn on a side along the flow stays on that side.
 
 ### Utilities
 
