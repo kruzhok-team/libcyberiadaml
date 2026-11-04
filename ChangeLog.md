@@ -1,53 +1,26 @@
 # libcyberiadaml project changelog
 
-## Version 1.1.0 (unreleased)
+## Version 1.1.0
 
 Added:
-- the geometry arrange `cyberiada_arrange_document_geometry`: the layered
-  layout of libhtgeom anew, seeded by the existing geometry - its bands, the
-  order in a layer, the flow directions and the minimum sizes kept, the
-  routes and the comments of the full layout (libhtgeom 1.3.0);
+- the geometry arrange `cyberiada_arrange_document_geometry`;
 - the layout options `CyberiadaLayoutOptions` (`cyberiada_default_layout_options`)
-  and the calls `cyberiada_{reconstruct,update,arrange}_document_geometry_with`:
-  the routing `CyberiadaLayoutRouting`, the polylines by default or the
-  orthogonal routes (libhtgeom 1.3.0, test 34); the orthogonal arrange keeps
-  the drawn ends of the transitions, their sides along the flow;
-- the meta parameter `regionGeometry/ stored` (`CYBERIADA_META_REGION_GEOMETRY`):
-  the region rects are the frames of the nested elements as drawn, set by the
-  producers that store their regions;
-- the bands of a composite as the editor draws it: the title, the entry and
-  the internal actions in the header, the exit in the footer at the bottom
-  (`htree_node_set_footer`), the region between them (test 35);
-- the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
-  `type/ fa` in its metainformation is a deterministic finite automaton
-  diagram; the strict reader and writer (`CYBERIADA_FLAG_STRICT`) refuse it
-  with the new code `CYBERIADA_FA_ERROR` when it breaks the `CGML-FA-*`
-  requirements, the lenient ones take it as a draft (FA-extension 0.4, 5);
-  `cyberiada_check_fa_document` lists every violation (`CyberiadaFAFinding`:
-  the requirement, the element, the message, a construct foreign to the FA or
-  a fault of a draft) whatever the flags;
-  `cyberiada_document_is_fa`, the `CYBERIADA_META_TYPE` and
-  `CYBERIADA_FA_*` constants; the alphabet comments `FA_INPUT`/`FA_OUTPUT`
-  with their restricted regular expressions (cyb_fa.c); the 27 EXT-FA
-  diagrams of compat-tests 374e6d0 in the tests.
+  and the calls `cyberiada_{reconstruct,update,arrange}_document_geometry_with`;
+- the meta parameter `regionGeometry/ stored` (`CYBERIADA_META_REGION_GEOMETRY`);
+- the bands of a composite as the editor draws it;
+- the EXT-FA rules on a deterministic finite automaton;
 - the geometry reconstruction and update give the comment links their ends
-  (libhtgeom 1.3): the links to the elements and to the transitions both ends,
-  the links to the fragments the source point only.
+  (libhtgeom 1.3).
 
 Changed:
 - an FA output symbol is one line of any characters, as the escapes of FA 4
-  allow (`.-`, `/`): only the input symbols keep the shape of an event name.
-- the comment size estimate of the reconstruction wraps the body at 40
-  characters, counts the name line and floors the box to 200x100 (the editor's
-  default comment) instead of the state size; the hidden `CGML_COMPONENT`
-  comments without geometry are skipped like the meta node (libhtgeom 1.3 lays
-  the comments out inside their containers).
+  allow (`.-`, `/`).
 
 Fixed:
 - the target point of a comment link to a transition is relative to the
-  transition's source node (PNST 1044 9.1.1), not to its target node.
+  transition's source node, not to its target node.
 - the strict mode refuses a comment link targeting a state machine or a region
-  graph and a `dName` link to a transition (PNST 1044 6.7, compat-tests spec 1.10).
+  graph and a `dName` link to a transition.
 
 ## Version 1.0.8
 
