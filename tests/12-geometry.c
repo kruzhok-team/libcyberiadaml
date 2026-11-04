@@ -88,6 +88,18 @@ int main(void)
 		edge->geometry_label_rect = NULL;
 		TEST_ASSERT(cyberiada_update_document_geometry(doc, 1) == CYBERIADA_NO_ERROR);
 		TEST_ASSERT(edge->geometry_source_point && !edge->geometry_label_rect);
+		/* the arrange keeps the drawn order of the swapped states and lays
+		   them out anew: the estimated sizes, the transition with its label */
+		{
+			double x = off->geometry_rect->x;
+			off->geometry_rect->x = on->geometry_rect->x;
+			on->geometry_rect->x = x;
+			TEST_ASSERT(cyberiada_arrange_document_geometry(doc, 1) == CYBERIADA_NO_ERROR);
+			TEST_ASSERT(on->geometry_rect->x + on->geometry_rect->width <= off->geometry_rect->x);
+			TEST_ASSERT(off->geometry_rect->width >= 300.0 && off->geometry_rect->height >= 200.0);
+			TEST_ASSERT(edge->geometry_source_point && edge->geometry_label_rect &&
+						edge->geometry_label_rect->width > 0.0);
+		}
 	}
 
 	/* cleaning removes the geometry */

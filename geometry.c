@@ -76,12 +76,19 @@ static size_t cyberiada_text_chars(const char* text)
 	return chars;
 }
 
-/* the lines of an action list as the writer formats them: the head line
-   ("entry/", "trigger [guard]/") and the behavior lines */
-static void cyberiada_actions_metrics(const CyberiadaAction* action, size_t* max_chars, size_t* lines)
+/* the action types of the text blocks: all of them, the header of a
+   composite (the editor draws its exit block at the bottom) */
+#define CYBERIADA_LAYOUT_ACTIONS_ALL    (cybActionTransition | cybActionEntry | cybActionExit | cybActionDo)
+#define CYBERIADA_LAYOUT_ACTIONS_HEADER (CYBERIADA_LAYOUT_ACTIONS_ALL & ~cybActionExit)
+
+/* the lines of the actions of the types as the writer formats them: the
+   head line ("entry/", "trigger [guard]/") and the behavior lines */
+static void cyberiada_actions_metrics(const CyberiadaAction* action, unsigned int types,
+									  size_t* max_chars, size_t* lines)
 {
 	for (; action; action = action->next) {
 		size_t head;
+		if (!(action->type & types)) continue;
 		if (action->type == cybActionTransition) {
 			if (!cyberiada_text_chars(action->trigger) && !cyberiada_text_chars(action->guard) &&
 				!cyberiada_text_chars(action->behavior)) continue;
@@ -139,9 +146,11 @@ static void cyberiada_text_block_size(size_t max_chars, size_t lines, double* w,
    of a comment; a leaf takes at least the default state size, a comment at
    least the default comment box */
 static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOptions* opts,
-									double* w, double* h)
+									double* w, double* h, double* footer)
 {
 	size_t max_chars = 0, lines = 0;
+
+	*footer = 0.0;
 
 	if (node->type & (cybNodeComment | cybNodeFormalComment)) {
 		if (node->comment_data) {
@@ -162,7 +171,21 @@ static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOpt
 							 cybNodeSubmachineState)) {
 		cyberiada_text_metrics(node->title, &max_chars, &lines);
 		if (lines == 0) lines = 1;
-		cyberiada_actions_metrics(node->actions, &max_chars, &lines);
+		if (node->type == cybNodeCompositeState) {
+			/* a composite as the editor draws it: the title, the entry and
+			   the internal actions in the header, the exit block in the
+			   footer at the bottom */
+			size_t exit_chars = 0, exit_lines = 0;
+			cyberiada_actions_metrics(node->actions, CYBERIADA_LAYOUT_ACTIONS_HEADER, &max_chars, &lines);
+			cyberiada_actions_metrics(node->actions, cybActionExit, &exit_chars, &exit_lines);
+			if (exit_lines > 0) {
+				double exit_w;
+				cyberiada_text_block_size(exit_chars, exit_lines, &exit_w, footer);
+				if (exit_chars > max_chars) max_chars = exit_chars;
+			}
+		} else {
+			cyberiada_actions_metrics(node->actions, CYBERIADA_LAYOUT_ACTIONS_ALL, &max_chars, &lines);
+		}
 	} else {
 		return 0;
 	}
@@ -179,12 +202,14 @@ static int cyberiada_node_text_size(const CyberiadaNode* node, const HTLayoutOpt
 /* the preset minimum size of a node for the layout */
 static void cyberiada_node_layout_size(const CyberiadaNode* node, HTreeNode* t_node)
 {
-	double w, h;
+	double w, h, footer;
 	HTLayoutOptions opts;
 
 	htree_default_layout_options(&opts);
-	if (cyberiada_node_text_size(node, &opts, &w, &h)) {
+	if (cyberiada_node_text_size(node, &opts, &w, &h, &footer)) {
+		/* a composite: the header as its min height, the footer apart */
 		htree_node_set_min_size(t_node, w, h);
+		htree_node_set_footer(t_node, footer);
 	}
 }
 
@@ -305,6 +330,23 @@ static int cyberiada_clean_edge_geometry(CyberiadaEdge* edge)
 	return CYBERIADA_NO_ERROR;
 }
 
+/* the route of an edge: its polyline and its label geometry; the ends stay */
+static void cyberiada_clean_edge_route(CyberiadaEdge* edge)
+{
+	if (edge->geometry_polyline) {
+		htree_destroy_polyline(edge->geometry_polyline);
+		edge->geometry_polyline = NULL;
+	}
+	if (edge->geometry_label_point) {
+		htree_destroy_point(edge->geometry_label_point);
+		edge->geometry_label_point = NULL;
+	}
+	if (edge->geometry_label_rect) {
+		htree_destroy_rect(edge->geometry_label_rect);
+		edge->geometry_label_rect = NULL;
+	}
+}
+
 static int cyberiada_clean_edges_geometry(CyberiadaEdge* edge)
 {
 	while (edge) {
@@ -392,6 +434,13 @@ static int cyberiada_round_document_geometry(CyberiadaDocument* doc)
 	}
 	return CYBERIADA_NO_ERROR;
 }
+
+/* the text-size estimates of the layout: none, of the elements without
+   geometry (the reconstruction, the update), of every transition label too
+   (the arrange keeps the drawn ends of the transitions) */
+#define CYBERIADA_ESTIMATE_NONE      0
+#define CYBERIADA_ESTIMATE_NEW       1
+#define CYBERIADA_ESTIMATE_LABELS    2
 
 /* the estimate flag presets the layout sizes from the texts (the full
    reconstruction); the preserving fill-in passes no presets */
@@ -486,13 +535,14 @@ static HTreeEdge* cyberiada_edge_to_htree(CyberiadaEdge* edge, int estimate)
 							edge->target_edge ? edge->target_edge->id : NULL);
 	}
 	if (estimate && edge->type != cybEdgeComment && edge->action && !edge->geometry_label_rect &&
-		!edge->geometry_source_point && !edge->geometry_target_point &&
-		!edge->geometry_polyline && !edge->geometry_label_point) {
+		!edge->geometry_polyline && !edge->geometry_label_point &&
+		(estimate == CYBERIADA_ESTIMATE_LABELS ||
+		 (!edge->geometry_source_point && !edge->geometry_target_point))) {
 		/* the label size preset from the action text; a drawn transition
 		   without a label rect keeps none */
 		size_t max_chars = 0, lines = 0;
 		double w, h;
-		cyberiada_actions_metrics(edge->action, &max_chars, &lines);
+		cyberiada_actions_metrics(edge->action, CYBERIADA_LAYOUT_ACTIONS_ALL, &max_chars, &lines);
 		if (lines > 0) {
 			cyberiada_text_block_size(max_chars, lines, &w, &h);
 			t_edge->label_rect = htree_new_rect();
@@ -803,7 +853,7 @@ int cyberiada_convert_document_geometry(CyberiadaDocument* doc,
 										CyberiadaGeometryEdgeFormat new_edge_format)
 {
 	int res;
-	HTDocument* htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	HTDocument* htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
@@ -924,7 +974,7 @@ int cyberiada_import_document_geometry(CyberiadaDocument* doc,
 	doc->edge_pl_coord_format = old_edge_pl_coord_format;
 	doc->edge_geom_format = old_edge_format;
 	
-	htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
@@ -987,7 +1037,7 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 0);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NONE);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
@@ -1014,7 +1064,29 @@ int cyberiada_export_document_geometry(CyberiadaDocument* doc,
 }
 
 
+void cyberiada_default_layout_options(CyberiadaLayoutOptions* options)
+{
+	if (options) {
+		options->routing = htRoutingPolyline;
+	}
+}
+
+/* the layered layout options of the library options */
+static void cyberiada_htree_layout_options(HTLayoutOptions* layout, const CyberiadaLayoutOptions* options)
+{
+	htree_default_layout_options(layout);
+	if (options) {
+		layout->routing = options->routing;
+	}
+}
+
 int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_reconstruct_document_geometry_with(doc, reconstruct_sm, NULL);
+}
+
+int cyberiada_reconstruct_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+												 const CyberiadaLayoutOptions* options)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -1055,13 +1127,13 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 	doc->edge_pl_coord_format = edge_pl_format;
 	doc->edge_geom_format = edge_geom_format;
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 1);
+	htreegeom = cyberiada_to_htree_geometry(doc, CYBERIADA_ESTIMATE_NEW);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htree_default_layout_options(&layout);
+	cyberiada_htree_layout_options(&layout, options);
 	if ((res = htree_reconstruct_document_geometry(htreegeom, reconstruct_sm, &layout)) != HTREE_OK) {
 		ERROR("Error while reconstructing htree geometry %d\n", res);
 		htree_destroy_document(htreegeom);
@@ -1074,11 +1146,10 @@ int cyberiada_reconstruct_document_geometry(CyberiadaDocument* doc, int reconstr
 	return CYBERIADA_NO_ERROR;
 }
 
-/* The geometry update: the layered layout seeded by the existing geometry,
-   which is kept - the geometry-less elements are inserted by the flow, the
-   drawn ones keep their places; the sizes are estimated for the new
-   elements only (the drawn ones keep theirs) */
-int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+/* the layouts seeded by the existing geometry: the update keeps it, the
+   arrange reads it and lays the document out anew */
+static int cyberiada_seeded_document_geometry(CyberiadaDocument* doc, int reconstruct_sm, int arrange,
+											  const CyberiadaLayoutOptions* options)
 {
 	int res;
 	HTDocument* htreegeom;
@@ -1099,16 +1170,32 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
 	if (doc->edge_geom_format == edgeNone) {
 		doc->edge_geom_format = edgeBorder;
 	}
+	if (arrange) {
+		/* the arrange routes every transition anew: the label sizes are
+		   estimated as for the full layout; the orthogonal routes keep the
+		   drawn ends, the sides they are drawn on */
+		CyberiadaSM* sm;
+		CyberiadaEdge* edge;
+		for (sm = doc->state_machines; sm; sm = sm->next) {
+			if (options && options->routing == htRoutingOrthogonal) {
+				for (edge = sm->edges; edge; edge = edge->next) cyberiada_clean_edge_route(edge);
+			} else {
+				cyberiada_clean_edges_geometry(sm->edges);
+			}
+		}
+	}
 
-	htreegeom = cyberiada_to_htree_geometry(doc, 1);
+	htreegeom = cyberiada_to_htree_geometry(doc, arrange ? CYBERIADA_ESTIMATE_LABELS : CYBERIADA_ESTIMATE_NEW);
 	if (!htreegeom) {
 		ERROR("Cannot convert document geometry to htree geometry\n");
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	htree_default_layout_options(&layout);
-	if ((res = htree_update_document_geometry(htreegeom, reconstruct_sm, &layout)) != HTREE_OK) {
-		ERROR("Error while updating htree geometry %d\n", res);
+	cyberiada_htree_layout_options(&layout, options);
+	res = arrange ? htree_arrange_document_geometry(htreegeom, reconstruct_sm, &layout) :
+		htree_update_document_geometry(htreegeom, reconstruct_sm, &layout);
+	if (res != HTREE_OK) {
+		ERROR("Error while %s htree geometry %d\n", arrange ? "arranging" : "updating", res);
 		htree_destroy_document(htreegeom);
 		return CYBERIADA_BAD_PARAMETER;
 	}
@@ -1117,6 +1204,36 @@ int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_s
 	htree_destroy_document(htreegeom);
 
 	return CYBERIADA_NO_ERROR;
+}
+
+/* The geometry update: the layered layout seeded by the existing geometry,
+   which is kept - the geometry-less elements are inserted by the flow, the
+   drawn ones keep their places; the sizes are estimated for the new
+   elements only (the drawn ones keep theirs) */
+int cyberiada_update_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0, NULL);
+}
+
+int cyberiada_update_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+											const CyberiadaLayoutOptions* options)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 0, options);
+}
+
+/* The geometry arrange: the layered layout anew, seeded by the existing
+   geometry - its bands, the order in a layer, the flow directions and the
+   seed rects as the minimum sizes; the places, the routes and the comments
+   of the full layout, the text sizes estimated for every element */
+int cyberiada_arrange_document_geometry(CyberiadaDocument* doc, int reconstruct_sm)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1, NULL);
+}
+
+int cyberiada_arrange_document_geometry_with(CyberiadaDocument* doc, int reconstruct_sm,
+											 const CyberiadaLayoutOptions* options)
+{
+	return cyberiada_seeded_document_geometry(doc, reconstruct_sm, 1, options);
 }
 
 static int cyberiada_node_has_geometry(CyberiadaNode* node)
@@ -1424,7 +1541,9 @@ static void cyberiada_arena_node(CyberiadaNode* node, const HTLayoutOptions* opt
 	if (node->type == cybNodeChoice) {
 		w = h = opts->point_size;
 	} else {
-		cyberiada_node_text_size(node, opts, &w, &h);
+		double footer;
+		cyberiada_node_text_size(node, opts, &w, &h, &footer);
+		h += footer;
 	}
 	if (node->children) {
 		cyberiada_arena_extent(node->children, opts->point_size, &ew, &eh);

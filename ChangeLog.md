@@ -3,6 +3,21 @@
 ## Version 1.1.0 (unreleased)
 
 Added:
+- the geometry arrange `cyberiada_arrange_document_geometry`: the layered
+  layout of libhtgeom anew, seeded by the existing geometry - its bands, the
+  order in a layer, the flow directions and the minimum sizes kept, the
+  routes and the comments of the full layout (libhtgeom 1.3.0);
+- the layout options `CyberiadaLayoutOptions` (`cyberiada_default_layout_options`)
+  and the calls `cyberiada_{reconstruct,update,arrange}_document_geometry_with`:
+  the routing `CyberiadaLayoutRouting`, the polylines by default or the
+  orthogonal routes (libhtgeom 1.3.0, test 34); the orthogonal arrange keeps
+  the drawn ends of the transitions, their sides along the flow;
+- the meta parameter `regionGeometry/ stored` (`CYBERIADA_META_REGION_GEOMETRY`):
+  the region rects are the frames of the nested elements as drawn, set by the
+  producers that store their regions;
+- the bands of a composite as the editor draws it: the title, the entry and
+  the internal actions in the header, the exit in the footer at the bottom
+  (`htree_node_set_footer`), the region between them (test 35);
 - the EXT-FA rules (compat-tests testing spec 1.11, 2.9): a document with
   `type/ fa` in its metainformation is a deterministic finite automaton
   diagram; the strict reader and writer (`CYBERIADA_FLAG_STRICT`) refuse it
