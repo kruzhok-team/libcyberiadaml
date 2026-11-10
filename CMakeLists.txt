@@ -65,11 +65,13 @@ add_library(cyberiadaml SHARED
 			cyb_string.c
 			cyb_structs.c
 	 		cyb_types.c
+			diff.c
 			geometry.c
 			isomorph.c
 			utf8enc.c
 			cyberiadaml.c
 			cyberiadaml_iso.h
+			cyberiadaml_diff.h
 )
 
 # the public header includes <cyberiada/htgeom.h>, so the parent of the
@@ -126,7 +128,7 @@ install(TARGETS cyberiadaml EXPORT cyberiadaml
         RUNTIME DESTINATION bin COMPONENT runtime
         LIBRARY DESTINATION lib COMPONENT runtime
         ARCHIVE DESTINATION lib COMPONENT dev)
-install(FILES cyberiadaml.h cyberiadaml_iso.h
+install(FILES cyberiadaml.h cyberiadaml_iso.h cyberiadaml_diff.h
         DESTINATION include/cyberiada
         COMPONENT dev)
 install(EXPORT cyberiadaml DESTINATION lib/cmake/cyberiadaml

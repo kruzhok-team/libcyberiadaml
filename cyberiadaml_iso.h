@@ -1,7 +1,7 @@
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML library implemention
  *
- * The isomorphism check and diff C library header
+ * The isomorphism check C library header
  *
  * Copyright (C) 2026 Alexey Fedoseev <aleksey@fedoseev.net>
  *

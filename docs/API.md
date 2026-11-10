@@ -387,7 +387,8 @@ The pairing:
 1. the state machines by the id of their node, then by the title, then in the
    document order; the metainformation by its names (the standard version,
    `transitionOrder`, `eventPropagation`, the strings);
-2. the nodes, parents before children: a node of the same id and a compatible
+2. the nodes, parents before children (the regions of the composite states
+   among them): a node of the same id and a compatible
    type is the same node when the evidence holds - an equal non-empty title,
    action list or comment text, or two of the weaker signs: the parents paired
    with each other, the same place, the only node of its type under the paired

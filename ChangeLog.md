@@ -2,6 +2,14 @@
 
 ## Version 1.2.0 (unreleased)
 
+Added:
+- the revision diff of two revisions of a document (`cyberiadaml_diff.h`):
+  `cyberiada_diff_documents`, `cyberiada_diff_sms` and their cleanups, the
+  options (`cyberiada_default_diff_options`: the geometry, the comments
+  left out) and the `CYBERIADA_DIFF_FLAG_*` flags; the elements paired by their
+  ids, checked by their contents, the state machines by the id, the title and
+  the order, the metainformation by its names.
+
 Changed:
 - the isomorphism check takes every pair of nodes of compatible types as a
   candidate, the degrees acting through the proximity only: check(A, B) and

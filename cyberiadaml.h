@@ -411,6 +411,7 @@ typedef enum {
 
 
 #include "cyberiadaml_iso.h"
+#include "cyberiadaml_diff.h"
 
 /* -----------------------------------------------------------------------------
  * The Cyberiada GraphML error codes
