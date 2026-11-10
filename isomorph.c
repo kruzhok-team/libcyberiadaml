@@ -26,14 +26,13 @@
 #include "cyberiadaml.h"
 #include "cyberiadaml_iso.h"
 #include "cyb_structs.h"
+#include "cyb_string.h"
 #include "cyb_error.h"
 
 #ifdef __DEBUG__
 /* Uncomment this if you need additional debug */
 /*#define EXTRA_DEBUG 1 */
 #endif
-
-#define MAX_PROXIMITY 127
 
 /*-----------------------------------------------------------------------------
  Recursively calculate number of nodes in a node tree 
@@ -282,6 +281,24 @@ static void debug_matrix(const char* name, char** matrix, size_t n, size_t m)
 	}
 	DEBUG("\n");
 }
+
+static void debug_proximity_matrix(const char* name, int** matrix, size_t n, size_t m)
+{
+	size_t i, j;
+	DEBUG("\n%s matrix:\n     ", name);
+	for (j = 0; j < m; j++) {
+		DEBUG("%4lu ", j + 1);
+	}
+	DEBUG("\n");
+	for (i = 0; i < n; i++) {
+		DEBUG(" %3lu ", i + 1);
+		for (j = 0; j < m; j++) {
+			DEBUG("%4d ", matrix[i][j]);
+		}
+		DEBUG("\n");
+	}
+	DEBUG("\n");
+}
 #endif
 
 /*-----------------------------------------------------------------------------
@@ -289,7 +306,7 @@ static void debug_matrix(const char* name, char** matrix, size_t n, size_t m)
  the node difference
  ------------------------------------------------------------------------------*/
 
-static int calculate_sm_proximity_matrix_nodes(char** M, char** ProxiM, Vertex* v1, Vertex* v2, size_t n1, size_t n2)
+static int calculate_sm_proximity_matrix_nodes(char** M, int** ProxiM, Vertex* v1, Vertex* v2, size_t n1, size_t n2)
 {
 	int result = 0;
 	size_t i, j;
@@ -362,11 +379,7 @@ static int calculate_sm_proximity_matrix_nodes(char** M, char** ProxiM, Vertex* 
 					DEBUG("Comparing nodes %s [%s] and %s [%s] %d -> %d\n",
 					  node1->id, node1->title, node2->id, node2->title, flags, proximity);
 #endif
-					if (proximity > MAX_PROXIMITY) {
-						ProxiM[i][j] = MAX_PROXIMITY;
-					} else {
-						ProxiM[i][j] = (char)proximity;
-					}
+					ProxiM[i][j] = proximity;
 					result += proximity;
 				} else {
 					
@@ -383,7 +396,7 @@ static int calculate_sm_proximity_matrix_nodes(char** M, char** ProxiM, Vertex* 
  the edges difference
  ------------------------------------------------------------------------------*/
 
-static int calculate_sm_proximity_matrix_edges(char** M, char** ProxiM,
+static int calculate_sm_proximity_matrix_edges(char** M, int** ProxiM,
 											   CyberiadaSM* sm1, CyberiadaSM* sm2,
 											   Vertex* v1, Vertex* v2, size_t n1, size_t n2)
 {
@@ -489,11 +502,7 @@ static int calculate_sm_proximity_matrix_edges(char** M, char** ProxiM,
 	for (i = 0; i < n1; i++) {
 		for (j = 0; j < n2; j++) {
 			if (EP[i][j]) {
-				if (ProxiM[i][j] + EP[i][j] > MAX_PROXIMITY) {
-					ProxiM[i][j] = MAX_PROXIMITY;
-				} else {
-					ProxiM[i][j] += (char)EP[i][j];
-				}
+				ProxiM[i][j] += EP[i][j];
 			}
 		}
 	}
@@ -511,7 +520,7 @@ static int calculate_sm_proximity_matrix_edges(char** M, char** ProxiM,
  the proximity matrix
  ------------------------------------------------------------------------------*/
 
-static int calculate_sm_proximity(char** P, char** ProxiM, size_t n1, size_t n2)
+static int calculate_sm_proximity(char** P, int** ProxiM, size_t n1, size_t n2)
 {
 	int result = 0;
 	size_t i, j;
@@ -529,10 +538,10 @@ static int calculate_sm_proximity(char** P, char** ProxiM, size_t n1, size_t n2)
  Comparison function for quick sort algorithm
  ------------------------------------------------------------------------------*/
 
-static int compare_char(const void* a, const void* b) {
-	char ca = *(char*)a;
-	char cb = *(char*)b;
-    return (cb > ca) - (cb < ca); /* reverse compare */
+static int compare_int(const void* a, const void* b) {
+	int ia = *(const int*)a;
+	int ib = *(const int*)b;
+    return (ib > ia) - (ib < ia); /* reverse compare */
 }
 
 /*-----------------------------------------------------------------------------
@@ -545,7 +554,8 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 												   size_t* n_vertexes1, size_t* n_edges1, size_t* n_vertexes2, size_t* n_edges2)
 {
 	size_t i, j, k, x, y, n_v1 = 0, n_v2 = 0, n_e1 = 0, n_e2 = 0;
-	char **M = NULL, **P = NULL, **Proxi = NULL;
+	char **M = NULL, **P = NULL;
+	int **Proxi = NULL;
 	size_t *row_num = NULL, *col_num = NULL; 
 	Vertex *v1 = NULL, *v2 = NULL;
 	int found;
@@ -566,7 +576,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	/* the potential (M), permutation (P) and proximity matrices */
 	M = (char**)calloc(n_v1, sizeof(char*));
 	P = (char**)calloc(n_v1, sizeof(char*));
-	Proxi = (char**)calloc(n_v1, sizeof(char*));
+	Proxi = (int**)calloc(n_v1, sizeof(int*));
 	v1 = (Vertex*)malloc(sizeof(Vertex) * n_v1);
 	v2 = (Vertex*)malloc(sizeof(Vertex) * n_v2);
 	row_num = (size_t*)malloc(sizeof(size_t) * n_v1);
@@ -577,7 +587,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	for (i = 0; i < n_v1; i++) {
 		M[i] = (char*)malloc(sizeof(char) * n_v2);
 		P[i] = (char*)malloc(sizeof(char) * n_v2);
-		Proxi[i] = (char*)malloc(sizeof(char) * n_v2);
+		Proxi[i] = (int*)malloc(sizeof(int) * n_v2);
 		if (!M[i] || !P[i] || !Proxi[i]) {
 			goto memory_error;
 		}
@@ -607,11 +617,11 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		for (j = 0; j < n_v2; j++) {
 			CyberiadaNode* node1 = v1[i].node;
 			CyberiadaNode* node2 = v2[j].node;
-			if ((node1->type == node2->type ||
-				 (node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState) ||
-				 (node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState)) &&
-				(abs(v1[i].degree_in - v2[j].degree_in) <= 1 || v1[i].degree_in + 1 < v2[j].degree_in) &&
-				(abs(v1[i].degree_out - v2[j].degree_out) <= 1 || v1[i].degree_out + 1 < v2[j].degree_out)) {
+			/* every pair of compatible types is a candidate: the degrees act through
+			   the proximity only, so check(A, B) and check(B, A) agree */
+			if (node1->type == node2->type ||
+				(node1->type == cybNodeSimpleState && node2->type == cybNodeCompositeState) ||
+				(node1->type == cybNodeCompositeState && node2->type == cybNodeSimpleState)) {
 				M[i][j] = 1;
 				row_num[i]++;
 				col_num[j]++;
@@ -656,8 +666,9 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 		size_t p_max = 0; /* the maximum size of permutation matrices */
 		int proximity_max = -1; /* the maximum total proximity found */
 		char** P_max; /* the maximum permutation matrix found */
-		char single_proximity_max = -1; /* the maximum single value of the proximity matrix */
-		char* proximity_levels = NULL; /* the ordered array of unique values of the proximity matrix */
+		int single_proximity_max = -1; /* the maximum single value of the proximity matrix */
+		int* proximity_levels = NULL; /* the ordered array of unique values of the proximity matrix */
+		size_t proximity_levels_max = n_v1 * n_v2 + 1; /* no more unique values than cells */
 		size_t proximity_levels_size = 0; /* the number of unique values of the proximity matrix */
 
 		P_max = (char**)calloc(n_v1, sizeof(char*));
@@ -692,7 +703,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 
 		/* calculate the proximity levels array */
 		if (single_proximity_max > 0) {
-			proximity_levels = (char*)malloc(single_proximity_max);
+			proximity_levels = (int*)malloc(sizeof(int) * proximity_levels_max);
 			if (!proximity_levels) {
 				for (i = 0; i < n_v1; i++) {
 					free(P_max[i]);
@@ -700,12 +711,12 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 				free(P_max);
 				goto memory_error;
 			}
-			memset(proximity_levels, 0, single_proximity_max);
+			memset(proximity_levels, 0, sizeof(int) * proximity_levels_max);
 			proximity_levels[0] = single_proximity_max;
 			proximity_levels_size = 1;
 			for (i = 0; i < n_v1; i++) {
 				for (j = 0; j < n_v2; j++) {
-					char p = Proxi[i][j];
+					int p = Proxi[i][j];
 					found = 0;
 					if (p < 0) {
 						continue;
@@ -722,7 +733,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 					}
 				}
 			}
-			qsort(proximity_levels, proximity_levels_size, sizeof(char), compare_char);
+			qsort(proximity_levels, proximity_levels_size, sizeof(int), compare_int);
 #ifdef EXTRA_DEBUG
 			DEBUG("\nProximity levels: ");
 			for (i = 0; i < proximity_levels_size; i++) {
@@ -748,7 +759,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 					/* try to build permutation matrix using the maximum possible level of proximity */
 					while (p_total < n_v1 && p_total < n_v2 && c_proximity < proximity_levels_size) {
 						int p_found = 0;
-						char current_proximity = proximity_levels[c_proximity];
+						int current_proximity = proximity_levels[c_proximity];
 						for (x = 0; x < n_v1; x++) {
 							for (y = 0; y < n_v2; y++) {
 								if (x == i && y == j) continue;
@@ -770,10 +781,11 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 									/* each row & column have only one 1 */
 									if (!found) {
 										/* new element of the permutation matrix found */
+										/* the higher levels stay exhausted: their sweeps took
+										   every free cell, so the search goes on at this level */
 										P[x][y] = 1;
 										p_total++;
 										p_found = 1;
-										c_proximity = 0; /* again - start from the maximum possible level of proximity */
 										continue;
 									}
 								}
@@ -832,7 +844,7 @@ static int cyberiada_build_node_permutation_matrix(CyberiadaSM* sm1, CyberiadaSM
 	}
 
 #ifdef EXTRA_DEBUG
-	debug_matrix("Proximity M", Proxi, n_v1, n_v2);
+	debug_proximity_matrix("Proximity M", Proxi, n_v1, n_v2);
 #endif
 	
 	for (i = 0; i < n_v1; i++) {
@@ -914,9 +926,9 @@ static int cyberiada_compare_actions(CyberiadaAction* action1, CyberiadaAction* 
 		for (a2 = action2; a2; a2 = a2->next) {
 			if (a1->type == a2->type &&
 				a1->propagation == a2->propagation &&
-				strcmp(a1->trigger, a2->trigger) == 0 &&
-				strcmp(a1->guard, a2->guard) == 0 &&
-				strcmp(a1->behavior, a2->behavior) == 0) {
+				cyberiada_string_compare(a1->trigger, a2->trigger) == 0 &&
+				cyberiada_string_compare(a1->guard, a2->guard) == 0 &&
+				cyberiada_string_compare(a1->behavior, a2->behavior) == 0) {
 				found = 1;
 				cyberiada_list_add(&found_list, a2->trigger, (void*)a2);
 			}
@@ -954,17 +966,20 @@ static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
 	*result_flags = 0;
 
 	/* the two nodes have different ids */
-	if (strcmp(n1->id, n2->id) != 0) {
+	if (cyberiada_string_compare(n1->id, n2->id) != 0) {
 		*result_flags |= CYBERIADA_NODE_DIFF_ID;
 	}
 
-	/* the two nodes have different types */
-	if (n1->type != n2->type) {
+	/* the two nodes have different types (a simple and a composite state differ
+	   by their children only) */
+	if (n1->type != n2->type &&
+		!((n1->type == cybNodeSimpleState && n2->type == cybNodeCompositeState) ||
+		  (n1->type == cybNodeCompositeState && n2->type == cybNodeSimpleState))) {
 		*result_flags |= CYBERIADA_NODE_DIFF_TYPE;
 	}
 
-	/* the two nodes have different titles */
-	if (n1->title && n2->title && strcmp(n1->title, n2->title) != 0) {
+	/* the two nodes have different titles, an absent one included */
+	if (cyberiada_string_compare(n1->title, n2->title) != 0) {
 		*result_flags |= CYBERIADA_NODE_DIFF_TITLE;		
 	}
 
@@ -973,8 +988,9 @@ static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
 		*result_flags |= CYBERIADA_NODE_DIFF_ACTIONS;		
 	}
 
-	/* the two nodes have different SM links */
-	if (n1->link && n2->link && n1->link->ref && n2->link->ref && strcmp(n1->link->ref, n2->title) != 0) {
+	/* the two nodes have different SM links, a link on one side only included */
+	if ((n1->link == NULL) != (n2->link == NULL) ||
+		(n1->link && n2->link && cyberiada_string_compare(n1->link->ref, n2->link->ref) != 0)) {
 		*result_flags |= CYBERIADA_NODE_DIFF_SM_LINK;
 	}
 	
@@ -998,6 +1014,22 @@ static int cyberiada_compare_two_nodes(CyberiadaNode* n1, CyberiadaNode* n2,
 }
 
 /*-----------------------------------------------------------------------------
+ Add a difference verdict: the isomorphic verdicts give way, the other
+ differences stay
+ ------------------------------------------------------------------------------*/
+
+static void cyberiada_iso_add_diff(int* flags, int diff)
+{
+	*flags = (*flags & CYBERIADA_ISOMORPH_FLAG_DIFF_MASK) | diff;
+}
+
+/* the edge passes: the transitions first, then the comment links to the
+   transitions they comment, paired through the transition pairs */
+#define ISO_EDGE_PASS_EDGES 0
+#define ISO_EDGE_PASS_LINKS 1
+#define ISO_EDGE_PASSES     2
+
+/*-----------------------------------------------------------------------------
  Check isomophism of two SM graphs and fill the difference result
  ------------------------------------------------------------------------------*/
 
@@ -1012,6 +1044,8 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 	CyberiadaNode *sm1_initial_ps = NULL, *sm2_initial_ps = NULL;
 	CyberiadaEdge *sm1_initial_edge = NULL, *sm2_initial_edge = NULL, *e1, *e2;
 	CyberiadaList* found_edges = NULL;
+	CyberiadaList* paired_edges = NULL; /* the sm1 edge id -> the sm2 edge */
+	int pass;
 
 	if (!sm1 || !sm2 || !result) {
 		return CYBERIADA_BAD_PARAMETER;
@@ -1131,10 +1165,10 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 		/* the SM graphs have the different sizes - non isomorphic */
 		result->flags = 0;
 		if (sm1_vertexes != sm2_vertexes) {
-			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
 		}
 		if (sm1_edges != sm2_edges) {
-			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
+			cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES);
 		}
 	}
 
@@ -1152,19 +1186,17 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 					result->diff_nodes[result->diff_nodes_size].n2 = vertexes2[j].node;
 					result->diff_nodes_flags[result->diff_nodes_size] = node_diff;
 					result->diff_nodes_size++;
-					if (result->flags != CYBERIADA_ISOMORPH_FLAG_DIFF_STATES) {
+					if (node_diff & (CYBERIADA_NODE_DIFF_CHILDREN | CYBERIADA_NODE_DIFF_TYPE)) {
+						cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
+					} else if (!(result->flags & CYBERIADA_ISOMORPH_FLAG_DIFF_MASK)) {
 						if (node_diff == CYBERIADA_NODE_DIFF_ID) {
 							/* if the only difference is node id - potentially equal */
 							if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
 								result->flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
 							}
-						} else if (node_diff & (CYBERIADA_NODE_DIFF_CHILDREN | CYBERIADA_NODE_DIFF_TYPE)) {
-							result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
-						} else {
+						} else if (result->flags & (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | CYBERIADA_ISOMORPH_FLAG_EQUAL)) {
 							/* the types and children are the same - potentially isomorphic */
-							if (result->flags & (CYBERIADA_ISOMORPH_FLAG_IDENTICAL | CYBERIADA_ISOMORPH_FLAG_EQUAL)) {
-								result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
-							}
+							result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
 						}
 					}
 				}
@@ -1175,14 +1207,14 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 		}
 		if (!vertexes1[i].found) {
 			/* missing SM1 nodes in SM2 found */
-			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
 			result->missing_nodes[result->missing_nodes_size++] = vertexes1[i].node;
 		}
 	}
 	for (j = 0; j < sm2_vertexes; j++) {
 		if (!vertexes2[j].found) {
 			/* new SM2 nodes found */
-			result->flags = CYBERIADA_ISOMORPH_FLAG_DIFF_STATES;
+			cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_STATES);
 			result->new_nodes[result->new_nodes_size++] = vertexes2[j].node;
 		}
 	}
@@ -1192,91 +1224,86 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 		goto free_all;
 	}
 
-	for (e1 = sm1->edges; e1; e1 = e1->next) {
-		CyberiadaNode *sm2_source = NULL, *sm2_target = NULL;
-		int found = 0;
+	for (pass = 0; pass < ISO_EDGE_PASSES; pass++) {
+		for (e1 = sm1->edges; e1; e1 = e1->next) {
+			CyberiadaNode *sm2_source = NULL, *sm2_target = NULL;
+			CyberiadaEdge *sm2_target_edge = NULL;
+			int found = 0;
 
-		if (ignore_comments && (e1->type == cybEdgeComment)) continue;
+			if (ignore_comments && (e1->type == cybEdgeComment)) continue;
+			if ((e1->target_edge != NULL) != (pass == ISO_EDGE_PASS_LINKS)) continue;
 
-		for (i = 0; i < sm1_vertexes; i++) {
-			if (e1->source == vertexes1[i].node) {
-				for (j = 0; j < sm2_vertexes; j++) {
-					if (perm_matrix[i][j]) {
-						sm2_source = vertexes2[j].node;
+			for (i = 0; i < sm1_vertexes; i++) {
+				if (e1->source == vertexes1[i].node) {
+					for (j = 0; j < sm2_vertexes; j++) {
+						if (perm_matrix[i][j]) {
+							sm2_source = vertexes2[j].node;
+							break;
+						}
+					}
+				}
+				if (e1->target == vertexes1[i].node) {
+					for (j = 0; j < sm2_vertexes; j++) {
+						if (perm_matrix[i][j]) {
+							sm2_target = vertexes2[j].node;
+							break;
+						}
+					}
+				}
+				if (sm2_source && sm2_target) break;
+			}
+			if (e1->target_edge) {
+				sm2_target_edge = (CyberiadaEdge*)cyberiada_list_find(&paired_edges, e1->target_edge->id);
+			}
+			if (sm2_source && (sm2_target || sm2_target_edge)) {
+				for (e2 = sm2->edges; e2; e2 = e2->next) {
+					if (ignore_comments && (e2->type == cybEdgeComment)) continue;
+					if (e2->source == sm2_source &&
+						(sm2_target_edge ? e2->target_edge == sm2_target_edge : e2->target == sm2_target) &&
+						cyberiada_list_find(&found_edges, e2->id) == NULL) {
+						int edge_diff = 0;
+						found = 1;
+						if (cyberiada_string_compare(e1->id, e2->id) != 0) {
+							edge_diff |= CYBERIADA_EDGE_DIFF_ID;
+							if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
+								result->flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
+							}
+						}
+						if (cyberiada_compare_actions(e1->action, e2->action) != 0) {
+							edge_diff |= CYBERIADA_EDGE_DIFF_ACTION;
+							if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL || result->flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
+								result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
+							}
+						}
+						/* the edges with differences are found */
+						if (edge_diff) {
+							result->diff_edges[result->diff_edges_size].e1 = e1;
+							result->diff_edges[result->diff_edges_size].e2 = e2;
+							result->diff_edges_flags[result->diff_edges_size] = edge_diff;
+							result->diff_edges_size++;
+						}
+						cyberiada_list_add(&found_edges, e2->id, (void*)e2);
+						cyberiada_list_add(&paired_edges, e1->id, (void*)e2);
 						break;
 					}
 				}
 			}
-			if (e1->target == vertexes1[i].node) {
-				for (j = 0; j < sm2_vertexes; j++) {
-					if (perm_matrix[i][j]) {
-						sm2_target = vertexes2[j].node;
-						break;
-					}
+			if (!found) {
+				/* the edge found not available in the second graph */
+				cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES);
+				result->missing_edges[result->missing_edges_size++] = e1;
+				if (require_initial && e1 == sm1_initial_edge) {
+					result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
+					result->new_initial = sm2_initial_edge->target;
 				}
 			}
-			if (sm2_source && sm2_target) break;
-		}
-		if (!sm2_source || !sm2_target) {
-			/* the edge found not available in the second graph */
-			if (!(result->flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
-				result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
-				if (result->flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
-					result->flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
-				}
-			}
-			result->missing_edges[result->missing_edges_size++] = e1;
-			if (require_initial && e1 == sm1_initial_edge) {
-				result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_INITIAL;
-				result->new_initial = sm2_initial_edge->target;
-			}
-			continue;
-		}
-
-		for (e2 = sm2->edges; e2; e2 = e2->next) {
-			if (ignore_comments && (e2->type == cybEdgeComment)) continue;
-			if (e2->source == sm2_source && e2->target == sm2_target &&
-				cyberiada_list_find(&found_edges, e2->id) == NULL) {
-				int edge_diff = 0;
-				found = 1;
-				if (strcmp(e1->id, e2->id) != 0) {
-					edge_diff |= CYBERIADA_EDGE_DIFF_ID;
-					if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL) {
-						result->flags = CYBERIADA_ISOMORPH_FLAG_EQUAL;
-					}
-				}
-				if (cyberiada_compare_actions(e1->action, e2->action) != 0) {
-					edge_diff |= CYBERIADA_EDGE_DIFF_ACTION;
-					if (result->flags == CYBERIADA_ISOMORPH_FLAG_IDENTICAL || result->flags == CYBERIADA_ISOMORPH_FLAG_EQUAL) {
-						result->flags = CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC;
-					}
-				}
-				/* the edges with differences are found */
-				if (edge_diff) {
-					result->diff_edges[result->diff_edges_size].e1 = e1;
-					result->diff_edges[result->diff_edges_size].e2 = e2;
-					result->diff_edges_flags[result->diff_edges_size] = edge_diff;
-					result->diff_edges_size++;
-				}
-				cyberiada_list_add(&found_edges, e2->id, (void*)e2);
-				break;
-			}
-		}
-		if (!found) {
-			/* the edge found not available in the second graph */
-			result->missing_edges[result->missing_edges_size++] = e1;
 		}
 	}
 	if (cyberiada_list_size(&found_edges) < sm2_edges) {
 		for (e2 = sm2->edges; e2; e2 = e2->next) {
 			if (ignore_comments && e2->type == cybEdgeComment) continue;
 			if (cyberiada_list_find(&found_edges, e2->id) == NULL) {
-				if (!(result->flags & CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES)) {
-					result->flags |= CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES;
-					if (result->flags & CYBERIADA_ISOMORPH_FLAG_ISOMORPHIC_MASK) {
-						result->flags &= CYBERIADA_ISOMORPH_FLAG_DIFF_MASK;
-					}
-				}
+				cyberiada_iso_add_diff(&(result->flags), CYBERIADA_ISOMORPH_FLAG_DIFF_EDGES);
 				/* the edge found not available in the first graph */
 				result->new_edges[result->new_edges_size++] = e2;
 				if (require_initial && e2 == sm2_initial_edge) {
@@ -1291,6 +1318,7 @@ int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 
 free_all:
 	cyberiada_list_free(&found_edges);
+	cyberiada_list_free(&paired_edges);
 	if (perm_matrix) {
 		for (i = 0; i < sm1_vertexes; i++) {
 			free(perm_matrix[i]);

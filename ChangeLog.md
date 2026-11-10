@@ -1,5 +1,23 @@
 # libcyberiadaml project changelog
 
+## Version 1.2.0 (unreleased)
+
+Changed:
+- the isomorphism check takes every pair of nodes of compatible types as a
+  candidate, the degrees acting through the proximity only: check(A, B) and
+  check(B, A) agree.
+
+Fixed:
+- the isomorphism check: a submachine link compared with the other link, not
+  with the other node's title; a link or a title on one side only differs; a
+  simple and a composite state differ by their children, not by their type;
+  with the comments compared, a comment link to a transition is paired; the
+  proximity kept whole (no cap at 127, which tied the close candidates) and the
+  array of its levels sized for every level; the verdict flags accumulate
+  instead of overwriting each other;
+- the action comparison compares an absent string as an empty one (it
+  crashed) and takes a NULL flags pointer everywhere.
+
 ## Version 1.1.0
 
 Added:

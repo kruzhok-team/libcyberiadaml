@@ -876,7 +876,9 @@ static int cyberiada_compare_action_behaviors(const char* behavior1, const char*
 
 	for (j = 0; j < commands2_size; j++) {
 		if (*commands2[j]) {
-			*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION;
+			if (compare_flags) {
+				*compare_flags |= CYBERIADA_ACTION_DIFF_BEHAVIOR_ACTION;
+			}
 			break;
 		}
 	}
@@ -928,18 +930,20 @@ int cyberiada_compare_node_actions(CyberiadaAction* n1action, CyberiadaAction* n
 		int found = 0;
 		for (a2 = n2action; a2; a2 = a2->next) {
 			if (a1->type == a2->type &&
-				(a2->type != cybActionTransition || strcmp(a1->trigger, a2->trigger) == 0)) {
-				if (strcmp(a1->guard, a2->guard) == 0) {
+				(a2->type != cybActionTransition || cyberiada_string_compare(a1->trigger, a2->trigger) == 0)) {
+				if (cyberiada_string_compare(a1->guard, a2->guard) == 0) {
 					found = 1;
 					if (a1->propagation != a2->propagation && compare_flags) {
 						*compare_flags |= CYBERIADA_ACTION_DIFF_PROPAGATION;
 					}
-					if (strcmp(a1->behavior, a2->behavior) != 0) {
+					if (cyberiada_string_compare(a1->behavior, a2->behavior) != 0) {
 						/*DEBUG("Compare action behaviors %s and %s\n", a1->behavior, a2->behavior);*/
-						cyberiada_compare_action_behaviors(a1->behavior, a2->behavior, compare_flags);
+						cyberiada_compare_action_behaviors(a1->behavior ? a1->behavior : EMPTY_LINE,
+														   a2->behavior ? a2->behavior : EMPTY_LINE,
+														   compare_flags);
 					}
 					break;
-				} else if(strcmp(a1->behavior, a2->behavior) == 0 && compare_flags) {
+				} else if(cyberiada_string_compare(a1->behavior, a2->behavior) == 0 && compare_flags) {
 					*compare_flags |= CYBERIADA_ACTION_DIFF_GUARDS;
 				}
 			}

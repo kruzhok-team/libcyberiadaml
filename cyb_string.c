@@ -66,6 +66,11 @@ int cyberiada_string_is_empty(const char* s)
 	return 1;
 }
 
+int cyberiada_string_compare(const char* a, const char* b)
+{
+	return strcmp(a ? a : EMPTY_LINE, b ? b : EMPTY_LINE);
+}
+
 int cyberiada_string_trim(char* orig)
 {
 	char* s;

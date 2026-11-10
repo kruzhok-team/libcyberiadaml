@@ -41,6 +41,8 @@ extern "C" {
 	
 	int cyberiada_copy_string(char** target, size_t* size, const char* source);
 	int cyberiada_string_is_empty(const char* s);
+	/* strcmp() with an absent string compared as the empty one */
+	int cyberiada_string_compare(const char* a, const char* b);
 	int cyberiada_string_trim(char* orig);
 	int cyberiada_append_string(char** target, size_t* size, const char* source, const char* separator);
 	
