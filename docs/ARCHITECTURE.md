@@ -38,23 +38,26 @@ State Machine (HSM) diagrams.
    utf8enc, cyb_error.h      |      | (find/add)     |    |
                              |      +----------------+    |
 
- +---------------------+  independent of cyberiadaml.c, works on CyberiadaSM:
- |     isomorph.c      |  isomorphism check & structural diff
- +---------------------+
+ +---------------------+  independent of cyberiadaml.c, work on CyberiadaSM:
+ |     isomorph.c      |  the isomorphism check: the structural similarity
+ +---------------------+  of two diagrams
+ |       diff.c        |  the revision diff: two revisions of one document,
+ +---------------------+  paired by the ids
 ```
 
 The call direction is strictly downward: `cyberiadaml.c` is the only module
 that touches XML and the only caller of `cyb_meta` (decode path),
-`cyb_graph_recon` and `geometry.c`. Nothing calls back up. `isomorph.c` and
-`geometry.c` do not depend on the parser and can be used on documents
-constructed programmatically.
+`cyb_graph_recon` and `geometry.c`. Nothing calls back up. `isomorph.c`,
+`diff.c` and `geometry.c` do not depend on the parser and can be used on
+documents constructed programmatically.
 
 ## Modules
 
 | Module | Role |
 |---|---|
 | `cyberiadaml.h` | The public header: the core types, flags, error codes and prototypes. Installed to `include/cyberiada/`. |
-| `cyberiadaml_iso.h` | The public isomorphism check and diff header (result structure, flags, prototypes); installed next to `cyberiadaml.h` and included by it. |
+| `cyberiadaml_iso.h` | The public isomorphism check header (result structure, flags, prototypes); installed next to `cyberiadaml.h` and included by it. |
+| `cyberiadaml_diff.h` | The public revision diff header (options, result structures, flags, prototypes); installed next to `cyberiadaml.h` and included by it. |
 | `cyberiadaml.c` | GraphML reader and writer: key tables, dialect detection, the DOM-walk processor, both format writers, the `read`/`write`/`decode`/`encode` entry points. |
 | `cyb_types.c/.h` | Lifecycle of the core structures: `new_*`, deep `copy_*`, `destroy_*`, `print_*` for document / SM / node / edge / action / link / comment. |
 | `cyb_graph.c/.h` | Graph primitives: find node by id/type, find edge, add node/edge with type-aware placement. |
@@ -67,10 +70,11 @@ constructed programmatically.
 | `cyb_structs.c/.h` | One generic `{key, data, next}` node reused as stack, list and queue. |
 | `cyb_node_stack.c/.h` | Typed stack tracking (current XML element, current node) during the DOM walk. |
 | `geometry.c/.h` | Bridge to libhtgeom: Cyberiada graph -> `HTDocument` -> convert / reconstruct -> back. Clean, round and validation helpers. |
-| `isomorph.c` | Graph isomorphism check and structural diff (prototypes in `cyberiadaml_iso.h`). |
+| `isomorph.c` | Graph isomorphism check: the structural similarity of two state machines (prototypes in `cyberiadaml_iso.h`). |
+| `diff.c` | Revision diff: the pairs of the elements of two revisions by their verified ids, with their differences (prototypes in `cyberiadaml_diff.h`). |
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
-| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `diff`. |
+| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph`, `diff`. |
 
 ## The reading pipeline
 
@@ -191,12 +195,31 @@ line, at least 200x100 - the editor's default box). The meta node and the compon
 comments (`CGML_COMPONENT`, hidden in the editors) without geometry take no
 part in the layout.
 
-## Isomorphism and diff
+## Isomorphism check and revision diff
+
+Two algorithms answer two questions about a pair of state machines:
+
+```
+ isomorph.c                                  diff.c
++------------------------------------+      +------------------------------------+
+| the isomorphism check              |      | the revision diff                  |
+| two diagrams, maybe two authors:   |      | two revisions of one document:     |
+| ids mean nothing, the structure    |      | ids mean identity, checked by the  |
+| and the texts pair the nodes       |      | contents; unpaired: added, removed |
++------------------------------------+      +------------------------------------+
+  verdict + the differing pairs               every pair + its flags, the meta,
+  cyberiada_check_sm_isomorphism()            the state machines
+                                              cyberiada_diff_documents(), _sms()
+  cybparser isomorph                          cybparser diff, libcyberiadamlpp
+```
+
+They share only `cyberiada_compare_node_actions()` (cyb_actions.c).
 
 `cyberiada_check_sm_isomorphism()` compares two `CyberiadaSM` graphs:
 
 1. enumerate vertexes with their in/out degrees;
-2. build a candidate-match matrix and proximity matrices over nodes and edges;
+2. build a candidate-match matrix (every pair of compatible types) and the
+   proximity matrices over nodes and edges;
 3. search permutation matrices in descending proximity order.
 
 The verdict is a flag word — `identical` / `equal` / `isomorphic` /
@@ -206,6 +229,33 @@ and missing elements — gathered in the `CyberiadaIsomorphismResult` structure
 and released with `cyberiada_cleanup_isomorphism_result()`. Action-level
 comparison distinguishes different behavior, behavior order and behavior
 arguments.
+
+`cyberiada_diff_documents()` pairs the state machines (id, title, order) and
+the metainformation (by name), then `cyberiada_diff_sms()` pairs the elements of
+each pair of state machines:
+
+```
+ sm1, sm2
+    |
+    v
+ the nodes, parents before children        an id index of sm2 (sorted)
+    same id + compatible type  ----------> the evidence:
+    + the evidence holds                     2  equal title, actions, comment text
+    repeated while new pairs appear          1  paired parents, the same place,
+    |                                           the only one of its type,
+    |                                           a paired neighbour by its trigger
+    v                                        a pair at 2
+ the edges: the id with paired ends; the paired ends + the trigger; the paired ends
+    |
+    v
+ every pair compared -> CYBERIADA_DIFF_FLAG_*; unpaired -> ADDED / REMOVED
+```
+
+No pass pairs the leftovers by their structure: an element whose id changed is
+removed and added, and the isomorphism check is the tool for the diagrams
+renumbered or drawn anew. The geometry is compared as stored, so both documents
+come in the same coordinate format, the left-top one being the meaningful
+basis.
 
 ## Memory ownership
 
@@ -218,6 +268,10 @@ arguments.
 * The isomorphism result arrays are allocated by the check and released with
   `cyberiada_cleanup_isomorphism_result()`; the nodes/edges they point to
   belong to the compared documents.
+* The diff results are allocated by the diff and released with
+  `cyberiada_cleanup_document_diff()` / `cyberiada_cleanup_sm_diff()`; their
+  element pointers belong to the compared documents, their meta strings to the
+  result.
 
 ---
 

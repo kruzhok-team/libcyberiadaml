@@ -278,9 +278,13 @@ violations are the faults of a draft (a missing or repeated symbol, the
 initial, `EOF`, the alphabets). An editor refuses to turn a document with a
 foreign construct into an automaton.
 
-### Isomorphism and diff
+### Isomorphism check
 
-Declared in `cyberiadaml_iso.h` (auto-included).
+Declared in `cyberiadaml_iso.h` (auto-included). The check looks for the
+structural similarity of two state machines that may come from different
+authors: the ids mean nothing there, the nodes are paired by their types,
+titles, actions and neighbourhood. The changes between two revisions of one
+document are the revision diff below.
 
 ```c
 int cyberiada_check_sm_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
@@ -306,6 +310,17 @@ with `cyberiada_cleanup_isomorphism_result()`; the nodes and edges they point
 to belong to the compared graphs. Action comparison reports
 `CYBERIADA_ACTION_DIFF_*` flags.
 
+* Every pair of nodes of compatible types (a simple and a composite state are
+  compatible) is a candidate; the ids, the titles, the actions and the degrees
+  only raise the proximity of a candidate.
+* The diff verdicts accumulate: different states and different edges are
+  both reported. A node type differs except between a simple and a composite
+  state (a different number of children reports that); a title or a
+  submachine link present on one side only differs; an absent string compares
+  as an empty one.
+* With `ignore_comments` off, a comment link to a transition is paired through
+  the pairs of the transitions.
+
 The previous pointer-based form is kept for compatibility and is deprecated:
 
 ```c
@@ -317,6 +332,85 @@ int cyberiada_check_isomorphism(CyberiadaSM* sm1, CyberiadaSM* sm2,
 
 It wraps the structure form; pass `NULL` for outputs you do not need, free the
 requested arrays yourself.
+
+### Revision diff
+
+Declared in `cyberiadaml_diff.h` (auto-included). The diff compares two
+revisions of one document: the ids of its elements are their identity, checked
+by their contents because a new element may get the id of a deleted one. It
+lists every pair of elements with what differs in it, and the elements found
+on one side only.
+
+```c
+void cyberiada_default_diff_options(CyberiadaDiffOptions* options);
+int  cyberiada_diff_documents(CyberiadaDocument* doc1, CyberiadaDocument* doc2,
+                              const CyberiadaDiffOptions* options,
+                              CyberiadaDocumentDiff* result);
+int  cyberiada_cleanup_document_diff(CyberiadaDocumentDiff* result);
+int  cyberiada_diff_sms(CyberiadaSM* sm1, CyberiadaSM* sm2,
+                        const CyberiadaDiffOptions* options, CyberiadaSMDiff* result);
+int  cyberiada_cleanup_sm_diff(CyberiadaSMDiff* result);
+```
+
+`options` may be `NULL` (the defaults): `flags` of
+`CYBERIADA_DIFF_OPTION_GEOMETRY` (compare the geometry and the collapsed flag)
+and `CYBERIADA_DIFF_OPTION_IGNORE_COMMENTS` (leave the comments and their links
+out), and `geometry_tolerance`, the largest coordinate difference counted as
+none (`CYBERIADA_DIFF_GEOMETRY_TOLERANCE`).
+
+| Structure | Holds |
+|---|---|
+| `CyberiadaDocumentDiff` | `flags` (the OR of the SM flags and `META`; 0: no differences), `meta` (`CyberiadaMetaDiff`: `name`, `value1`, `value2`, a NULL value for a missing one; the differing entries only), `sms` |
+| `CyberiadaSMDiff` | `sm1`, `sm2` (NULL for an added or removed SM), `flags` (of the SM node, and `ELEMENTS` when an element differs), `nodes`, `edges` |
+| `CyberiadaNodeDiff` | `n1`, `n2` (NULL for an added or removed node), `flags` (0 for an unchanged pair), `action_flags` (`CYBERIADA_ACTION_DIFF_*`) |
+| `CyberiadaEdgeDiff` | `e1`, `e2`, `flags` |
+
+| `CYBERIADA_DIFF_FLAG_*` | The element |
+|---|---|
+| `ADDED`, `REMOVED` | is in the second document only, in the first only |
+| `TYPE` | changed its type (not between a simple and a composite state) |
+| `TITLE` | changed its title or formal title; a SM: its name |
+| `ACTIONS` | changed its actions (their order counts), detailed in `action_flags` |
+| `PARENT` | moved to another parent |
+| `LINK` | changed its submachine reference |
+| `COMMENT` | changed its comment text or markup |
+| `COLOR` | changed its colour |
+| `GEOMETRY`, `COLLAPSED` | moved or resized, collapsed or expanded (with the geometry option) |
+| `SOURCE`, `TARGET` | a transition or a comment link changed its end |
+| `TRIGGER`, `GUARD`, `BEHAVIOR`, `PROPAGATION` | a transition changed that part of its action |
+| `SUBJECT` | a comment link changed its subject (the type or the fragment) |
+| `META` | the document metainformation differs |
+| `ELEMENTS` | a SM: some of its nodes or edges differ |
+
+The pairing:
+
+1. the state machines by the id of their node, then by the title, then in the
+   document order; the metainformation by its names (the standard version,
+   `transitionOrder`, `eventPropagation`, the strings);
+2. the nodes, parents before children: a node of the same id and a compatible
+   type is the same node when the evidence holds - an equal non-empty title,
+   action list or comment text, or two of the weaker signs: the parents paired
+   with each other, the same place, the only node of its type under the paired
+   parents, a transition to an already paired neighbour by the same trigger;
+   the other nodes are added or removed, no node is paired by its structure
+   alone;
+3. the transitions by the id with their ends paired (one end is enough with the
+   same trigger and guard: the other end changed), then by their paired ends and
+   trigger, then by their paired ends; the comment links after them.
+
+The nodes come in the order of the second document followed by the removed ones
+in the order of the first, the edges and the state machines likewise. The
+pointers belong to the compared documents, which must outlive the result; the
+meta strings belong to the result. The cleanup frees the arrays and zeroes the
+structure; a failing call cleans up itself. The meta node is no node of the
+diff.
+
+The geometry is compared as stored, within the tolerance: the nodes' rectangles
+and points, the transitions' end points, labels and polylines. The meaningful
+basis is the left-top one of CyberiadaML-GraphML 1.0 (a node relative to its
+parent's corner), where moving a composite state moves no element inside it;
+with the geometry option, documents of different coordinate formats are a
+`CYBERIADA_BAD_PARAMETER` - convert one of them first.
 
 ### Geometry
 
