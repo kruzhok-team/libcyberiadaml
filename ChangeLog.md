@@ -11,6 +11,10 @@ Added:
   the order, the metainformation by its names.
 
 Changed:
+- cybparser: `diff` prints the revision diff of the two documents, a line per
+  changed element, and exits 1 when they differ (`-C` leaves the comments out,
+  `-G` compares the geometry); the former report of the isomorphism check is
+  `isomorph`; both read the second graph with the flags of the first;
 - the isomorphism check takes every pair of nodes of compatible types as a
   candidate, the degrees acting through the proximity only: check(A, B) and
   check(B, A) agree.

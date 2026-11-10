@@ -74,7 +74,7 @@ documents constructed programmatically.
 | `diff.c` | Revision diff: the pairs of the elements of two revisions by their verified ids, with their differences (prototypes in `cyberiadaml_diff.h`). |
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
-| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph`, `diff`. |
+| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ). |
 
 ## The reading pipeline
 

@@ -1,0 +1,13 @@
+meta platform: ArduinoUno -> ArduinoNano
+sm G G elements
+ node n1 n1 color
+ node - n3 added
+ node n2 n2 parent
+ node c1 c1 comment
+ node n3 - removed
+ edge n1-n2 n1-n2 behavior
+ edge - n2-n1 added
+ edge n1-n5 n1-n5 target
+ edge n5-n1 n5-n1#2 trigger
+ edge n2-n3 - removed
+ edge n3-n1 - removed

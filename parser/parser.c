@@ -27,7 +27,8 @@
 
 #define CMD_PRINT                   1
 #define CMD_CONVERT                 2
-#define CMD_DIFF                    3
+#define CMD_ISOMORPH                3
+#define CMD_DIFF                    4
 
 #define CMD_PARAM_INDEX_FROM_TYPE   0
 #define CMD_PARAM_INDEX_TO_TYPE     1
@@ -41,6 +42,8 @@
 #define CMD_PARAM_INDEX_SIMPLIFY_ID 9
 #define CMD_PARAM_INDEX_SKIP_META   10
 #define CMD_PARAM_INDEX_STRICT      11
+#define CMD_PARAM_INDEX_NO_COMMENTS 12
+#define CMD_PARAM_INDEX_GEOMETRY    13
 
 #define CMD_PARAMETER_FROM_TYPE     1
 #define CMD_PARAMETER_TO_TYPE       2
@@ -54,6 +57,8 @@
 #define CMD_PARAMETER_SIMPLIFY_ID   512
 #define CMD_PARAMETER_SKIP_META     1024
 #define CMD_PARAMETER_STRICT        2048
+#define CMD_PARAMETER_NO_COMMENTS   4096
+#define CMD_PARAMETER_GEOMETRY      8192
 
 const char* formats[] = {
 	"cyberiada",    /* cybxmlCyberiada10 */
@@ -103,6 +108,8 @@ CyberiadaCommandParameters parameters[] = {
 	{CMD_PARAMETER_SIMPLIFY_ID, "-i",  "--simplify-ids",        argNone,   "simplify graph identifiers", 0, NULL, -1},
 	{CMD_PARAMETER_SKIP_META,   "-m",  "--skip-meta",           argNone,   "skip meta from the loaded graph", 0, NULL, -1},
 	{CMD_PARAMETER_STRICT,      "-x",  "--strict",              argNone,   "strictly check the standard requirements", 0, NULL, -1},
+	{CMD_PARAMETER_NO_COMMENTS, "-C",  "--ignore-comments",     argNone,   "leave the comments out of the diff", 0, NULL, -1},
+	{CMD_PARAMETER_GEOMETRY,    "-G",  "--geometry",            argNone,   "compare the geometry in the diff", 0, NULL, -1},
 };
 
 size_t parameters_count = sizeof(parameters) / sizeof(CyberiadaCommandParameters);
@@ -125,10 +132,14 @@ CyberiadaCommand commands[] = {
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_RECONSTR | CMD_PARAMETER_RECONSTR_SM |
 	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT,
 	 "convert HSM from -f <from-format> to -t <output-format> into the file named -o <output-graph>"},
-	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
+	{CMD_ISOMORPH, "isomorph", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY |
 	 CMD_PARAMETER_SIMPLIFY_ID | CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT,
-	 "compare HSMs from <graph> and <output-graph> and print the difference"}
+	 "check the structural similarity of the single HSMs from <graph> and <output-graph> and print the differences"},
+	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
+	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY |
+	 CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT | CMD_PARAMETER_NO_COMMENTS | CMD_PARAMETER_GEOMETRY,
+	 "compare the revisions <graph> and <output-graph> of a document, print a line per changed element; exit 1 when they differ"}
 };
 
 size_t commands_count = sizeof(commands) / sizeof(CyberiadaCommand);
@@ -219,6 +230,53 @@ int parse_arguments(int argc, char** argv)
 	return cmd->code;
 }
 
+/* the names of the CYBERIADA_DIFF_FLAG_* bits, from the lowest */
+const char* diff_flag_names[] = {
+	"added", "removed", "type", "title", "actions", "parent", "link", "comment", "color", "geometry",
+	"collapsed", "source", "target", "trigger", "guard", "behavior", "propagation", "subject", "meta",
+	"elements"
+};
+
+size_t diff_flag_names_count = sizeof(diff_flag_names) / sizeof(char*);
+
+static void print_diff_line(const char* kind, const char* id1, const char* id2, unsigned int flags)
+{
+	size_t i;
+	printf("%s %s %s", kind, id1 ? id1 : "-", id2 ? id2 : "-");
+	for (i = 0; i < diff_flag_names_count; i++) {
+		if (flags & (1U << i)) {
+			printf(" %s", diff_flag_names[i]);
+		}
+	}
+	printf("\n");
+}
+
+static void print_document_diff(const CyberiadaDocumentDiff* diff)
+{
+	size_t i, j;
+	for (i = 0; i < diff->meta_size; i++) {
+		const CyberiadaMetaDiff* m = diff->meta + i;
+		printf("meta %s: %s -> %s\n", m->name, m->value1 ? m->value1 : "-", m->value2 ? m->value2 : "-");
+	}
+	for (i = 0; i < diff->sms_size; i++) {
+		const CyberiadaSMDiff* sm = diff->sms + i;
+		if (!sm->flags) continue;
+		print_diff_line("sm", sm->sm1 ? sm->sm1->nodes->id : NULL, sm->sm2 ? sm->sm2->nodes->id : NULL, sm->flags);
+		for (j = 0; j < sm->nodes_size; j++) {
+			const CyberiadaNodeDiff* n = sm->nodes + j;
+			if (n->flags) {
+				print_diff_line(" node", n->n1 ? n->n1->id : NULL, n->n2 ? n->n2->id : NULL, n->flags);
+			}
+		}
+		for (j = 0; j < sm->edges_size; j++) {
+			const CyberiadaEdgeDiff* e = sm->edges + j;
+			if (e->flags) {
+				print_diff_line(" edge", e->e1 ? e->e1->id : NULL, e->e2 ? e->e2->id : NULL, e->flags);
+			}
+		}
+	}
+}
+
 int main(int argc, char** argv)
 {
 	int command = 0;
@@ -300,8 +358,41 @@ int main(int argc, char** argv)
 		}
 	} else if (command == CMD_DIFF) {
 		CyberiadaDocument doc2;
+		CyberiadaDocumentDiff diff;
+		CyberiadaDiffOptions options;
+
+		cyberiada_init_sm_document(&doc2);
+		if ((res = cyberiada_read_sm_document(&doc2, dest_filename, dest_format, flags)) != CYBERIADA_NO_ERROR) {
+			fprintf(stderr, "Error while reading %s file: %s (%d)\n",
+					dest_filename, cyberiada_error_str(res), res);
+			cyberiada_cleanup_sm_document(&doc);
+			cyberiada_cleanup_sm_document(&doc2);
+			return 5;
+		}
+
+		cyberiada_default_diff_options(&options);
+		if (parameters[CMD_PARAM_INDEX_NO_COMMENTS].present) {
+			options.flags |= CYBERIADA_DIFF_OPTION_IGNORE_COMMENTS;
+		}
+		if (parameters[CMD_PARAM_INDEX_GEOMETRY].present) {
+			options.flags |= CYBERIADA_DIFF_OPTION_GEOMETRY;
+		}
+		res = cyberiada_diff_documents(&doc, &doc2, &options, &diff);
+		if (res == CYBERIADA_NO_ERROR) {
+			int differ = diff.flags != 0;
+			if (!silent) {
+				print_document_diff(&diff);
+			}
+			cyberiada_cleanup_document_diff(&diff);
+			cyberiada_cleanup_sm_document(&doc2);
+			cyberiada_cleanup_sm_document(&doc);
+			return differ ? 1 : 0;
+		}
+		fprintf(stderr, "Error while comparing the documents: %s (%d)\n", cyberiada_error_str(res), res);
+		cyberiada_cleanup_sm_document(&doc2);
+	} else if (command == CMD_ISOMORPH) {
+		CyberiadaDocument doc2;
 		CyberiadaIsomorphismResult iso;
-		flags = CYBERIADA_FLAG_NO;
 		
 		if (!doc.state_machines || doc.state_machines->next) {
 			fprintf(stderr, "The graph %s should contain a single state machine\n", source_filename);
@@ -364,7 +455,7 @@ int main(int argc, char** argv)
 				}
 				printf("\n");
 				if (iso.new_initial) {
-					printf("'\nNew initial pseudostate: ");
+					printf("\nNew initial pseudostate: ");
 					cyberiada_print_node(iso.new_initial, 0);
 				}
 				if (iso.diff_nodes_size > 0) {
@@ -414,7 +505,7 @@ int main(int argc, char** argv)
 					}
 				}
 				if (iso.missing_nodes_size > 0 && iso.missing_nodes) {
-					printf("\nThe nodes missing in the first graph:\n");
+					printf("\nThe nodes of the first graph missing in the second graph:\n");
 					for (i = 0; i < iso.missing_nodes_size; i++) {
 						cyberiada_print_node(iso.missing_nodes[i], 0);
 					}
@@ -451,7 +542,7 @@ int main(int argc, char** argv)
 					}
 				}
 				if (iso.missing_edges_size > 0 && iso.missing_edges) {
-					printf("\nThe edges missing in the first graph:\n");
+					printf("\nThe edges of the first graph missing in the second graph:\n");
 					for (i = 0; i < iso.missing_edges_size; i++) {
 						cyberiada_print_edge(iso.missing_edges[i]);
 					}

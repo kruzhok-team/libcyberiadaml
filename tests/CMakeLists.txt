@@ -45,3 +45,23 @@ file(COPY ${TEST_GOOD} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/good)
 
 file(GLOB TEST_SAMPLES ${CMAKE_SOURCE_DIR}/graph-samples/*.graphml)
 file(COPY ${TEST_SAMPLES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/samples)
+
+# the cybparser comparisons; on Windows the DLLs are not next to cybparser
+if(TARGET cybparser AND NOT WIN32)
+  foreach(parser_case
+      "parser-diff-same|0|diff|-g|diagrams/diff-light.graphml|-o|diagrams/diff-light.graphml|"
+      "parser-diff-light|1|diff|-g|diagrams/diff-light.graphml|-o|diagrams/diff-light-edited.graphml|good/parser-diff-light.txt"
+      "parser-isomorph|0|isomorph|-g|diagrams/minimal.graphml|-o|diagrams/minimal.graphml|")
+    string(REPLACE "|" ";" parser_fields "${parser_case}")
+    list(GET parser_fields 0 parser_name)
+    list(GET parser_fields 1 parser_expected)
+    list(SUBLIST parser_fields 2 5 parser_args)
+    list(GET parser_fields 7 parser_good)
+    string(REPLACE ";" "|" parser_args "${parser_args}")
+    add_test(NAME ${parser_name}
+             COMMAND ${CMAKE_COMMAND} -DPARSER=$<TARGET_FILE:cybparser> -DARGS=${parser_args}
+                     -DEXPECTED=${parser_expected} -DGOOD=${parser_good}
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/run-parser.cmake
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  endforeach()
+endif()
