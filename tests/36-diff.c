@@ -123,7 +123,8 @@ int main(void)
 	}
 	TEST_ASSERT(cyberiada_cleanup_document_diff(&diff) == CYBERIADA_NO_ERROR);
 
-	/* a revision saved as yEd: the elements are the same */
+	/* a revision saved as yEd: the states and the transitions are the same (the
+	   dialect keeps neither the meta, nor the SM name, nor the comment links) */
 	{
 		CyberiadaDocument* yed;
 		TEST_ASSERT(cyberiada_write_sm_document(base, "36-out.graphml", cybxmlYEDOstranna, CYBERIADA_FLAG_NO) ==
@@ -132,7 +133,11 @@ int main(void)
 		TEST_ASSERT(cyberiada_diff_documents(base, yed, NULL, &diff) == CYBERIADA_NO_ERROR);
 		TEST_ASSERT(diff.sms_size == 1);
 		for (i = 0; i < diff.sms[0].nodes_size; i++) TEST_ASSERT(diff.sms[0].nodes[i].flags == 0);
-		for (i = 0; i < diff.sms[0].edges_size; i++) TEST_ASSERT(diff.sms[0].edges[i].flags == 0);
+		for (i = 0; i < diff.sms[0].edges_size; i++) {
+			const CyberiadaEdgeDiff* e = diff.sms[0].edges + i;
+			const CyberiadaEdge* edge = e->e1 ? e->e1 : e->e2;
+			if (edge->source->type != cybNodeComment) TEST_ASSERT(e->flags == 0);
+		}
 		TEST_ASSERT(cyberiada_cleanup_document_diff(&diff) == CYBERIADA_NO_ERROR);
 		TEST_ASSERT(cyberiada_destroy_sm_document(yed) == CYBERIADA_NO_ERROR);
 	}
