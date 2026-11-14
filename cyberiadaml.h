@@ -33,7 +33,7 @@
 /* The version of the library itself */
 
 #define CYBERIADA_LIB_VERSION_MAJOR 1
-#define CYBERIADA_LIB_VERSION_MINOR 1
+#define CYBERIADA_LIB_VERSION_MINOR 2
 #define CYBERIADA_LIB_VERSION_PATCH 0
 
 #ifdef __cplusplus
