@@ -1,34 +1,17 @@
 # libcyberiadaml project changelog
 
-## Version 1.2.0 (unreleased)
+## Version 1.2.0
 
 Added:
-- the revision diff of two revisions of a document (`cyberiadaml_diff.h`):
-  `cyberiada_diff_documents`, `cyberiada_diff_sms` and their cleanups, the
-  options (`cyberiada_default_diff_options`: the geometry, the comments
-  left out) and the `CYBERIADA_DIFF_FLAG_*` flags; the elements paired by their
-  ids, checked by their contents, the state machines by the id, the title and
-  the order, the metainformation by its names.
+- the revision diff of two revisions of a document (`cyberiadaml_diff.h`).
 
 Changed:
-- cybparser: `diff` prints the revision diff of the two documents, a line per
-  changed element, and exits 1 when they differ (`-C` leaves the comments out,
-  `-G` compares the geometry); the former report of the isomorphism check is
-  `isomorph`; both read the second graph with the flags of the first;
-- the isomorphism check takes every pair of nodes of compatible types as a
-  candidate, the degrees acting through the proximity only: check(A, B) and
-  check(B, A) agree.
+- cybparser: `diff` prints the revision diff of the two documents, 
+  the former report of the isomorphism check is `isomorph`.
 
 Fixed:
-- the isomorphism check: a submachine link compared with the other link, not
-  with the other node's title; a link or a title on one side only differs; a
-  simple and a composite state differ by their children, not by their type;
-  with the comments compared, a comment link to a transition is paired; the
-  proximity kept whole (no cap at 127, which tied the close candidates) and the
-  array of its levels sized for every level; the verdict flags accumulate
-  instead of overwriting each other;
-- the action comparison compares an absent string as an empty one (it
-  crashed) and takes a NULL flags pointer everywhere.
+- the isomorphism check was corrected;
+- resolve crash with the action comparison.
 
 ## Version 1.1.0
 
