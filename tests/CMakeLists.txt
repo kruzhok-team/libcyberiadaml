@@ -51,12 +51,26 @@ if(TARGET cybparser AND NOT WIN32)
   foreach(parser_case
       "parser-diff-same|0|diff|-g|diagrams/diff-light.graphml|-o|diagrams/diff-light.graphml|"
       "parser-diff-light|1|diff|-g|diagrams/diff-light.graphml|-o|diagrams/diff-light-edited.graphml|good/parser-diff-light.txt"
-      "parser-isomorph|0|isomorph|-g|diagrams/minimal.graphml|-o|diagrams/minimal.graphml|")
+      "parser-isomorph|0|isomorph|-g|diagrams/minimal.graphml|-o|diagrams/minimal.graphml|"
+      "parser-listing-diff-light|0|listing|diagrams/diff-light.graphml|good/parser-listing-diff-light.txt"
+      "parser-listing-completeness|0|listing|diagrams/completeness.graphml|good/parser-listing-completeness.txt"
+      "parser-listing-event-propagation|0|listing|diagrams/event-propagation.graphml|good/parser-listing-event-propagation.txt"
+      "parser-listing-comment-sizes|0|listing|diagrams/comment-sizes.graphml|good/parser-listing-comment-sizes.txt"
+      "parser-listing-two-machines|0|listing|diagrams/two-machines.graphml|good/parser-listing-two-machines.txt"
+      "parser-listing-two-regions|0|listing|diagrams/two-regions.graphml|good/parser-listing-two-regions.txt"
+      "parser-listing-format|0|listing|-g|diagrams/diff-light.graphml|-f|cyberiada|good/parser-listing-diff-light.txt"
+      "parser-listing-empty|0|listing|diagrams/empty.graphml|diagrams/empty.graphml"
+      "parser-listing-not-read|0|listing|diagrams/bad.graphml|diagrams/bad.graphml"
+      "parser-listing-missing|2|listing|diagrams/missing.graphml|")
+    # the fields: the name, the exit code, the arguments, the good file (may be empty)
     string(REPLACE "|" ";" parser_fields "${parser_case}")
+    list(LENGTH parser_fields parser_size)
+    math(EXPR parser_last "${parser_size} - 1")
+    math(EXPR parser_args_size "${parser_size} - 3")
     list(GET parser_fields 0 parser_name)
     list(GET parser_fields 1 parser_expected)
-    list(SUBLIST parser_fields 2 5 parser_args)
-    list(GET parser_fields 7 parser_good)
+    list(SUBLIST parser_fields 2 ${parser_args_size} parser_args)
+    list(GET parser_fields ${parser_last} parser_good)
     string(REPLACE ";" "|" parser_args "${parser_args}")
     add_test(NAME ${parser_name}
              COMMAND ${CMAKE_COMMAND} -DPARSER=$<TARGET_FILE:cybparser> -DARGS=${parser_args}
@@ -64,4 +78,14 @@ if(TARGET cybparser AND NOT WIN32)
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/run-parser.cmake
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endforeach()
+
+  find_program(GIT_EXECUTABLE git)
+  if(GIT_EXECUTABLE)
+    add_test(NAME parser-listing-git
+             COMMAND ${CMAKE_COMMAND} -DPARSER=$<TARGET_FILE:cybparser> -DGIT=${GIT_EXECUTABLE}
+                     -DDIAGRAM=${CMAKE_CURRENT_SOURCE_DIR}/diagrams/diff-light.graphml
+                     -DEDITED=${CMAKE_CURRENT_SOURCE_DIR}/diagrams/diff-light-edited.graphml
+                     -P ${CMAKE_CURRENT_SOURCE_DIR}/run-textconv.cmake
+             WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
 endif()

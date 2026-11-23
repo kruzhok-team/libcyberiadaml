@@ -24,11 +24,13 @@
 #include <stdlib.h>
 
 #include "cyberiadaml.h"
+#include "listing.h"
 
 #define CMD_PRINT                   1
 #define CMD_CONVERT                 2
 #define CMD_ISOMORPH                3
 #define CMD_DIFF                    4
+#define CMD_LISTING                 5
 
 #define CMD_PARAM_INDEX_FROM_TYPE   0
 #define CMD_PARAM_INDEX_TO_TYPE     1
@@ -139,7 +141,9 @@ CyberiadaCommand commands[] = {
 	{CMD_DIFF,    "diff", 0, CMD_PARAMETER_GRAPH | CMD_PARAMETER_GRAPH2,
 	 CMD_PARAMETER_FROM_TYPE | CMD_PARAMETER_TO_TYPE | CMD_PARAMETER_SILENT | CMD_PARAMETER_SKIP_GEOM | CMD_PARAMETER_SKIP_EMPTY |
 	 CMD_PARAMETER_SKIP_META | CMD_PARAMETER_STRICT | CMD_PARAMETER_NO_COMMENTS | CMD_PARAMETER_GEOMETRY,
-	 "compare the revisions <graph> and <output-graph> of a document, print a line per changed element; exit 1 when they differ"}
+	 "compare the revisions <graph> and <output-graph> of a document, print a line per changed element; exit 1 when they differ"},
+	{CMD_LISTING, "listing", CMD_PARAMETER_GRAPH, CMD_PARAMETER_GRAPH, CMD_PARAMETER_FROM_TYPE,
+	 "print the elements of the HSM diagram a line each, without the geometry: the textconv driver of git"}
 };
 
 size_t commands_count = sizeof(commands) / sizeof(CyberiadaCommand);
@@ -314,6 +318,12 @@ int main(int argc, char** argv)
 	strict = parameters[CMD_PARAM_INDEX_STRICT].present;
 	require_initial = 0;
 	ignore_comments = 1;
+
+	if (command == CMD_LISTING) {
+		res = print_listing(source_filename, source_format);
+		cyberiada_cleanup_library();
+		return res;
+	}
 
 	cyberiada_init_sm_document(&doc);
 

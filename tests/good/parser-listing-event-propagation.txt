@@ -1,0 +1,20 @@
+state machine Event propagation SM
+  initial
+  state Waiting
+    entry: prepare();
+    TICK: count();
+  state Active
+  state Done
+  transition initial -> Waiting
+  transition Waiting -> Active [START]
+    do: run();
+    propagation: eventPropagationPropagate
+  transition Active -> Done [STOP]
+    guard: ready
+    do: finish();
+    propagation: eventPropagationBlock
+  transition Done -> Waiting [RESET]
+    propagation: eventPropagationDefer
+meta
+  standardVersion: 1.0
+  eventPropagation: block

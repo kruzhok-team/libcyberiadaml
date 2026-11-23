@@ -1,0 +1,24 @@
+state machine Completeness
+  initial (init)
+  state Composite
+    initial (cinit)
+    state Inner
+  submachine Nested -> M2
+    entry point In (sub0::en)
+    exit point Out (sub0::ex)
+  comment
+    text: The guarded transition.
+  transition initial (init) -> Composite
+  transition initial (cinit) -> Inner
+  transition Composite -> Nested [FIND]
+    guard: text.Contains(\[sample\])
+    do: mark()
+  link comment -> transition (c0-sub0#1): mark()
+state machine Worker
+  entry point In (m2en)
+  exit point Out (m2ex)
+  initial (m2i)
+  state Run
+  transition initial (m2i) -> Run
+meta
+  standardVersion: 1.0

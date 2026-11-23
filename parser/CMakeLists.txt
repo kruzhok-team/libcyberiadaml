@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.12)
 
 project(cybparser VERSION 1.2.0)
-add_executable(cybparser parser.c)
+add_executable(cybparser parser.c listing.c)
 target_include_directories(cybparser PUBLIC
 			   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 			   $<INSTALL_INTERFACE:include/cyberiada>)

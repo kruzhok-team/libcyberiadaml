@@ -1,0 +1,18 @@
+state machine Comment sizes
+  formal comment CGML_COMPONENT led
+    text: type/ LED
+          
+          pin/ 13
+  state Off
+  state On
+  comment (short)
+    text: Short note
+  comment (long)
+    text: A long explanation of the decision taken here: the lamp turns on only after the button has been held for a second, otherwise a brief touch is ignored by design, see the issue tracker for the discussion of the debounce timing.
+  transition Off -> On [PRESS]
+  link formal comment CGML_COMPONENT led -> On
+  link comment (short) -> Off
+meta
+  standardVersion: 1.0
+  transitionOrder: actionFirst
+  eventPropagation: block

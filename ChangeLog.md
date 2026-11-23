@@ -1,5 +1,11 @@
 # libcyberiadaml project changelog
 
+## Version 1.2.1 (unreleased)
+
+Added:
+- cybparser: `listing` prints a diagram an element per line without the geometry, the
+  textconv driver of `git diff` (the listing of `hsm-git textconv`).
+
 ## Version 1.2.0
 
 Added:

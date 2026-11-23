@@ -1,0 +1,10 @@
+state machine First
+  initial (init)
+  state Idle
+  transition initial (init) -> Idle
+state machine Second
+  initial (m2i)
+  state Run
+  transition initial (m2i) -> Run
+meta
+  standardVersion: 1.0

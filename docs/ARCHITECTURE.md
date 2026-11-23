@@ -289,10 +289,13 @@ line per element and indented by its nesting.
 * A text of several lines continues under its first line, indented to its value.
 * The geometry, the ids and the view state are left out, so a moved state is no change in
   `git diff`.
-* An empty file prints nothing. A file the library cannot read is printed as it is, with one
-  line on stderr, and the exit code is 0, so `git diff` still shows it.
+* An empty file prints nothing. A file the library cannot read is printed as it is, the
+  reason on stderr, and the exit code is 0, so `git diff` still shows it.
 * The output is the one of `hsm-git textconv` of the retired CyberiadaPro git plugin, so a
-  repository configured for it keeps its diffs.
+  repository configured for it keeps its diffs: the order of the binding — the links grouped
+  by their comments, the comments in the order of the tree — and its view of a submachine
+  state, which has no actions. A document the binding refuses, a state of several regions
+  among them, is listed too, the nodes of every region under their state.
 
 ## Memory ownership
 

@@ -1,0 +1,17 @@
+state machine Region ids
+  initial (init)
+  state Parallel
+    entry point In
+    initial (r1init)
+    state Left
+    initial (r2init)
+    state Right
+  state Done
+  transition initial (init) -> Parallel
+  transition In -> Left
+  transition initial (r1init) -> Left
+  transition initial (r2init) -> Right
+  transition Parallel -> Done [STOP]
+    do: halt()
+meta
+  standardVersion: 1.0
