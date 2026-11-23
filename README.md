@@ -30,6 +30,15 @@ Run `make install` to install the library.
 
 Use CMake parameters to change the build type / installation prefix / etc.
 
+## Diagrams in git diff
+
+`cybparser listing <graph>` prints a diagram an element per line, without the geometry
+(see the architecture, The listing). Set it as the textconv driver of git, and `git diff` and
+`git log -p` show the changed states and transitions instead of the GraphML lines:
+
+    echo '*.graphml diff=cyberiada' >> .gitattributes
+    git config diff.cyberiada.textconv "cybparser listing"
+
 ## Testing
 
 Build the library and run `ctest` in the `build` directory. Run

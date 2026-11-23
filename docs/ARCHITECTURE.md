@@ -74,7 +74,7 @@ documents constructed programmatically.
 | `diff.c` | Revision diff: the pairs of the elements of two revisions by their verified ids, with their differences (prototypes in `cyberiadaml_diff.h`). |
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
-| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ). |
+| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ), `listing` (the elements one per line, the textconv driver of git). |
 
 ## The reading pipeline
 
@@ -256,6 +256,43 @@ removed and added, and the isomorphism check is the tool for the diagrams
 renumbered or drawn anew. The geometry is compared as stored, so both documents
 come in the same coordinate format, the left-top one being the meaningful
 basis.
+
+### The listing
+
+`cybparser listing <graph>` prints a document as the text a person reads in `git diff`:
+the revision diff of an empty document and the document, every element added, written a
+line per element and indented by its nesting.
+
+```
+ <graph> (any format print reads)    an empty document
+        \                              /
+         cyberiada_diff_documents(empty, doc)    the pairs in the order of the diff
+                        |
+                        v
+ state machine <name>                        one per state machine
+   <word> <name>[ (<id>)][ -> <reference>]   a node; the id only when the word and the
+     entry: <behavior>                       name repeat; the states holding it first
+     exit: <behavior>
+     <trigger>[ [<guard>]]: <behavior>
+     text: <body>
+     color: <color>
+   transition <source> -> <target>[ [<trigger>]]
+     guard: <guard>   do: <behavior>   propagation: <value>   color: <color>
+   link <comment> -> <subject>[: <fragment>]
+ meta
+   <name>: <value>                           not the editor's view state, regionGeometry
+```
+
+* The words are those of the editor: `state`, `submachine`, `comment`, `formal comment`,
+  `initial`, `final`, `choice`, `terminate`, `shallow history`, `deep history`, `entry
+  point`, `exit point`.
+* A text of several lines continues under its first line, indented to its value.
+* The geometry, the ids and the view state are left out, so a moved state is no change in
+  `git diff`.
+* An empty file prints nothing. A file the library cannot read is printed as it is, with one
+  line on stderr, and the exit code is 0, so `git diff` still shows it.
+* The output is the one of `hsm-git textconv` of the retired CyberiadaPro git plugin, so a
+  repository configured for it keeps its diffs.
 
 ## Memory ownership
 
