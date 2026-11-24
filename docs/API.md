@@ -205,6 +205,7 @@ The document must be allocated/initialized before reading. `format` may be
 `cybxmlUnknown` on read for auto-detection; on write it must name a concrete
 format (the yEd writer supports single-SM documents only). `encode` allocates
 the output buffer; the caller frees it.
+The file names are UTF-8 on every platform, Windows included.
 
 ### Printing (debug)
 

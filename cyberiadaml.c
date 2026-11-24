@@ -32,6 +32,7 @@
 #include "cyberiadaml.h"
 #include "cyb_actions.h"
 #include "cyb_error.h"
+#include "cyb_file.h"
 #include "cyb_graph.h"
 #include "cyb_graph_recon.h"
 #include "cyb_meta.h"
@@ -3471,7 +3472,7 @@ static int cyberiada_detect_flattened_file(const char* filename, int* flattened)
 		return CYBERIADA_BAD_PARAMETER;
 	}
 
-	f = fopen(filename, "rb");
+	f = cyberiada_fopen(filename, "rb");
 	if (!f) {
 		return CYBERIADA_XML_ERROR;
 	}

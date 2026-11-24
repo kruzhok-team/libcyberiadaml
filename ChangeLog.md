@@ -6,6 +6,10 @@ Added:
 - cybparser: `listing` prints a diagram an element per line without the geometry, the
   textconv driver of `git diff` (the listing of `hsm-git textconv`).
 
+Fixed:
+- Windows: a document with a non-ASCII file name is read with the format
+  detection (`cybxmlUnknown`).
+
 ## Version 1.2.0
 
 Added:

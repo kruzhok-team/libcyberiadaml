@@ -35,8 +35,9 @@ State Machine (HSM) diagrams.
                              | +-----------+              | | clean,      |     |  math)    |
    leaf utilities:           |      +----------------+    | | reconstruct |     +-----------+
    cyb_string, cyb_structs,  |      | cyb_graph      |    | +-------------+
-   utf8enc, cyb_error.h      |      | (find/add)     |    |
-                             |      +----------------+    |
+   utf8enc, cyb_file,        |      | (find/add)     |    |
+   cyb_error.h               |      +----------------+    |
+                             |                            |
 
  +---------------------+  independent of cyberiadaml.c, work on CyberiadaSM:
  |     isomorph.c      |  the isomorphism check: the structural similarity
@@ -73,6 +74,7 @@ documents constructed programmatically.
 | `isomorph.c` | Graph isomorphism check: the structural similarity of two state machines (prototypes in `cyberiadaml_iso.h`). |
 | `diff.c` | Revision diff: the pairs of the elements of two revisions by their verified ids, with their differences (prototypes in `cyberiadaml_diff.h`). |
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
+| `cyb_file.c/.h` | `cyberiada_fopen()`: a UTF-8 file name, opened as wide on Windows where the narrow `fopen` takes the ANSI code page. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
 | `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ), `listing` (the elements one per line, the textconv driver of git). |
 
