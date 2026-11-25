@@ -22,6 +22,11 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#include <shellapi.h>
+#endif
 
 #include "cyberiadaml.h"
 #include "listing.h"
@@ -281,6 +286,38 @@ static void print_document_diff(const CyberiadaDocumentDiff* diff)
 	}
 }
 
+#ifdef _WIN32
+/* The arguments in UTF-8, the file names of the library: the narrow argv of Windows is in
+   the ANSI code page. They live as long as the program; NULL keeps the narrow argv. */
+static char** utf8_arguments(int* argc)
+{
+	int count, i, j, size;
+	char** args;
+	wchar_t** wide = CommandLineToArgvW(GetCommandLineW(), &count);
+
+	if (!wide) {
+		return NULL;
+	}
+	args = (char**)calloc((size_t)count + 1, sizeof(char*));
+	for (i = 0; args && i < count; i++) {
+		size = WideCharToMultiByte(CP_UTF8, 0, wide[i], -1, NULL, 0, NULL, NULL);
+		args[i] = size > 0 ? (char*)malloc((size_t)size) : NULL;
+		if (!args[i] || WideCharToMultiByte(CP_UTF8, 0, wide[i], -1, args[i], size, NULL, NULL) <= 0) {
+			for (j = 0; j <= i; j++) {
+				free(args[j]);
+			}
+			free(args);
+			args = NULL;
+		}
+	}
+	LocalFree(wide);
+	if (args) {
+		*argc = count;
+	}
+	return args;
+}
+#endif
+
 int main(int argc, char** argv)
 {
 	int command = 0;
@@ -291,8 +328,14 @@ int main(int argc, char** argv)
 	CyberiadaXMLFormat source_format, dest_format;
 	CyberiadaDocument doc;
 	size_t i;
-	
+
 	int res = CYBERIADA_NO_ERROR;
+#ifdef _WIN32
+	char** utf8_argv = utf8_arguments(&argc);
+	if (utf8_argv) {
+		argv = utf8_argv;
+	}
+#endif
 
 	if (argc < 3) {
 		print_usage(argv[0]);

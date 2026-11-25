@@ -9,6 +9,8 @@ Added:
 Fixed:
 - Windows: a document with a non-ASCII file name is read with the format
   detection (`cybxmlUnknown`).
+- Windows: cybparser takes non-ASCII file names from its command line in UTF-8,
+  `listing` opens them so.
 
 ## Version 1.2.0
 

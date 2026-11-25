@@ -46,7 +46,8 @@ file(COPY ${TEST_GOOD} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/good)
 file(GLOB TEST_SAMPLES ${CMAKE_SOURCE_DIR}/graph-samples/*.graphml)
 file(COPY ${TEST_SAMPLES} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/samples)
 
-# the cybparser comparisons; on Windows the DLLs are not next to cybparser
+# the cybparser comparisons; a cmake script runs cybparser, without the emulator of the
+# Windows cross build
 if(TARGET cybparser AND NOT WIN32)
   foreach(parser_case
       "parser-diff-same|0|diff|-g|diagrams/diff-light.graphml|-o|diagrams/diff-light.graphml|"
@@ -88,4 +89,17 @@ if(TARGET cybparser AND NOT WIN32)
                      -P ${CMAKE_CURRENT_SOURCE_DIR}/run-textconv.cmake
              WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
   endif()
+endif()
+
+# cybparser listing of a non-ASCII (UTF-8) file name, Windows included: git hands the
+# textconv a file of the diagram's own name
+if(TARGET cybparser)
+  configure_file(diagrams/diff-light.graphml
+                 "${CMAKE_CURRENT_BINARY_DIR}/diagrams/светофор.graphml" COPYONLY)
+  add_test(NAME parser-listing-utf8
+           COMMAND cybparser listing "diagrams/светофор.graphml"
+           WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
+  set_tests_properties(parser-listing-utf8 PROPERTIES
+                       PASS_REGULAR_EXPRESSION "\n  transition Red -> Night \\[NIGHT\\]\n"
+                       FAIL_REGULAR_EXPRESSION "cannot|not read")
 endif()

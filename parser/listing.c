@@ -25,6 +25,7 @@
 
 #include "cyberiadaml.h"
 #include "cyberiadaml_diff.h"
+#include "cyb_file.h"
 #include "listing.h"
 
 /* The listing is the text of the revision diff of an empty document and the document,
@@ -685,7 +686,7 @@ int print_listing(const char* path, CyberiadaXMLFormat format)
 		fprintf(stderr, "%s: no file given\n", LISTING_PROGRAM);
 		return 1;
 	}
-	file = fopen(path, "rb");
+	file = cyberiada_fopen(path, "rb");
 	if (!file) {
 		fprintf(stderr, "%s: %s: cannot open the file\n", LISTING_PROGRAM, listing_base_name(path));
 		return 2;

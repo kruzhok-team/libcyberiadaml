@@ -76,7 +76,7 @@ documents constructed programmatically.
 | `utf8enc.c/.h` | Escape/unescape of non-ASCII bytes around action text. |
 | `cyb_file.c/.h` | `cyberiada_fopen()`: a UTF-8 file name, opened as wide on Windows where the narrow `fopen` takes the ANSI code page. |
 | `cyb_error.h` | `DEBUG()` / `ERROR()` reporting macros. |
-| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ), `listing` (the elements one per line, the textconv driver of git). |
+| `parser/parser.c` | `cybparser`, the reference command line tool: `print`, `convert`, `isomorph` (the isomorphism check report), `diff` (the revision diff, a line per changed element, exit 1 when the documents differ), `listing` (the elements one per line, the textconv driver of git). On Windows the arguments come from the wide command line in UTF-8, the file names of the library. |
 
 ## The reading pipeline
 
